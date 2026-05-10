@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Games — DUEL</title>
+  <link rel="stylesheet" href="../../base.css">
+  <style>
+    /* Netflix-style rows. Horizontal scroll, no pagination. */
+    .row-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+    }
+    .row-head .eyebrow { font-family: var(--font-mono); letter-spacing: 0.06em; }
+    .row-scroll {
+      display: flex;
+      gap: var(--space-6);
+      overflow-x: auto;
+      padding-bottom: var(--space-6);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .row-scroll::-webkit-scrollbar { height: 6px; }
+    .row-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .game-card {
+      flex: 0 0 192px;
+      min-width: 192px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding: 0;
+      border: 0;
+      background: transparent;
+      transition: transform var(--dur-base) var(--ease);
+    }
+    .game-card.featured { flex-basis: 256px; min-width: 256px; }
+
+    .game-thumb {
+      aspect-ratio: 16/9;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      transition: border-color var(--dur-base) var(--ease);
+      position: relative;
+      overflow: hidden;
+    }
+    /* The duel detail inside the blank thumbnail — a barely-visible */
+    /* vertical hairline down the middle. Two sides. You don't notice. */
+    .game-thumb::after {
+      content: '';
+      position: absolute;
+      top: 20%;
+      bottom: 20%;
+      left: 50%;
+      width: 1px;
+      background: rgba(255,255,255,0.04);
+    }
+    .game-card:hover .game-thumb { border-color: var(--border-hover); }
+
+    .game-card-dim .game-thumb {
+      background: var(--surface-dim);
+      border-color: var(--border-dim);
+    }
+    .game-card-dim .game-name { color: var(--text-tertiary); }
+    .game-card-dim:hover .game-thumb { border-color: var(--border-dim); }
+
+    .game-name {
+      font-size: var(--fs-body);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .game-desc {
+      font-size: var(--fs-small);
+      color: rgba(255,255,255,0.40);
+      margin: 0;
+    }
+    .game-tag {
+      margin-top: var(--space-3);
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .empty-row {
+      flex: 0 0 100%;
+      padding: var(--space-12) var(--space-10);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Primary">
+  <div class="nav-inner">
+    <a href="landing.html" class="nav-brand">DUEL</a>
+    <div class="nav-links">
+      <a href="library.html" class="nav-link active">Games</a>
+      <a href="tournaments.html" class="nav-link">Tournaments</a>
+    </div>
+    <div class="nav-right">
+      <a href="wallet.html" class="pill">
+        <span class="pill-dot"></span>
+        2.450 kr
+      </a>
+      <a href="profile.html" class="avatar" aria-label="Profile">S</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <div class="page-header-content">
+      <span class="eyebrow">Library · 3 games · more coming</span>
+      <h1 class="page-title">Pick a fight</h1>
+      <p class="body">Every game is 100% skill. Pick your stake at the lobby. Winner takes the pot.</p>
+    </div>
+    <div class="u-hidden-sm">
+      <span class="badge">1v1</span>
+      <span class="badge">Tournaments</span>
+    </div>
+  </header>
+
+  <!-- ROW: CLASSIC -->
+  <section class="section">
+    <div class="row-head">
+      <span class="eyebrow">CLASSIC · 3</span>
+      <span class="hint">Launch games</span>
+    </div>
+    <div class="row-scroll">
+      <a href="card-duel.html" class="game-card featured">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">Card Duel</h3>
+        <p class="game-desc">Sealed sequential rock paper scissors.</p>
+        <span class="game-tag">1v1 · 60s</span>
+      </a>
+      <a href="card-duel.html" class="game-card">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">CycleDuel</h3>
+        <p class="game-desc">Five-type cycle with a peek.</p>
+        <span class="game-tag">1v1 · 90s</span>
+      </a>
+      <a href="card-duel.html" class="game-card">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">DropDuel</h3>
+        <p class="game-desc">Connect Four with blocks.</p>
+        <span class="game-tag">1v1 · 60s</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ROW: BUILT ON CARD DUEL -->
+  <section class="section">
+    <div class="row-head">
+      <span class="eyebrow">BUILT ON CARD DUEL · 4</span>
+      <span class="hint">Same engine, different skin</span>
+    </div>
+    <div class="row-scroll">
+      <div class="game-card game-card-dim">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">Blade Duel</h3>
+        <p class="game-desc">Samurai reskin.</p>
+        <span class="game-tag">Coming soon</span>
+      </div>
+      <div class="game-card game-card-dim">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">Spell Clash</h3>
+        <p class="game-desc">Fantasy magic.</p>
+        <span class="game-tag">Coming soon</span>
+      </div>
+      <div class="game-card game-card-dim">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">Street Fight</h3>
+        <p class="game-desc">Urban.</p>
+        <span class="game-tag">Coming soon</span>
+      </div>
+      <div class="game-card game-card-dim">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">War Room</h3>
+        <p class="game-desc">Military strategy.</p>
+        <span class="game-tag">Coming soon</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROW: 3-PLAYER -->
+  <section class="section">
+    <div class="row-head">
+      <span class="eyebrow">3-PLAYER · 0</span>
+      <span class="hint">1v1v1 formats</span>
+    </div>
+    <div class="row-scroll">
+      <div class="empty empty-row">
+        <p class="empty-body">Nothing here yet.</p>
+        <p class="empty-hint">1v1v1 formats are in design. Kickback mechanics, alliance rules, rake-share math — it's a different beast.</p>
+        <a href="#" class="empty-cta">Suggest a format &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROW: BLOCK GAMES -->
+  <section class="section">
+    <div class="row-head">
+      <span class="eyebrow">BLOCK GAMES · 1</span>
+      <span class="hint">Placement or blocking is core</span>
+    </div>
+    <div class="row-scroll">
+      <a href="card-duel.html" class="game-card featured">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">DropDuel</h3>
+        <p class="game-desc">Connect Four with a pre-game block.</p>
+        <span class="game-tag">1v1 · 60s</span>
+      </a>
+      <div class="game-card game-card-dim">
+        <div class="game-thumb"></div>
+        <h3 class="game-name">ReverseDuel</h3>
+        <p class="game-desc">Othello with blocks.</p>
+        <span class="game-tag">Post-launch</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">DUEL · built in DK</div>
+      <p class="footer-fine">DUEL is a skill-gaming platform. 18+. Play within your means.</p>
+    </div>
+    <div class="footer-links">
+      <a href="library.html" class="footer-link">Games</a>
+      <a href="tournaments.html" class="footer-link">Tournaments</a>
+      <a href="#" class="footer-link">Responsible gaming</a>
+      <a href="#" class="footer-link">Terms</a>
+      <a href="#" class="footer-link">Privacy</a>
+      <a href="#" class="footer-link">Fair play</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

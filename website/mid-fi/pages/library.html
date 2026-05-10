@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DUEL — Games Library (v2)</title>
+  <link rel="stylesheet" href="../base.css">
+  <style>
+    /* ---- Engine tabs ---- */
+    .engine-tabs {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border-dim);
+      margin-bottom: var(--space-16);
+      scrollbar-width: none;
+    }
+    .engine-tabs::-webkit-scrollbar { display: none; }
+    .engine-tab {
+      flex-shrink: 0;
+      padding: 10px var(--space-6);
+      font-size: var(--fs-body);
+      font-weight: var(--fw-semibold);
+      color: var(--text-tertiary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color var(--dur-quick) var(--ease),
+                  border-color var(--dur-quick) var(--ease);
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: var(--font-sans);
+    }
+    .engine-tab:hover { color: rgba(255,255,255,0.60); }
+    .engine-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ---- Engine section ---- */
+    .engine-section { margin-bottom: var(--space-20); }
+    .engine-label {
+      font-size: var(--fs-small);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+    .engine-name {
+      font-size: var(--fs-section);
+      font-weight: var(--fw-bold);
+      margin-top: var(--space-2);
+      margin-bottom: var(--space-8);
+    }
+
+    /* ---- Parent card (playable engine root) ---- */
+    .parent-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-10);
+      padding: var(--space-8);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      margin-bottom: var(--space-6);
+      transition: border-color var(--dur-base) var(--ease);
+    }
+    .parent-card:hover { border-color: var(--border-hover); }
+    .parent-card.is-dim {
+      background: var(--surface-dim);
+      border-color: var(--border-dim);
+    }
+    .parent-card.is-dim:hover { border-color: var(--border-dim); }
+
+    .parent-card-title {
+      font-size: 1.5rem;
+      font-weight: var(--fw-bold);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .parent-card-title.is-dim { color: rgba(255,255,255,0.40); }
+    .parent-card-tagline {
+      font-size: var(--fs-body);
+      color: var(--text-secondary);
+      margin-top: var(--space-2);
+      max-width: 480px;
+    }
+    .parent-card-tagline.is-dim { color: rgba(255,255,255,0.25); }
+    .parent-card-actions { display: flex; gap: var(--space-3); flex-shrink: 0; }
+
+    /* Status badge */
+    .status-live   { font-size: 10px; padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid rgba(220,38,38,0.20); background: rgba(220,38,38,0.10); color: rgba(248,113,113,1); font-weight:var(--fw-semibold); }
+    .status-coming { font-size: 10px; padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text-tertiary); font-weight:var(--fw-semibold); }
+    .status-road   { font-size: 10px; padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--border-dim); background: rgba(255,255,255,0.03); color: var(--text-disabled); font-weight:var(--fw-semibold); }
+
+    /* ---- Variant grid ---- */
+    .variant-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-3);
+    }
+    @media (max-width: 900px) { .variant-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .variant-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .variant-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--r-md);
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      transition: border-color var(--dur-quick) var(--ease);
+    }
+    .variant-card:hover { border-color: var(--border); }
+    .variant-card.is-dim {
+      background: rgba(255,255,255,0.02);
+      border-color: var(--border-dim);
+    }
+    .variant-card.is-dim:hover { border-color: var(--border-dim); }
+
+    .variant-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+    .variant-card-name { font-weight: var(--fw-semibold); font-size: var(--fs-body); color: rgba(255,255,255,0.80); line-height: 1.3; }
+    .variant-card-name.is-dim { color: rgba(255,255,255,0.25); }
+    .variant-card-tagline { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+    .variant-card-tagline.is-dim { color: rgba(255,255,255,0.15); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" aria-label="Primary">
+  <div class="nav-inner">
+    <a href="landing.html" class="nav-brand">DUEL</a>
+    <div class="nav-links">
+      <a href="library.html" class="nav-link active">Games</a>
+      <a href="#" class="nav-link">Tournaments</a>
+    </div>
+    <div class="nav-right">
+      <a href="#" class="pill">
+        <span style="color:var(--text-disabled);font-size:11px;">Balance</span>
+        <span style="font-weight:var(--fw-bold);color:rgba(255,255,255,0.70);">1.000 kr</span>
+      </a>
+      <a href="#" class="avatar">SD</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+
+  <!-- PAGE HEADER -->
+  <div style="margin-bottom:var(--space-10);">
+    <h1 class="page-title">Games</h1>
+    <p style="color:var(--text-secondary);margin-top:var(--space-3);font-size:var(--fs-body);">
+      28 titles · 6 engines
+    </p>
+  </div>
+
+  <!-- ENGINE TABS -->
+  <div class="engine-tabs" role="tablist">
+    <button class="engine-tab active" role="tab">All</button>
+    <button class="engine-tab" role="tab">Card Duel</button>
+    <button class="engine-tab" role="tab">CycleDuel</button>
+    <button class="engine-tab" role="tab">DropDuel</button>
+    <button class="engine-tab" role="tab">ReverseDuel</button>
+    <button class="engine-tab" role="tab">CodeDuel</button>
+    <button class="engine-tab" role="tab">Multi-Game</button>
+  </div>
+
+  <!-- CARD DUEL ENGINE -->
+  <section class="engine-section">
+    <p class="engine-label">Sequential RPS</p>
+    <p class="engine-name">Card Duel</p>
+
+    <div class="parent-card">
+      <div>
+        <div class="parent-card-title">
+          Card Duel
+          <span class="status-live">Live</span>
+        </div>
+        <p class="parent-card-tagline">9 cards. Pure psychology. Zero randomness.</p>
+      </div>
+      <div class="parent-card-actions">
+        <a href="#" class="btn btn-primary" style="height:40px;font-size:var(--fs-body);">Play demo</a>
+        <a href="#" class="btn btn-secondary" style="height:40px;">Info</a>
+      </div>
+    </div>
+
+    <div class="variant-grid">
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Blade Duel</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Samurai skin. Same mind game.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Spell Clash</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Fantasy magic reskin.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Street Fight</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Urban brawl aesthetic.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">War Room</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Military command theme.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CYCLEDUEL ENGINE -->
+  <section class="engine-section">
+    <p class="engine-label">5-Type Cycle</p>
+    <p class="engine-name">CycleDuel</p>
+
+    <div class="parent-card">
+      <div>
+        <div class="parent-card-title">
+          CycleDuel
+          <span class="status-live">Live</span>
+        </div>
+        <p class="parent-card-tagline">5-type cycle. See one card. Lock your sequence.</p>
+      </div>
+      <div class="parent-card-actions">
+        <a href="#" class="btn btn-primary" style="height:40px;font-size:var(--fs-body);">Play demo</a>
+        <a href="#" class="btn btn-secondary" style="height:40px;">Info</a>
+      </div>
+    </div>
+
+    <div class="variant-grid">
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Blind Duel</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">No peek. Pure sealed.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Faction War</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Medieval reskin.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Cyber Clash</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Sci-fi reskin.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">ElementDuel</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">7 elements. Extended cycle.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Beast War</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">7 animal types.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DROPDUEL ENGINE -->
+  <section class="engine-section">
+    <p class="engine-label">Block + Connect Four</p>
+    <p class="engine-name">DropDuel</p>
+
+    <div class="parent-card">
+      <div>
+        <div class="parent-card-title">
+          DropDuel
+          <span class="status-live">Live</span>
+        </div>
+        <p class="parent-card-tagline">Place a block. Play Connect Four.</p>
+      </div>
+      <div class="parent-card-actions">
+        <a href="#" class="btn btn-primary" style="height:40px;font-size:var(--fs-body);">Play demo</a>
+        <a href="#" class="btn btn-secondary" style="height:40px;">Info</a>
+      </div>
+    </div>
+
+    <div class="variant-grid">
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Trench War</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Military skin.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Virus Spread</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">7×8 board. 2 blocks each.</p>
+      </div>
+      <div class="variant-card">
+        <div class="variant-card-header">
+          <p class="variant-card-name">Crystal Cave</p>
+          <span class="status-coming">Coming</span>
+        </div>
+        <p class="variant-card-tagline">Fantasy skin. 5-in-a-row.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVERSEDUEL ENGINE -->
+  <section class="engine-section">
+    <p class="engine-label">Block + Othello</p>
+    <p class="engine-name">ReverseDuel</p>
+
+    <div class="parent-card is-dim">
+      <div>
+        <div class="parent-card-title is-dim">
+          ReverseDuel
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="parent-card-tagline is-dim">Othello with a hidden block. No opening books.</p>
+      </div>
+    </div>
+
+    <div class="variant-grid">
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Territory War</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Military Othello.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Plague</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Bio/sci-fi. 2 blocks each.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Realm</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Medieval. 10×10.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Blitz Flip</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Speed variant.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CODEDUEL ENGINE -->
+  <section class="engine-section">
+    <p class="engine-label">Code Cracker</p>
+    <p class="engine-name">CodeDuel</p>
+
+    <div class="parent-card is-dim">
+      <div>
+        <div class="parent-card-title is-dim">
+          Vault Cracker
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="parent-card-tagline is-dim">Crack the code. Bank heist.</p>
+      </div>
+    </div>
+
+    <div class="variant-grid">
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Cipher Agent</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Spy theme. 5 numbers, no repeats.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Potion Brewer</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">8 ingredients. Fantasy.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Bomb Squad</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">First to crack wins.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Starmap</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">3 slots, 6 symbols.</p>
+      </div>
+      <div class="variant-card is-dim">
+        <div class="variant-card-header">
+          <p class="variant-card-name is-dim">Heist</p>
+          <span class="status-road">Roadmap</span>
+        </div>
+        <p class="variant-card-tagline is-dim">Multi-stage. Best of 3.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MULTI-GAME -->
+  <section class="engine-section">
+    <p class="engine-label">Cross-Engine Formats</p>
+    <p class="engine-name">Multi-Game</p>
+
+    <div class="variant-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="parent-card is-dim" style="flex-direction:column;align-items:flex-start;margin-bottom:0;">
+        <div class="parent-card-title is-dim">Gauntlet <span class="status-road">Roadmap</span></div>
+        <p class="parent-card-tagline is-dim">Best of 3 across all launch games.</p>
+      </div>
+      <div class="parent-card is-dim" style="flex-direction:column;align-items:flex-start;margin-bottom:0;">
+        <div class="parent-card-title is-dim">Pick &amp; Ban <span class="status-road">Roadmap</span></div>
+        <p class="parent-card-tagline is-dim">Ban a game. Pick a game. Best player wins.</p>
+      </div>
+      <div class="parent-card is-dim" style="flex-direction:column;align-items:flex-start;margin-bottom:0;">
+        <div class="parent-card-title is-dim">Streak <span class="status-road">Roadmap</span></div>
+        <p class="parent-card-tagline is-dim">Win to stay on. Loser pays, winner banks.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">DUEL · built in DK</div>
+      <p class="footer-fine">DUEL is a skill-gaming platform. 18+. Play within your means.</p>
+    </div>
+    <div class="footer-links">
+      <a href="landing.html" class="footer-link">Games</a>
+      <a href="#" class="footer-link">Tournaments</a>
+      <a href="#" class="footer-link">Responsible gaming</a>
+      <a href="#" class="footer-link">Terms</a>
+      <a href="#" class="footer-link">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "userIgnoreFilters": [
+    "app/duel/node_modules",
+    "app/duel/.next",
+    "app/duel/.claude",
+    "app/duel/design",
+    "Templates"
+  ]
+}

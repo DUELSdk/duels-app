@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUEL — Logo Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #18181b;
+  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 64px 56px;
+  min-width: 900px;
+}
+
+.display {
+  font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  line-height: 1;
+  color: white;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 80px;
+}
+
+.direction { margin-bottom: 96px; }
+
+.dir-header {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 48px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.dir-num {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+  font-weight: 300;
+  min-width: 24px;
+}
+
+.dir-name {
+  font-size: 14px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.dir-note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.18);
+  font-weight: 300;
+  font-style: italic;
+  margin-left: auto;
+}
+
+.variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-end;
+}
+
+.variant {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+}
+
+.sw {
+  background: #18181b;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sw-og   { padding: 40px 48px; min-width: 260px; }
+.sw-nav  { padding: 18px 22px; }
+.sw-icon { width: 80px; height: 80px; }
+.sw-fav  { width: 52px; height: 52px; }
+.sw-light { background: #f4f4f5; }
+
+.v-div {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.12);
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  margin: 0 0 96px 0;
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <span class="eyebrow">DUEL — Logo Concepts · 2026</span>
+  <span class="eyebrow" style="color:rgba(255,255,255,0.12);">3 directions · OG · Nav · Icon · Light</span>
+</header>
+
+
+<!-- ─────────────────────────────────────────────────────── -->
+<!-- 01 · HAIRLINE SPLIT                                    -->
+<!-- Wordmark only. Red hairline bisects the word.          -->
+<!-- ─────────────────────────────────────────────────────── -->
+<section class="direction">
+  <div class="dir-header">
+    <span class="dir-num">01</span>
+    <span class="dir-name">Hairline Split</span>
+    <span class="dir-note">Wordmark only. Hairline at center mass — two halves facing off.</span>
+  </div>
+
+  <div class="variants">
+
+    <!-- OG -->
+    <div class="variant">
+      <div class="sw sw-og">
+        <div style="position:relative; display:inline-block;">
+          <span class="display" style="font-size:108px; letter-spacing:0.04em;">DUEL</span>
+          <div style="position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%); width:1.5px; background:#dc2626;"></div>
+        </div>
+      </div>
+      <span class="v-label">OG / Trademark</span>
+    </div>
+
+    <!-- Nav -->
+    <div class="variant">
+      <div class="sw sw-nav">
+        <div style="position:relative; display:inline-block;">
+          <span class="display" style="font-size:30px; letter-spacing:0.04em;">DUEL</span>
+          <div style="position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%); width:1px; background:#dc2626;"></div>
+        </div>
+      </div>
+      <span class="v-label">Nav / Compact</span>
+    </div>
+
+    <!-- Icon -->
+    <div class="variant">
+      <div class="sw sw-icon">
+        <svg width="36" height="40" viewBox="0 0 36 40">
+          <!-- Two blocks + red slit -->
+          <rect x="0" y="4" width="14" height="32" fill="white" rx="1"/>
+          <rect x="16.25" y="0" width="1.5" height="40" fill="#dc2626"/>
+          <rect x="20" y="4" width="14" height="32" fill="white" rx="1"/>
+        </svg>
+      </div>
+      <span class="v-label">Icon / Avatar</span>
+    </div>
+
+    <!-- Favicon -->
+    <div class="variant">
+      <div class="sw sw-fav">
+        <svg width="22" height="26" viewBox="0 0 22 26">
+          <rect x="0" y="3" width="8" height="20" fill="white" rx="0.5"/>
+          <rect x="10.25" y="0" width="1.5" height="26" fill="#dc2626"/>
+          <rect x="14" y="3" width="8" height="20" fill="white" rx="0.5"/>
+        </svg>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+    <!-- Light bg -->
+    <div class="variant">
+      <div class="sw sw-og sw-light">
+        <div style="position:relative; display:inline-block;">
+          <span class="display" style="font-size:108px; letter-spacing:0.04em; color:#18181b;">DUEL</span>
+          <div style="position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%); width:1.5px; background:#dc2626;"></div>
+        </div>
+      </div>
+      <span class="v-label">Light Background</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────── -->
+<!-- 02 · D-MIRROR MARK                                     -->
+<!-- Abstract mark: two Ds confronting. Red slit between.  -->
+<!-- ─────────────────────────────────────────────────────── -->
+<section class="direction">
+  <div class="dir-header">
+    <span class="dir-num">02</span>
+    <span class="dir-name">D-Mirror Mark</span>
+    <span class="dir-note">Abstract mark + wordmark. Two Ds face off. Red slit at the gap.</span>
+  </div>
+
+  <div class="variants">
+
+    <!-- Mark only -->
+    <div class="variant">
+      <div class="sw sw-og" style="min-width:200px;">
+        <svg width="110" height="88" viewBox="0 0 100 72">
+          <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="white"/>
+          <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="white"/>
+          <line x1="50" y1="4" x2="50" y2="68" stroke="#dc2626" stroke-width="2"/>
+        </svg>
+      </div>
+      <span class="v-label">Mark Only</span>
+    </div>
+
+    <!-- OG: mark + wordmark stacked -->
+    <div class="variant">
+      <div class="sw sw-og" style="min-width:220px;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+          <svg width="88" height="64" viewBox="0 0 100 72">
+            <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="white"/>
+            <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="white"/>
+            <line x1="50" y1="4" x2="50" y2="68" stroke="#dc2626" stroke-width="2"/>
+          </svg>
+          <span class="display" style="font-size:30px; letter-spacing:0.22em;">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">OG / Trademark</span>
+    </div>
+
+    <!-- Horizontal lockup -->
+    <div class="variant">
+      <div class="sw sw-nav" style="min-width:230px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <svg width="42" height="30" viewBox="0 0 100 72">
+            <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="white"/>
+            <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="white"/>
+            <line x1="50" y1="0" x2="50" y2="72" stroke="#dc2626" stroke-width="2"/>
+          </svg>
+          <div class="v-div"></div>
+          <span class="display" style="font-size:26px; letter-spacing:0.14em;">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Horizontal Lockup</span>
+    </div>
+
+    <!-- Icon -->
+    <div class="variant">
+      <div class="sw sw-icon">
+        <svg width="44" height="40" viewBox="0 0 100 72">
+          <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="white"/>
+          <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="white"/>
+          <line x1="50" y1="0" x2="50" y2="72" stroke="#dc2626" stroke-width="2"/>
+        </svg>
+      </div>
+      <span class="v-label">Icon / Avatar</span>
+    </div>
+
+    <!-- Favicon -->
+    <div class="variant">
+      <div class="sw sw-fav">
+        <svg width="28" height="26" viewBox="0 0 100 72">
+          <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="white"/>
+          <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="white"/>
+          <line x1="50" y1="0" x2="50" y2="72" stroke="#dc2626" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+    <!-- Light bg -->
+    <div class="variant">
+      <div class="sw sw-og sw-light" style="min-width:220px;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+          <svg width="88" height="64" viewBox="0 0 100 72">
+            <path d="M 0,0 L 16,0 C 52,0 52,72 16,72 L 0,72 Z" fill="#18181b"/>
+            <path d="M 100,0 L 84,0 C 48,0 48,72 84,72 L 100,72 Z" fill="#18181b"/>
+            <line x1="50" y1="4" x2="50" y2="68" stroke="#dc2626" stroke-width="2"/>
+          </svg>
+          <span class="display" style="font-size:30px; letter-spacing:0.22em; color:#18181b;">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Light Background</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────── -->
+<!-- 03 · DOUBLE STACK                                      -->
+<!-- Word split DU / EL. Two rows, two players.            -->
+<!-- ─────────────────────────────────────────────────────── -->
+<section class="direction">
+  <div class="dir-header">
+    <span class="dir-num">03</span>
+    <span class="dir-name">Double Stack</span>
+    <span class="dir-note">Word split DU / EL. Two rows, two sides. Red line is the confrontation.</span>
+  </div>
+
+  <div class="variants">
+
+    <!-- OG -->
+    <div class="variant">
+      <div class="sw sw-og">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <span class="display" style="font-size:92px; letter-spacing:0.06em; line-height:0.88;">DU</span>
+          <div style="height:2px; width:100%; background:#dc2626; margin:5px 0;"></div>
+          <span class="display" style="font-size:92px; letter-spacing:0.06em; line-height:0.88;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">OG / Trademark</span>
+    </div>
+
+    <!-- Nav: stacked compact -->
+    <div class="variant">
+      <div class="sw sw-nav">
+        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+          <span class="display" style="font-size:27px; letter-spacing:0.06em; line-height:0.88;">DU</span>
+          <div style="height:1.5px; width:100%; background:#dc2626; margin:3px 0;"></div>
+          <span class="display" style="font-size:27px; letter-spacing:0.06em; line-height:0.88;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Nav / Compact</span>
+    </div>
+
+    <!-- Horizontal lockup -->
+    <div class="variant">
+      <div class="sw sw-nav" style="min-width:240px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <span class="display" style="font-size:22px; letter-spacing:0.05em; line-height:0.88;">DU</span>
+            <div style="height:1.5px; width:100%; background:#dc2626; margin:2px 0;"></div>
+            <span class="display" style="font-size:22px; letter-spacing:0.05em; line-height:0.88;">EL</span>
+          </div>
+          <div class="v-div"></div>
+          <span class="display" style="font-size:26px; letter-spacing:0.14em;">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Horizontal Lockup</span>
+    </div>
+
+    <!-- Icon -->
+    <div class="variant">
+      <div class="sw sw-icon">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <span class="display" style="font-size:28px; letter-spacing:0.05em; line-height:0.88;">DU</span>
+          <div style="height:2px; width:50px; background:#dc2626; margin:3px 0;"></div>
+          <span class="display" style="font-size:28px; letter-spacing:0.05em; line-height:0.88;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Icon / Avatar</span>
+    </div>
+
+    <!-- Favicon -->
+    <div class="variant">
+      <div class="sw sw-fav">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <span class="display" style="font-size:17px; letter-spacing:0.03em; line-height:0.88;">DU</span>
+          <div style="height:1.5px; width:30px; background:#dc2626; margin:2px 0;"></div>
+          <span class="display" style="font-size:17px; letter-spacing:0.03em; line-height:0.88;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+    <!-- Light bg -->
+    <div class="variant">
+      <div class="sw sw-og sw-light">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <span class="display" style="font-size:92px; letter-spacing:0.06em; line-height:0.88; color:#18181b;">DU</span>
+          <div style="height:2px; width:100%; background:#dc2626; margin:5px 0;"></div>
+          <span class="display" style="font-size:92px; letter-spacing:0.06em; line-height:0.88; color:#18181b;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Light Background</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────── -->
+<!-- PALETTE                                                -->
+<!-- ─────────────────────────────────────────────────────── -->
+<section class="direction" style="margin-bottom: 0;">
+  <div class="dir-header">
+    <span class="dir-num">—</span>
+    <span class="dir-name">Palette</span>
+  </div>
+  <div class="variants" style="align-items:flex-start;">
+    <div class="variant">
+      <div style="width:80px; height:44px; background:#18181b; border:1px solid rgba(255,255,255,0.1); border-radius:3px;"></div>
+      <span class="v-label">#18181b</span>
+      <span class="eyebrow" style="font-size:9px; margin-top:-4px;">Background</span>
+    </div>
+    <div class="variant">
+      <div style="width:80px; height:44px; background:#ffffff; border-radius:3px;"></div>
+      <span class="v-label">#ffffff</span>
+      <span class="eyebrow" style="font-size:9px; margin-top:-4px;">Logo primary</span>
+    </div>
+    <div class="variant">
+      <div style="width:80px; height:44px; background:#dc2626; border-radius:3px;"></div>
+      <span class="v-label">#dc2626</span>
+      <span class="eyebrow" style="font-size:9px; margin-top:-4px;">Tension / accent</span>
+    </div>
+    <div class="variant">
+      <div style="width:80px; height:44px; background:#f4f4f5; border-radius:3px;"></div>
+      <span class="v-label">#f4f4f5</span>
+      <span class="eyebrow" style="font-size:9px; margin-top:-4px;">Light background</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────── -->
+<!-- THE LINE IN CONTEXT                                     -->
+<!-- Same line, same role, every touchpoint.                -->
+<!-- ─────────────────────────────────────────────────────── -->
+<section class="direction" style="margin-top:96px;">
+  <div class="dir-header">
+    <span class="dir-num">—</span>
+    <span class="dir-name">The Line in Context</span>
+    <span class="dir-note">Same red line, every touchpoint. That's how recognition builds.</span>
+  </div>
+
+  <div class="variants" style="flex-direction:column; align-items:flex-start; gap:24px;">
+
+    <!-- Match header -->
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <span class="eyebrow" style="color:rgba(255,255,255,0.15);">Match screen — header</span>
+      <div style="background:#111113; border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:20px 32px; display:flex; align-items:center; gap:28px;">
+        <span style="font-size:15px; font-weight:300; letter-spacing:0.02em; color:rgba(255,255,255,0.85);">silas_g</span>
+        <div style="width:1.5px; height:28px; background:#dc2626; border-radius:1px;"></div>
+        <span style="font-size:15px; font-weight:300; letter-spacing:0.02em; color:rgba(255,255,255,0.85);">mk_plays</span>
+      </div>
+    </div>
+
+    <!-- Live score -->
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <span class="eyebrow" style="color:rgba(255,255,255,0.15);">Live score</span>
+      <div style="background:#111113; border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:20px 32px; display:flex; align-items:center; gap:20px;">
+        <span class="display" style="font-size:48px; color:white;">3</span>
+        <div style="width:1.5px; height:44px; background:#dc2626; border-radius:1px;"></div>
+        <span class="display" style="font-size:48px; color:rgba(255,255,255,0.3);">1</span>
+      </div>
+    </div>
+
+    <!-- Tournament row -->
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <span class="eyebrow" style="color:rgba(255,255,255,0.15);">Tournament bracket row</span>
+      <div style="background:#111113; border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:16px 24px; display:flex; align-items:center; gap:20px; width:420px;">
+        <span style="font-size:13px; font-weight:300; color:rgba(255,255,255,0.8); flex:1;">silas_g</span>
+        <div style="width:1.5px; height:22px; background:#dc2626; border-radius:1px;"></div>
+        <span style="font-size:13px; font-weight:300; color:rgba(255,255,255,0.8); flex:1; text-align:right;">mk_plays</span>
+      </div>
+    </div>
+
+    <!-- Nav bar -->
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <span class="eyebrow" style="color:rgba(255,255,255,0.15);">Nav bar</span>
+      <div style="background:#111113; border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:14px 24px; display:flex; align-items:center; gap:24px; width:520px;">
+        <div style="position:relative; display:inline-block;">
+          <span class="display" style="font-size:22px; letter-spacing:0.04em;">DUEL</span>
+          <div style="position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%); width:1px; background:#dc2626;"></div>
+        </div>
+        <div style="flex:1;"></div>
+        <span style="font-size:12px; font-weight:300; color:rgba(255,255,255,0.4); letter-spacing:0.04em;">Lobby</span>
+        <span style="font-size:12px; font-weight:300; color:rgba(255,255,255,0.4); letter-spacing:0.04em;">Results</span>
+        <span style="font-size:12px; font-weight:300; color:rgba(255,255,255,0.4); letter-spacing:0.04em;">Profile</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

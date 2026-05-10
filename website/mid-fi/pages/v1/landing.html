@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DUEL — 1v1 skill games for real money</title>
+  <link rel="stylesheet" href="../../base.css">
+  <style>
+    /* Page-local only. Everything reusable lives in base.css. */
+    .hero {
+      padding: 96px 0 var(--space-20);
+      border-bottom: 1px solid var(--border-dim);
+    }
+    .hero-eyebrow { margin-bottom: var(--space-10); }
+    .hero-title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+    .hero-title-dot {
+      /* The period after DUEL is intentionally a small red square — */
+      /* tension, not decoration. The "duel" detail people don't notice. */
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      margin-top: calc(var(--fs-hero) * 0.72);
+    }
+    .hero-sub {
+      max-width: 560px;
+      margin: var(--space-10) 0 var(--space-12);
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .hero-ctas { display: flex; align-items: center; gap: var(--space-8); }
+    .hero-link { color: var(--text-secondary); }
+    .hero-link:hover { color: var(--text-primary); }
+
+    .games-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+      padding-top: var(--space-16);
+    }
+    @media (max-width: 900px) { .games-strip { grid-template-columns: 1fr; } }
+    .game-tile {
+      padding: var(--space-10);
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color var(--dur-base) var(--ease);
+    }
+    .game-tile .badges { display: flex; gap: var(--space-3); margin-top: auto; padding-top: var(--space-8); }
+    .game-tile .section-title { margin-bottom: var(--space-3); }
+    .game-tile:hover { border-color: var(--border-hover); }
+    .game-tile .more { color: var(--accent); font-weight: 600; margin-top: var(--space-6); }
+
+    .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-10); }
+    @media (max-width: 900px) { .how { grid-template-columns: 1fr; } }
+    .how-step .eyebrow { display: block; margin-bottom: var(--space-4); font-family: var(--font-mono); letter-spacing: 0.05em; }
+    .how-step .section-title { margin-bottom: var(--space-3); }
+
+    .receipts {
+      padding: var(--space-12);
+    }
+    .receipts .eyebrow { display: block; margin-bottom: var(--space-6); }
+    .receipts-body { color: var(--text-primary); font-size: 1.0625rem; line-height: 1.6; max-width: 720px; }
+    .receipts-body strong { color: var(--text-primary); font-weight: 600; }
+    .receipts-link { display: inline-flex; margin-top: var(--space-8); color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" aria-label="Primary">
+  <div class="nav-inner">
+    <a href="landing.html" class="nav-brand">DUEL</a>
+    <div class="nav-links">
+      <a href="library.html" class="nav-link">Games</a>
+      <a href="tournaments.html" class="nav-link">Tournaments</a>
+    </div>
+    <div class="nav-right">
+      <a href="#" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:13px;">Enter</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow hero-eyebrow">DUEL · SKILL ONLY · DENMARK</span>
+    <div class="hero-title-wrap">
+      <h1 class="hero-title">DUEL</h1>
+      <span class="hero-title-dot" aria-hidden="true"></span>
+    </div>
+    <p class="hero-sub">1v1 skill games for real money. No luck. No license. Just you and them.</p>
+    <div class="hero-ctas">
+      <a href="library.html" class="btn btn-primary">Enter</a>
+      <a href="card-duel.html" class="hero-link">Read the rules &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- SPLIT RULE -->
+<div class="container" style="padding-top:var(--space-10);padding-bottom:0;">
+  <div class="split-rule">Two sides · one wins</div>
+</div>
+
+<!-- GAMES STRIP -->
+<section class="container" style="padding-top:var(--space-8);">
+  <div class="games-strip">
+    <a href="card-duel.html" class="card game-tile">
+      <span class="eyebrow">01 · CLASSIC</span>
+      <h3 class="section-title" style="margin-top:var(--space-6);">Card Duel</h3>
+      <p class="body">Sealed sequential rock paper scissors. Lock nine cards, resolve in order. Zero randomness.</p>
+      <div class="badges">
+        <span class="badge">1v1</span>
+        <span class="badge">60s</span>
+        <span class="badge">Skill</span>
+      </div>
+      <span class="more">Details &rarr;</span>
+    </a>
+
+    <a href="card-duel.html" class="card game-tile">
+      <span class="eyebrow">02 · CLASSIC</span>
+      <h3 class="section-title" style="margin-top:var(--space-6);">CycleDuel</h3>
+      <p class="body">Five types, each beats two. A peek every block. Play what you think they'll block.</p>
+      <div class="badges">
+        <span class="badge">1v1</span>
+        <span class="badge">90s</span>
+        <span class="badge">Skill</span>
+      </div>
+      <span class="more">Details &rarr;</span>
+    </a>
+
+    <a href="card-duel.html" class="card game-tile">
+      <span class="eyebrow">03 · CLASSIC</span>
+      <h3 class="section-title" style="margin-top:var(--space-6);">DropDuel</h3>
+      <p class="body">Connect Four with a pre-game block. Kills opening theory. Under a minute a match.</p>
+      <div class="badges">
+        <span class="badge">1v1</span>
+        <span class="badge">60s</span>
+        <span class="badge">Skill</span>
+      </div>
+      <span class="more">Details &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="container">
+  <div class="split-rule">How it works</div>
+  <div class="how">
+    <div class="how-step">
+      <span class="eyebrow">01</span>
+      <h3 class="section-title">Pick a game</h3>
+      <p class="body">Three at launch. Same engine, different stakes. More shipping quietly.</p>
+    </div>
+    <div class="how-step">
+      <span class="eyebrow">02</span>
+      <h3 class="section-title">Lock your plan</h3>
+      <p class="body">Every duel is sealed. You can't react — you have to predict. This is the whole game.</p>
+    </div>
+    <div class="how-step">
+      <span class="eyebrow">03</span>
+      <h3 class="section-title">Winner takes the pot</h3>
+      <p class="body">10% rake on 1v1. 15% on tournaments. Nothing else comes out.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LEGAL / RECEIPTS -->
+<section class="container">
+  <div class="card card-accent receipts">
+    <span class="eyebrow">Legal · Spilleloven</span>
+    <p class="receipts-body">
+      Every game on DUEL is <strong>100% skill</strong>. No randomness. No dice. No shuffled deck. Under Danish Spilleloven, that means <strong>no casino license</strong> is required &mdash; and your winnings up to the statutory limit aren't taxed.
+    </p>
+    <a href="#" class="receipts-link">How this works &rarr;</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">DUEL · built in DK</div>
+      <p class="footer-fine">DUEL is a skill-gaming platform. 18+. Play within your means. If you need to take a break, visit your wallet to set limits or self-exclude. Support: <a href="#" class="footer-link" style="color:var(--text-secondary);">help@duel.dk</a></p>
+    </div>
+    <div class="footer-links">
+      <a href="library.html" class="footer-link">Games</a>
+      <a href="tournaments.html" class="footer-link">Tournaments</a>
+      <a href="#" class="footer-link">Responsible gaming</a>
+      <a href="#" class="footer-link">Terms</a>
+      <a href="#" class="footer-link">Privacy</a>
+      <a href="#" class="footer-link">Fair play</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

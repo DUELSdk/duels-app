@@ -1,0 +1,252 @@
+{
+  "main": {
+    "id": "a9eb6e206517e294",
+    "type": "split",
+    "children": [
+      {
+        "id": "72040e312ee7a3d2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c85efc79a36e17dc",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Claude-Kanban-Board.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Claude-Kanban-Board"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "80c61cb2d507dd04",
+    "type": "split",
+    "children": [
+      {
+        "id": "981c17bb92ed57d7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ddca02898da40dbc",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "e1b8dbdf562d0673",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "eba2e467883d5e93",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "94278cfe490835be",
+    "type": "split",
+    "children": [
+      {
+        "id": "ebdbffc50332ef17",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eb1926e7ff690d04",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Claude-Kanban-Board.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Claude-Kanban-Board"
+            }
+          },
+          {
+            "id": "1ef29866257c9c1f",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Claude-Kanban-Board.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Claude-Kanban-Board"
+            }
+          },
+          {
+            "id": "d04c1886f13d2502",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "df6d7a5d3eb2adc6",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "aeb0c8dca05fe386",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Claude-Kanban-Board.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Claude-Kanban-Board"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "terminal:Open terminal": false,
+      "obsidian-kanban:Create new board": false,
+      "tasknotes:Open mini calendar view": false,
+      "tasknotes:Open calendar view": false,
+      "tasknotes:Open tasks view": false,
+      "tasknotes:Open agenda view": false,
+      "tasknotes:Open kanban board": false,
+      "tasknotes:Open pomodoro timer": false,
+      "tasknotes:Open pomodoro statistics": false,
+      "tasknotes:Create new task": false
+    }
+  },
+  "active": "ddca02898da40dbc",
+  "lastOpenFiles": [
+    "Untitled.base",
+    "Claude-Kanban-Board.md",
+    "for cycleduel The clash is to fast. and it dosent work with just text as to what you put up. not enough diffrence not enough art . also info. there should be info on the opponet and what the last phases went. this way players can analyze the opponent.md",
+    "app/duel/app/play/[game]/finding/page.tsx",
+    "app/duel/app/play/[game]/finding",
+    "Games/drop-duel-ui.md",
+    "Games/cycle-duel-ui.md",
+    "Games/card-duel-ui.md",
+    "Research/admin-db-schema.md",
+    "app/duel/lib/balance.ts",
+    "app/duel/lib/match-state.ts",
+    "app/duel/hooks/useBalance.ts",
+    "app/duel/hooks",
+    "app/duel/lib/tiers.ts",
+    "Research/launch-plan.md",
+    "app/duel/node_modules/animejs/dist/modules/core/render.d.ts",
+    "app/duel/node_modules/animejs/dist/modules/utils/random.d.ts",
+    "app/duel/node_modules/animejs/README.md",
+    "app/duel/node_modules/animejs/LICENSE.md",
+    "app/duel/node_modules/framer-motion/client/README.md",
+    "app/duel/node_modules/framer-motion/dom/README.md",
+    "app/duel/node_modules/framer-motion/LICENSE.md",
+    "Research/launch-timeline.md",
+    "website/mid-fi/WIREFRAMES.md",
+    "website/mid-fi/SITEMAP.md",
+    "website/mid-fi/DESIGN-arena.md",
+    "Research/Ideas/team-event-format.md",
+    "Research/Ideas/solo-tournament-format.md",
+    "Research/Ideas/mascot-design-brief.md",
+    "Research/mascot-design-brief.md",
+    "uploads/SITEMAP.md",
+    "uploads/DESIGN-arena.md",
+    "uploads/WIREFRAMES.md",
+    "Research/social-strategy_research.md",
+    "Untitled Kanban.md",
+    "app/duel/node_modules/pngjs/coverage/lcov-report/sort-arrow-sprite.png",
+    "app/duel/node_modules/pngjs/coverage/lcov-report/favicon.png",
+    "app/duel/node_modules/@supabase/phoenix/priv/static/phoenix.png",
+    "app/duel/node_modules/@supabase/phoenix/priv/static/phoenix-orange.png",
+    "app/duel/public/window.svg",
+    "app/duel/public/vercel.svg",
+    "app/duel/public/globe.svg",
+    "app/duel/public/next.svg",
+    "app/duel/public/file.svg"
+  ]
+}
