@@ -59,7 +59,7 @@ export function Footer() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', color: 'var(--bone-faint)' }}>
-          © 2025 DUELS APS · CVR 45XXXXXX · 18+
+          © 2026 DUELS v/Silas Greve Abainza · CVR 46451813 · info@duels.dk · 18+
         </span>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <a href="https://www.stopspillet.dk" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', color: 'var(--bone-faint)', textDecoration: 'none' }}>
