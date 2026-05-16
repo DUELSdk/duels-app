@@ -1,166 +1,247 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { use } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav } from '@/components/BroadcastNav'
-import { Footer } from '@/components/Footer'
+import { BroadcastNav, StadiumStrip } from '@/components/BroadcastNav'
 import { s } from '@/lib/styles'
 import { getGameDetail } from '@/lib/mock-data'
-import { TIERS, customTier, type Tier } from '@/lib/tiers'
 import { notFound } from 'next/navigation'
-import { use } from 'react'
+
+type Room = {
+  kr: number
+  liveCount: number
+  waitSec: number
+  isHot?: boolean
+}
+
+const ROOMS: Room[] = [
+  { kr: 10,  liveCount: 4,  waitSec: 12 },
+  { kr: 25,  liveCount: 6,  waitSec: 8  },
+  { kr: 50,  liveCount: 12, waitSec: 4, isHot: true },
+  { kr: 100, liveCount: 5,  waitSec: 14 },
+  { kr: 250, liveCount: 2,  waitSec: 40 },
+  { kr: 500, liveCount: 1,  waitSec: 120 },
+]
+
+const HIGH_ROLLER_KR: number[] = []
+const MOCK_BALANCE = 2450
+
+function waitLabel(sec: number) {
+  if (sec < 60) return `~${sec}s`
+  return `~${Math.round(sec / 60)}m`
+}
 
 export default function LobbyPage({ params }: { params: Promise<{ game: string }> }) {
   const { game: slug } = use(params)
   const detail = getGameDetail(slug)
   if (!detail) notFound()
 
-  const [selectedId, setSelectedId] = useState<string>('serious')
-  const [custom, setCustom] = useState('')
+  const searchParams = useSearchParams()
+  const krParam = parseInt(searchParams.get('kr') ?? '0')
 
-  const activeTier: Tier = custom && parseInt(custom) >= 501
-    ? customTier(parseInt(custom))
-    : TIERS.find(t => t.id === selectedId) ?? TIERS[2]
+  const availableRooms = ROOMS.filter(r => detail.stakeRooms.some(sr => sr.kr === r.kr))
+  const defaultKr = availableRooms.find(r => r.kr === krParam)?.kr ?? availableRooms[0]?.kr ?? 10
 
-  const matchHref = `/play/${slug}/finding?tier=${activeTier.id === 'custom' ? `custom-${parseInt(custom)}` : activeTier.id}`
+  const [selectedKr, setSelectedKr] = useState(defaultKr)
+
+  useEffect(() => {
+    const kr = parseInt(searchParams.get('kr') ?? '0')
+    const match = availableRooms.find(r => r.kr === kr)
+    if (match) setSelectedKr(match.kr)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const rake = Math.round(selectedKr * 2 * 0.1)
+  const winnerGets = selectedKr * 2 - rake
+  const gameLabel = detail.name
+  const formatLabel = detail.format.split('·')[0].trim()
+  const matchHref = `/play/${slug}/finding?kr=${selectedKr}`
+
+  const standardRooms   = availableRooms.filter(r => !HIGH_ROLLER_KR.includes(r.kr))
+  const highRollerRooms = availableRooms.filter(r => HIGH_ROLLER_KR.includes(r.kr))
+
+  function RoomButton({ room, i }: { room: Room; i: number }) {
+    const selected = selectedKr === room.kr
+    return (
+      <button
+        onClick={() => setSelectedKr(room.kr)}
+        style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '24px 16px 20px',
+          borderLeft: i > 0 ? '1px solid var(--ink)' : 'none',
+          background: selected ? 'var(--ink)' : 'transparent',
+          color: selected ? 'var(--bone)' : 'var(--ink)',
+          cursor: 'pointer',
+          position: 'relative',
+          transition: 'background 0.15s',
+        }}
+      >
+        {room.isHot && (
+          <div style={{
+            position: 'absolute', top: 8, right: 8,
+            ...s.mono, fontSize: 8, color: 'var(--alarm)',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
+            HOT
+          </div>
+        )}
+        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 8 }}>
+          ROOM 0{i + 1}
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {room.kr}
+        </div>
+        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 12 }}>
+          KR
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: room.liveCount > 0 ? 'var(--alarm)' : selected ? 'rgba(240,237,228,0.3)' : 'var(--ink-ghost)', display: 'inline-block' }} />
+          <span style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.6)' : 'var(--ink-faint)' }}>
+            {room.liveCount} LIVE
+          </span>
+        </div>
+        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.4)' : 'var(--ink-ghost)', marginTop: 3 }}>
+          WAIT {waitLabel(room.waitSec)}
+        </div>
+      </button>
+    )
+  }
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
+      <StadiumStrip />
 
-      {/* Breadcrumb */}
-      <div style={{ padding: `16px ${s.px} 0`, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/play" style={{ ...s.mono, color: 'var(--ink-faint)', textDecoration: 'none' }}>GAMES</Link>
-        <span style={{ ...s.mono, color: 'var(--ink-ghost)' }}>/</span>
-        <Link href={`/play/${slug}`} style={{ ...s.mono, color: 'var(--ink-faint)', textDecoration: 'none' }}>{detail.name}</Link>
-        <span style={{ ...s.mono, color: 'var(--ink-ghost)' }}>/</span>
-        <span style={{ ...s.mono }}>LOBBY</span>
-      </div>
+      <main style={{ padding: `28px ${s.px} 80px`, maxWidth: 1200 }}>
 
-      <section style={{ padding: `40px ${s.px} 56px`, display: 'grid', gridTemplateColumns: '1fr 360px', gap: 64, alignItems: 'start' }}>
-        {/* Left */}
-        <div>
+        {/* Breadcrumb */}
+        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link href={`/play/${slug}`} style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>{gameLabel}</Link>
+          <span>/</span>
+          <span style={{ color: 'var(--ink)' }}>LOBBY</span>
+        </div>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
+          <div>
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 8 }}>
+              {gameLabel} · {formatLabel}
+            </div>
+            <h1 style={{ ...s.display(80), lineHeight: 0.85 }}>PICK A ROOM.</h1>
+            <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 14, maxWidth: 460 }}>
+              Each room takes the stake on entry. Rake 10%. No decline once paired.
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 4 }}>YOUR BALANCE</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+              {MOCK_BALANCE.toLocaleString('da-DK')} KR
+            </div>
+            <Link href="/wallet" style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)', textDecoration: 'none', marginTop: 4, display: 'block' }}>
+              + DEPOSIT
+            </Link>
+          </div>
+        </div>
+
+        {/* Rooms */}
+        <div style={{ border: '1.5px solid var(--ink)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availableRooms.length}, 1fr)` }}>
+            {availableRooms.map((room, i) => (
+              <RoomButton key={room.kr} room={room} i={i} />
+            ))}
+          </div>
+        </div>
+
+        {/* Elite banner */}
+        <Link href={`/play/${slug}/elite`} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: 2, padding: '18px 24px',
+          background: 'var(--ink)', textDecoration: 'none',
+          border: '1.5px solid var(--ink)',
+        }}>
+          <div>
+            <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.20em', fontWeight: 700, marginBottom: 4 }}>● ELITE ROOM</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--bone)', letterSpacing: '-0.02em' }}>1,000+ KR · CUSTOM</div>
+            <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.4)', marginTop: 4, letterSpacing: '0.10em' }}>POST A CHALLENGE · SET YOUR TERMS</div>
+          </div>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--alarm)', letterSpacing: '-0.01em' }}>ENTER →</span>
+        </Link>
+
+        {/* Math */}
+        <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1.5px solid var(--ink)' }}>
           <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 16 }}>
-            {detail.name} / LOBBY
+            SELECTED · {selectedKr} KR ROOM
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 80, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.88 }}>
-            PICK A ROOM.
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 16, maxWidth: 480, lineHeight: 1.5 }}>
-            Fixed entry fee per player — platform earns that only. Winner takes the full stake pot.
-          </p>
-
-          {/* Tier grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, marginTop: 40 }}>
-            {TIERS.map(tier => {
-              const isSel = selectedId === tier.id && !custom
-              return (
-                <button
-                  key={tier.id}
-                  onClick={() => { setSelectedId(tier.id); setCustom('') }}
-                  style={{
-                    border: isSel ? '2px solid var(--ink)' : '1.5px solid var(--rule-soft)',
-                    background: isSel ? 'var(--ink)' : 'transparent',
-                    color: isSel ? 'var(--bone)' : 'var(--ink)',
-                    padding: '20px 16px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.1s',
-                  }}
-                >
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, letterSpacing: '-0.02em' }}>
-                    {tier.stakeKr}
-                    <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 4 }}>KR</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 32 }}>
+            {[
+              { label: 'YOU PAY',      value: selectedKr,   color: 'var(--ink)' },
+              { label: 'OPP PAYS',     value: selectedKr,   color: 'var(--ink)', prefix: '+' },
+              { label: 'WINNER TAKES', value: winnerGets,   color: 'var(--alarm)', prefix: '=' },
+              { label: 'ENTRY FEE',    value: rake / 2,     color: 'var(--ink-faint)' },
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-end', gap: i > 0 && i < 3 ? 12 : 0 }}>
+                {item.prefix && (
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--ink-ghost)', marginBottom: 4, marginRight: 8 }}>
+                    {item.prefix}
+                  </span>
+                )}
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 48, color: item.color, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {item.value}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, marginTop: 8, color: isSel ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)' }}>
-                    {tier.label} · {tier.entryFee} KR FEE
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, marginTop: 3, color: isSel ? 'rgba(240,237,228,0.4)' : 'var(--ink-ghost)' }}>
-                    WIN {tier.winnerGets} KR
-                  </div>
-                </button>
-              )
-            })}
+                  <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 4 }}>{item.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* Custom room */}
-          <div style={{ marginTop: 2, border: '1.5px dashed var(--rule-soft)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-            <div>
-              <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>+ CUSTOM ROOM</div>
-              <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-ghost)', marginTop: 3 }}>501 — 10.000 KR · 3% ENTRY FEE</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="number" min={501} max={10000} placeholder="750"
-                value={custom}
-                onChange={e => { setCustom(e.target.value); setSelectedId('') }}
+        {/* CTA */}
+        <div style={{ marginTop: 24 }}>
+          {selectedKr > MOCK_BALANCE ? (
+            <>
+              <div style={{
+                display: 'block', textAlign: 'center',
+                background: 'rgba(13,13,13,0.1)',
+                color: 'var(--ink-ghost)',
+                padding: '22px 32px',
+                fontFamily: 'var(--font-display)', fontWeight: 700,
+                fontSize: 20, textTransform: 'uppercase', letterSpacing: '0.02em',
+                cursor: 'not-allowed',
+              }}>
+                FIND OPPONENT — {selectedKr} KR →
+              </div>
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)', textAlign: 'center', marginTop: 10 }}>
+                INSUFFICIENT BALANCE · <Link href="/wallet/deposit" style={{ color: 'var(--alarm)' }}>DEPOSIT →</Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href={matchHref}
                 style={{
-                  width: 80, padding: '6px 10px',
-                  border: '1.5px solid var(--ink)', background: 'var(--bone)',
-                  fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600,
-                  color: 'var(--ink)', outline: 'none',
+                  display: 'block', textAlign: 'center',
+                  background: 'var(--alarm)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '22px 32px',
+                  fontFamily: 'var(--font-display)', fontWeight: 700,
+                  fontSize: 20, textTransform: 'uppercase', letterSpacing: '0.02em',
+                  textDecoration: 'none',
                 }}
-              />
-              <span style={{ ...s.mono, fontSize: 11 }}>KR</span>
-            </div>
-          </div>
-
-          {/* Pot math */}
-          <div style={{ marginTop: 24, padding: '16px 0', borderTop: '1px solid var(--rule-soft)', borderBottom: '1px solid var(--rule-soft)', display: 'flex', alignItems: 'baseline', gap: 20, flexWrap: 'wrap' }}>
-            <span style={{ ...s.mono, fontSize: 14, fontWeight: 600 }}>{activeTier.stakeKr} KR</span>
-            <span style={{ ...s.mono, color: 'var(--ink-faint)' }}>each in</span>
-            <span style={{ ...s.mono, color: 'var(--ink-faint)' }}>−</span>
-            <span style={{ ...s.mono, fontSize: 12 }}>{activeTier.entryFee} KR fee each</span>
-            <span style={{ ...s.mono, color: 'var(--ink-faint)' }}>=</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--alarm)' }}>
-              {activeTier.winnerGets} KR
-            </span>
-            <span style={{ ...s.mono, color: 'var(--ink-faint)', fontSize: 10 }}>WINNER TAKES</span>
-          </div>
+              >
+                FIND OPPONENT — {selectedKr} KR →
+              </Link>
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', textAlign: 'center', marginTop: 10 }}>
+                SEARCH IS A COMMITMENT. NO DECLINE ONCE PAIRED.
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Right — CTA panel */}
-        <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 4 }}>
-            SELECTED · {activeTier.label} · {activeTier.stakeKr} KR
-          </div>
-
-          <div style={{ background: 'var(--bone-2)', border: '1px solid var(--rule-soft)', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>YOU PUT IN</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20 }}>{activeTier.stakeKr} KR</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>OPP PUTS IN</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20 }}>{activeTier.stakeKr} KR</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>PLATFORM FEE</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{activeTier.entryFee * 2} KR total</span>
-            </div>
-            <div style={{ height: 1, background: 'var(--rule-soft)', margin: '10px 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>WINNER TAKES</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--alarm)' }}>
-                {activeTier.winnerGets} KR
-              </span>
-            </div>
-          </div>
-
-          <Link href={matchHref} style={{
-            display: 'block', textAlign: 'center',
-            background: 'var(--alarm)', color: '#fff',
-            border: 'none', padding: '20px 24px',
-            fontFamily: 'var(--font-display)', fontWeight: 700,
-            fontSize: 18, textTransform: 'uppercase', letterSpacing: '0.04em',
-            textDecoration: 'none',
-          }}>
-            FIND OPPONENT — {activeTier.stakeKr} KR →
-          </Link>
-          <p style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', textAlign: 'center' }}>
-            SEARCH IS A COMMITMENT. NO DECLINE ONCE PAIRED.
-          </p>
-        </div>
-      </section>
-
-      <Footer />
+      </main>
     </div>
   )
 }

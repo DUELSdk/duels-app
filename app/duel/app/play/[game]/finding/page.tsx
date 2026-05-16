@@ -1,76 +1,286 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { use } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
-function FindingContent({ game }: { game: string }) {
+const mono: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  letterSpacing: '0.1em',
+}
+
+const display = (size: number): React.CSSProperties => ({
+  fontFamily: 'var(--font-display)',
+  fontWeight: 800,
+  fontSize: size,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '-0.02em',
+  lineHeight: 0.88,
+})
+
+/* 7 squares cycling alarm colour — matches bundle SearchDots */
+function SearchDots() {
+  const [t, setT] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setT(x => x + 1), 240)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+      {[0,1,2,3,4,5,6].map(i => (
+        <span key={i} style={{
+          width: 10, height: 10,
+          background: (t % 7) === i ? 'var(--alarm)' : 'rgba(240,237,228,0.25)',
+          transition: 'background 0.15s',
+          display: 'inline-block',
+        }} />
+      ))}
+    </div>
+  )
+}
+
+function Silhouette({ size = 80 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 100 100" style={{
+      width: size, height: size,
+      background: 'var(--concrete-3)',
+      border: '1px solid rgba(240,237,228,0.14)',
+      flexShrink: 0,
+    }}>
+      <circle cx="50" cy="38" r="16" fill="var(--concrete)" />
+      <path d="M20 100 C20 70 35 60 50 60 C65 60 80 70 80 100 Z" fill="var(--concrete)" />
+      <text x="50" y="98" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="6" fill="var(--bone-ghost)">?</text>
+    </svg>
+  )
+}
+
+function TopBar({ game, kr, phase }: { game: string; kr: number; phase: 'finding' | 'matched' }) {
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr auto 1fr',
+      alignItems: 'center', padding: '14px 28px',
+      borderBottom: '1px solid rgba(240,237,228,0.14)',
+      background: 'var(--concrete-2)',
+    }}>
+      <span style={{ ...mono, fontSize: 11, color: 'var(--bone-faint)' }}>
+        MATCH — · {game} · {kr} KR ROOM
+      </span>
+      <span style={{ ...mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
+        {phase === 'finding' ? 'FINDING OPPONENT' : 'OPPONENT FOUND'}
+      </span>
+      <span style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)', textAlign: 'right' }}>
+        POT {kr * 2 - Math.round(kr * 2 * 0.1)} KR
+      </span>
+    </div>
+  )
+}
+
+function FindingContent({ game, kr }: { game: string; kr: number }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const tier = searchParams.get('tier') ?? 'serious'
+  const [phase, setPhase] = useState<'finding' | 'matched'>('finding')
+  const [sec, setSec] = useState(0)
+  const [progress, setProgress] = useState(0)
 
   const gameLabel = game === 'card-duel' ? 'CARD DUEL'
     : game === 'cycleduel' ? 'CYCLEDUEL'
     : 'DROPDUEL'
 
+  const myHandle = 'NOVASTRIKE'
+  const BOT_NAME = 'BOT'
+
+  /* Elapsed timer during search */
   useEffect(() => {
-    const t = setTimeout(() => {
-      router.push(`/play/${game}/match?tier=${tier}`)
-    }, 3000)
-    return () => clearTimeout(t)
-  }, [game, tier, router])
+    const id = setInterval(() => setSec(s => s + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  /* Transition to matched after 3s */
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('matched'), 3000)
+    return () => clearTimeout(t1)
+  }, [])
+
+  /* Progress bar fill after matched */
+  useEffect(() => {
+    if (phase !== 'matched') return
+    const start = Date.now()
+    const duration = 3000
+    const tick = () => {
+      const pct = Math.min((Date.now() - start) / duration, 1)
+      setProgress(pct)
+      if (pct < 1) requestAnimationFrame(tick)
+      else router.push(`/play/${game}/match?kr=${kr}`)
+    }
+    requestAnimationFrame(tick)
+  }, [phase, game, kr, router])
+
+  const elapsedMin = String(Math.floor(sec / 60)).padStart(2, '0')
+  const elapsedSec = String(sec % 60).padStart(2, '0')
+
+  const criteria = [
+    ['GAME',   gameLabel],
+    ['STAKE',  `${kr} KR`],
+    ['FORMAT', '1V1'],
+    ['POOL',   '14 ELIGIBLE'],
+  ]
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.4 }}
-      style={{ background: '#000000', color: 'rgba(255,255,255,0.88)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40 }}
-    >
-      {/* Pulsing search indicator */}
-      <motion.div
-        animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.8, 0.3] }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ width: 64, height: 64, border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: '50%' }}
-      />
+    <div style={{ background: 'var(--concrete)', color: 'var(--bone-on-dark)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <TopBar game={gameLabel} kr={kr} phase={phase} />
 
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>
-          {gameLabel}
-        </div>
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, textTransform: 'uppercase', letterSpacing: '-0.03em', lineHeight: 0.9, margin: 0 }}
-        >
-          FINDING<br />OPPONENT.
-        </motion.h1>
-      </div>
+      <AnimatePresence mode="wait">
+        {phase === 'finding' ? (
 
-      {/* Scanning bar */}
-      <div style={{ width: 240, height: 1, background: 'rgba(255,255,255,0.08)', position: 'relative', overflow: 'hidden' }}>
-        <motion.div
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.5)' }}
-        />
-      </div>
+          /* ── FINDING OPPONENT ── */
+          <motion.div
+            key="finding"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+          >
+            {/* Centre */}
+            <section style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', padding: '64px 56px', textAlign: 'center',
+            }}>
+              <div style={{ ...mono, fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', color: 'var(--money)' }}>
+                ● {kr} KR ROOM · {gameLabel}
+              </div>
+              <div style={{ ...display(220), color: 'var(--bone-on-dark)', lineHeight: 0.85, marginTop: 14 }}>
+                SEARCHING.
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 22, color: 'var(--bone-faint)', marginTop: 12,
+              }}>
+                Pairing you with a player in the same room.
+              </div>
+              <div style={{ marginTop: 40 }}>
+                <SearchDots />
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontWeight: 800,
+                fontSize: 56, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums',
+                color: 'var(--bone-on-dark)', marginTop: 36,
+              }}>
+                {elapsedMin}:{elapsedSec}
+              </div>
+              <div style={{ ...mono, fontSize: 11, color: 'var(--bone-faint)', letterSpacing: '0.14em', marginTop: 6 }}>
+                ELAPSED · AVG WAIT 6s
+              </div>
+            </section>
 
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)' }}>
-        NO DECLINE ONCE PAIRED
-      </div>
-    </motion.div>
+            {/* Bottom — criteria + cancel */}
+            <section style={{ padding: '24px 56px 32px' }}>
+              <div style={{ padding: 24, border: '1px solid rgba(240,237,228,0.18)' }}>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  SEARCH CRITERIA
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 12 }}>
+                  {criteria.map(([l, v]) => (
+                    <div key={l}>
+                      <div style={{ ...mono, fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>{l}</div>
+                      <div style={{
+                        fontFamily: 'var(--font-display)', fontWeight: 700,
+                        fontSize: 20, marginTop: 4, color: 'var(--bone-on-dark)',
+                      }}>
+                        {v}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button onClick={() => router.push(`/play/${game}/lobby`)} style={{
+                display: 'block', width: '100%', marginTop: 16, padding: 16,
+                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const,
+                color: 'var(--bone-on-dark)', background: 'transparent',
+                border: '1px solid rgba(240,237,228,0.3)', cursor: 'pointer',
+              }}>
+                CANCEL SEARCH · REFUND STAKE
+              </button>
+            </section>
+          </motion.div>
+
+        ) : (
+
+          /* ── OPPONENT FOUND (PairedDesktop) ── */
+          <motion.div
+            key="matched"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              flex: 1,
+              position: 'relative',
+            }}
+          >
+            <div style={{
+              position: 'absolute', inset: 60,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{ ...mono, fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
+                MATCHED
+              </div>
+
+              <div style={{ ...display(220), color: 'var(--bone-on-dark)', lineHeight: 0.85, marginTop: 8 }}>
+                VS.
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 40, marginTop: 24 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)' }}>YOU</div>
+                  <div style={{ ...display(42), color: 'var(--bone-on-dark)', marginTop: 4 }}>{myHandle}</div>
+                  <div style={{ ...mono, fontSize: 10, color: 'var(--bone-faint)', marginTop: 4 }}>· 28 ms ·</div>
+                </div>
+                <Silhouette size={120} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)' }}>OPP</div>
+                  <div style={{ ...display(42), color: 'var(--alarm)', marginTop: 4 }}>{BOT_NAME}</div>
+                  <div style={{ ...mono, fontSize: 10, color: 'var(--bone-faint)', marginTop: 4 }}>· STRANGER ·</div>
+                </div>
+              </div>
+
+              <div style={{ width: 480, marginTop: 56 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ ...mono, fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>BUILDING TABLE</span>
+                  <span style={{ ...mono, fontSize: 10, color: 'var(--bone-ghost)' }}>{(progress * 3.5).toFixed(1)}s</span>
+                </div>
+                <div style={{ height: 4, background: 'rgba(240,237,228,0.10)', position: 'relative', overflow: 'hidden' }}>
+                  <motion.div
+                    style={{ position: 'absolute', top: 0, left: 0, height: '100%', background: 'var(--alarm)' }}
+                    animate={{ width: `${progress * 100}%` }}
+                    transition={{ duration: 0.1 }}
+                  />
+                </div>
+                <div style={{ ...mono, fontSize: 10, color: 'var(--bone-faint)', textAlign: 'center', marginTop: 14, letterSpacing: '0.08em' }}>
+                  NO DECLINE. NO REMATCH GUARANTEE. ONE FIGHT.
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
+}
+
+function FindingWrapper({ game }: { game: string }) {
+  const searchParams = useSearchParams()
+  const kr = parseInt(searchParams.get('kr') ?? '50') || 50
+  return <FindingContent game={game} kr={kr} />
 }
 
 export default function FindingPage({ params }: { params: Promise<{ game: string }> }) {
   const { game } = use(params)
   return (
-    <Suspense fallback={<div style={{ background: '#000000', minHeight: '100vh' }} />}>
-      <FindingContent game={game} />
+    <Suspense fallback={<div style={{ background: 'var(--concrete)', minHeight: '100vh' }} />}>
+      <FindingWrapper game={game} />
     </Suspense>
   )
 }
