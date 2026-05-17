@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav, StadiumStrip, LiveTicker } from '@/components/BroadcastNav'
+import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
 import { getGameDetail } from '@/lib/mock-data'
@@ -326,8 +326,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ gam
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
-      <StadiumStrip />
-      <LiveTicker />
 
       <section style={{ padding: `32px ${s.px}` }}>
         <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.10em', color: 'var(--ink-faint)' }}>

@@ -39,7 +39,12 @@ Classic Mastermind duel format. Each player sets a 4-slot, 6-color code (repeats
 
 ## Scoring
 
-Win = crack opponent's code in fewer guesses. Tie = rematch with new codes, same pot, no new entry fee. 10 guesses with no crack → split pot.
+Win = crack opponent's code in fewer guesses. Same guess count → rematch (new codes, same pot, no new entry fee). 10 guesses with no crack → split pot — both players lose entry fee.
+
+**Tie resolution order:**
+1. Fewer guesses wins
+2. Same guess count → rematch (new codes, same pot)
+3. 10 guesses, neither cracks → split pot (entry fees kept by platform)
 
 ---
 
@@ -72,6 +77,23 @@ Not applicable. No spatial board or shared position to claim — Crown has no ma
 | Bomb Squad | Defuse theme | 4 colors, repeats allowed | Race — first to crack wins regardless of guess count |
 | Starmap | Sci-fi | 3 slots, 6 symbols | Shorter code |
 | Heist | Multi-stage | 3 rounds, new code each round | Best of 3 rounds |
+
+---
+
+## Fraud & Anti-Cheat
+
+See `Company/compliance.md` → Anti-Cheat Policy for full platform policy.
+
+**CodeDuel-specific vectors:**
+
+| Vector | Risk | Mitigation |
+|--------|------|------------|
+| Bot solver (automated guessing) | Medium | Input fingerprinting — mechanical timing detected |
+| Human-assisted solver (bot decides, human types) | Medium | Statistical flagging — near-perfect efficiency across many games |
+| Collusion (share codes pre-match) | High | Split pot on same-guess tie = both lose entry fee. No profit motive. |
+| Code stored client-side | High | Codes stored server-side only — never sent to client until match ends |
+
+**Legal deterrent:** MitID attaches real CPR to every account. Cheating for financial gain = bedrageri (§279 straffeloven). Confirmed cases referred to Politiet.
 
 ---
 

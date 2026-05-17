@@ -67,12 +67,12 @@ Hybrid system — method depends on purse size.
 |-------|--------|-----|
 | Starter / Standard (10–25kr) | Auto-queue | Fast, frictionless, high volume |
 | Serious / High (50–100kr) | Auto-queue + optional open challenge | Player choice |
-| Elite / Max (250–500kr) | Challenge board only | Players want to know who they're fighting |
-| Big Game / Grand (1,000kr+) | Challenge board only | Players want to know who they're fighting |
+| Elite / Max (250–500kr) | Auto-queue + optional open challenge | Still casual — no Elite Room below 1,000kr |
+| Big Game / Grand (1,000kr+) | Elite Room (challenge board only) | Players want to know who they're fighting |
 
-**Challenge board is public to all players regardless of purse size.** Small players watching a 970kr purse duel creates aspiration and validates the platform. The board is entertainment, not just matchmaking.
+**The Elite Room threshold is 1,000 KR.** Below that: casual purses, auto-queue. The jump from 500 to 1,000 KR is intentional — it marks the line between casual and serious.
 
-High-purse duels also run fewer per day — the board creates anticipation rather than exposing low volume as a weakness.
+**The Marquee** is the broadcast layer on top of the Elite Room. Not a match room — the front of house. Where you go to see what's on: challenges posted, matches live, who's holding a seat. Feeds the landing page jumbotron. Surface: BROADCAST (bone/paper). The Elite Room itself is BUNKER.
 
 #### Sweetened Challenge
 
@@ -345,29 +345,32 @@ Colonel Blotto duel format. Both players simultaneously allocate units across ba
 ### HexDuel (post-launch)
 Simultaneous territory connection game. Build an unbroken chain across the board before your opponent does.
 
-**Board:** 9×9 rhombus grid of hexagons. Red owns left and right edges. Blue owns top and bottom edges.
+**Board:** 9×9 rhombus grid of hexagons. 20s per move. Red owns left and right edges. Blue owns top and bottom edges.
 
 **Flow:**
-1. Both players choose a hex to place their piece simultaneously
+1. Both players choose a hex to place their piece simultaneously (20s timer)
 2. Both lock — placements reveal together
-3. **Contested hex** (both choose same cell): Blocked — neither piece placed, both replay that turn
+3. **Contested hex** (both choose same cell): **dead zone** — cell permanently removed from play, neither piece placed. Both choose again next turn.
 4. First player to form an unbroken chain of their pieces connecting both their edges wins
+5. If board reaches a state where neither chain is completable: split pot, rake kept
 
-**No draws possible** — mathematically proven. Someone always wins.
+**No draws possible** — mathematically proven. Someone always wins. The simultaneous rule also eliminates the first-player advantage inherent in standard Hex (proven to be a first-player win under perfect play) — both players commit blind, no turn order exists.
 
 **Why simultaneous breaks the game open:** memorized Hex theory assumes you react to your opponent's last move. When both move at once, you're predicting — not reacting. The entire strategy shifts.
 
+**Training gate:** 5 games vs bot, at least 1 win required. Unlocks real-money rooms. One-time per account. HexDuel connection strategy is not immediately obvious — training protects players and demonstrates platform due diligence.
+
 **Crown mechanic:** fully compatible. Predicting opponent's next hex placement and claiming it is one of the most powerful reads on the platform.
 
-**Scoring:** Win = match over. No point accumulation.
+**Scoring:** Win = match over. No point accumulation. Dead-zone split: neither chain completable → split pot, rake kept.
 
 **Themes & variants:**
-| Name | Theme | Board | Contested rule | Notes |
-|------|-------|-------|---------------|-------|
-| **HexDuel** | Neutral / standard | 9×9 | Blocked | Base |
-| **HexDuel Blitz** | Neutral speed | 7×7 | Blocked | Smaller board, faster chain |
-| **HexDuel Deep** | Neutral extended | 11×11 | Blocked | Classic Hex size, longer match |
-| **Dead Zones** | Neutral variant | 9×9 | Both placed | Contested cells become neutral dead zones — chains must route around them |
+| Name | Theme | Board | Timer | Notes |
+|------|-------|-------|-------|-------|
+| **HexDuel** | Neutral / standard | 9×9 | 20s | Base — dead zone on contest |
+| **HexDuel Blitz** | Neutral speed | 7×7 | 15s | Smaller board, faster chain |
+| **HexDuel Deep** | Neutral extended | 11×11 | 20s | Classic Hex size, longer match |
+| **Dead Zones** | Neutral variant | 9×9 | 20s | Contested cells: both pieces placed (neutral) instead of removed |
 
 **Future formats:** tournament bracket, Crown-only variant.
 
@@ -452,15 +455,16 @@ Different game formats can use different rules — not platform-wide, chosen per
 
 ### The Crown
 
-Series-only mechanic. One player holds the Crown at a time. Crown never transfers between different games.
+Optional mechanic — off by default. Enabled via room setting or Crown variant. One player holds the Crown at a time. Crown never transfers between different games.
 
 **When it applies:**
-- Best-of-X series of the same game only
+- Best-of-X series of the same game, Crown mode enabled only
 - Single matches: no Crown
+- Standard series (no Crown toggle): no Crown
 - Cross-game modes (Gauntlet, Pick & Ban): no Crown — does not transfer between games
 
 **Starting position:**
-- Game 1: challenger (the player who accepted the match) holds Crown
+- Game 1: no Crown — symmetric start
 - Game 2+: loser of previous game holds Crown
 
 **How it works:**
@@ -880,3 +884,4 @@ Cost: ~$1–5 per verification. EU-native, covers DK, UK, DE, SE in one integrat
 | 2026-04-24 | Tournament formats designed (launch: single elim, round robin, double elim). The Open structure defined. Platform systems added: rematch credits, ticket system, mission system, cosmetics, bounty, nemesis. BlottoDuel, HexDuel, WallDuel specs written. Simultaneous decision rule and Crown mechanic added as platform design principles. |
 | 2026-04-26 | Card Duel tiebreakers defined per format — sudden death single-card (Sealed/Blitz), rematch (Phase), split pot (FFA). Open Questions cleaned up. |
 | 2026-05-02 | The Stage added — featured high-stakes matches system, marketing layer, no influencer deals. |
+| 2026-05-14 | HexDuel updated — dead zone rule corrected (permanent removal not replay), board 9×9, timer 20s, training gate (5 games/1 win), dead-zone split tiebreaker, first-player advantage note added. |

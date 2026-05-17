@@ -6,13 +6,13 @@ added: 2026-05-02
 
 # Card Duel
 
-Both players arrange a 9-card sequence simultaneously and lock — cards auto-resolve slot by slot. Pure psychology, zero information.
+Both players arrange a 9-card sequence simultaneously and lock — cards auto-resolve slot by slot. Best-of-3 format: after each game you've seen the opponent's full sequence, and the real opponent-reading begins.
 
 ---
 
 ## Core Mechanic
 
-Each player holds 3× Rock, 3× Scissors, 3× Paper. In Sealed mode, both arrange all 9 into a sequence and lock simultaneously before any reveal — outcome is 100% deterministic from that point. In Phase mode, players pick one card per round from their remaining hand, locking simultaneously each round. Used cards are always visible to both players throughout.
+Each player holds 3× Rock, 3× Scissors, 3× Paper. Both arrange all 9 into a sequence and lock simultaneously before any reveal — outcome is 100% deterministic from that point. Match is Best-of-3 games. After Game 1, both sequences are fully visible — Game 2 and 3 are where psychology and pattern-reading emerge.
 
 ---
 
@@ -22,44 +22,37 @@ Each player holds 3× Rock, 3× Scissors, 3× Paper. In Sealed mode, both arrang
 |-------|--------|
 | Simultaneous decisions | ✅ both players commit before either sees the other's move |
 | RNG | none — outcome fully deterministic once locked |
-| Skill basis | psychology / sequencing / opponent-reading |
-| Tiebreaker | defined per format — see Scoring |
+| Skill basis | psychology / sequencing / opponent-reading across games |
+| Tiebreaker | defined — see Scoring |
 
 ---
 
 ## Flow
 
-**Sealed mode:**
+Each game (of 3):
 1. Both players arrange their 9 cards into a sequence and lock simultaneously
 2. Sequences reveal together
 3. Slots resolve 1→9 automatically
 
-**Phase mode:**
-1. Both players pick one card from remaining hand and lock simultaneously
-2. Both reveal — slot resolves
-3. Repeat for all 9 rounds (used cards always visible)
-4. Per-round time limit enforced. Expires → first card in hand played automatically, in type order (Rock → Scissors → Paper)
+After Game 1: both full sequences visible. Players re-arrange for Game 2. After Game 2 (if tied 1–1): Game 3 decider.
 
 ---
 
 ## Scoring
 
-Win = 1 point, tie (same type vs same type) = 0 each, loss = 0. Most points after 9 rounds wins.
+**Per game:** Win = 1 point, tie (same type vs same type) = 0 each, loss = 0. Most points after 9 slots wins that game.
 
-**Tiebreakers:**
+**Match:** First to win 2 games wins the match.
 
-| Format | Tiebreaker |
-|--------|-----------|
-| Sealed | Sudden death — each player picks one card (R/S/P) secretly, simultaneous reveal, repeat until broken. Always produces a winner. |
-| Phase | Rematch — new hands, same pot, no new entry fee; if rematch ties → split pot |
+**Slot tie (game tied after 9):** Sudden death — each player picks one card (R/S/P) secretly, simultaneous reveal, repeat until broken. Always produces a game winner.
+
+**Match tie (1–1 after 2 games with no Game 3 decider needed):** Cannot happen — Best-of-3 always produces a 2–0 or 2–1 result after Game 3.
 
 ---
 
 ## Simultaneous Rule
 
-**Sealed:** Both players arrange and lock their full 9-card sequence before either is revealed.
-
-**Phase:** Both players pick and lock one card per round before either is revealed.
+Both players arrange and lock their full 9-card sequence before either is revealed. This applies to every game in the Best-of-3.
 
 ---
 
@@ -69,10 +62,8 @@ Win = 1 point, tie (same type vs same type) = 0 each, loss = 0. Most points afte
 |------|-------------------|
 | Your locked slot count | ✅ yes — "X/9 locked" shown |
 | Your locked slot moves | ❌ no — shown as ■ (face-down) until reveal |
-| Revealed slot moves (resolved rounds) | ✅ yes — shown after each round resolves |
-| Your remaining hand (card counts) | ✅ yes — used cards always visible |
-
-Slots reveal one at a time as each round resolves, not all at once at the end.
+| Revealed slot moves (resolved slots) | ✅ yes — shown after each slot resolves |
+| Previous game sequences | ✅ yes — full sequences visible after each game ends |
 
 ---
 
@@ -115,4 +106,4 @@ Cycle diagram (R beats S, S beats P, P beats R) always visible on screen.
 
 | Question | Priority |
 |----------|----------|
-| Legal status of Sealed mode (simultaneous sealed sequence) — needs Spillemyndighed opinion | High |
+| Legal status — sealed sequence + Best-of-3 format needs Spillemyndighed opinion | High |

@@ -40,20 +40,6 @@ function SearchDots() {
   )
 }
 
-function Silhouette({ size = 80 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 100 100" style={{
-      width: size, height: size,
-      background: 'var(--concrete-3)',
-      border: '1px solid rgba(240,237,228,0.14)',
-      flexShrink: 0,
-    }}>
-      <circle cx="50" cy="38" r="16" fill="var(--concrete)" />
-      <path d="M20 100 C20 70 35 60 50 60 C65 60 80 70 80 100 Z" fill="var(--concrete)" />
-      <text x="50" y="98" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="6" fill="var(--bone-ghost)">?</text>
-    </svg>
-  )
-}
 
 function TopBar({ game, kr, phase }: { game: string; kr: number; phase: 'finding' | 'matched' }) {
   return (
@@ -175,17 +161,17 @@ function FindingContent({ game, kr }: { game: string; kr: number }) {
 
             {/* Bottom — criteria + cancel */}
             <section style={{ padding: '24px 56px 32px' }}>
-              <div style={{ padding: 24, border: '1px solid rgba(240,237,228,0.18)' }}>
-                <div style={{ ...mono, fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              <div style={{ padding: '24px 32px', border: '1px solid rgba(240,237,228,0.18)' }}>
+                <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
                   SEARCH CRITERIA
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 48, alignItems: 'flex-end', justifyContent: 'center' }}>
                   {criteria.map(([l, v]) => (
-                    <div key={l}>
-                      <div style={{ ...mono, fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>{l}</div>
+                    <div key={l} style={{ textAlign: 'center' }}>
+                      <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 4 }}>{l}</div>
                       <div style={{
-                        fontFamily: 'var(--font-display)', fontWeight: 700,
-                        fontSize: 20, marginTop: 4, color: 'var(--bone-on-dark)',
+                        fontFamily: 'var(--font-display)', fontWeight: 800,
+                        fontSize: 32, letterSpacing: '-0.02em', color: 'var(--bone-on-dark)', lineHeight: 1,
                       }}>
                         {v}
                       </div>
@@ -194,8 +180,8 @@ function FindingContent({ game, kr }: { game: string; kr: number }) {
                 </div>
               </div>
               <button onClick={() => router.push(`/play/${game}/lobby`)} style={{
-                display: 'block', width: '100%', marginTop: 16, padding: 16,
-                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.08em',
+                display: 'block', width: '100%', marginTop: 16, padding: '18px 0',
+                fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.10em',
                 textTransform: 'uppercase' as const,
                 color: 'var(--bone-on-dark)', background: 'transparent',
                 border: '1px solid rgba(240,237,228,0.3)', cursor: 'pointer',
@@ -232,14 +218,16 @@ function FindingContent({ game, kr }: { game: string; kr: number }) {
                 VS.
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 40, marginTop: 24 }}>
-                <div style={{ textAlign: 'right' }}>
+              <div style={{ width: 200, height: 3, background: 'var(--alarm)', margin: '20px auto 0' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 24 }}>
+                <div style={{ width: 240, textAlign: 'right', paddingRight: 40 }}>
                   <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)' }}>YOU</div>
                   <div style={{ ...display(42), color: 'var(--bone-on-dark)', marginTop: 4 }}>{myHandle}</div>
                   <div style={{ ...mono, fontSize: 10, color: 'var(--bone-faint)', marginTop: 4 }}>· 28 ms ·</div>
                 </div>
-                <Silhouette size={120} />
-                <div style={{ textAlign: 'left' }}>
+                <div style={{ width: 1, height: 64, background: 'rgba(240,237,228,0.18)', flexShrink: 0 }} />
+                <div style={{ width: 240, textAlign: 'left', paddingLeft: 40 }}>
                   <div style={{ ...mono, fontSize: 11, color: 'var(--bone-ghost)' }}>OPP</div>
                   <div style={{ ...display(42), color: 'var(--alarm)', marginTop: 4 }}>{BOT_NAME}</div>
                   <div style={{ ...mono, fontSize: 10, color: 'var(--bone-faint)', marginTop: 4 }}>· STRANGER ·</div>

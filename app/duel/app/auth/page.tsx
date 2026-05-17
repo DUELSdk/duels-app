@@ -3,205 +3,155 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav } from '@/components/BroadcastNav'
-import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
+import { getStatsStrip, getLiveMatchCount } from '@/lib/mock-data'
+
+const STATS_STRIP_STYLE: React.CSSProperties = {
+  background: 'var(--ink)',
+  color: 'var(--bone-on-dark)',
+  padding: '6px 56px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+}
+
+const MINIMAL_NAV_STYLE: React.CSSProperties = {
+  borderBottom: '1px solid var(--rule-soft)',
+  padding: '14px 56px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  background: 'var(--bone)',
+}
 
 export default function AuthPage() {
-  const [tab, setTab] = useState<'signin' | 'register'>('signin')
+  const stats  = getStatsStrip()
+  const counts = getLiveMatchCount()
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    ...s.mono,
-    fontSize: 11,
-    padding: '10px 24px',
-    border: 'none',
-    borderBottom: active ? '2px solid var(--ink)' : '2px solid transparent',
-    background: 'transparent',
-    color: active ? 'var(--ink)' : 'var(--ink-faint)',
-    cursor: 'pointer',
-  })
+  function handleMitID() {
+    if (loading) return
+    setLoading(true)
+    setTimeout(() => router.push('/auth/callback'), 1400)
+  }
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <BroadcastNav />
 
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `56px ${s.px}` }}>
-        <div style={{ width: '100%', maxWidth: 460 }}>
+      {/* Stats strip */}
+      <div style={STATS_STRIP_STYLE}>
+        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
+          TODAY&apos;S BIGGEST POT <span style={{ color: 'var(--bone-on-dark)', fontWeight: 600 }}>{stats.biggestPotAmount} KR</span> — {stats.biggestPotWho}
+        </span>
+        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)' }}>
+          {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY &nbsp;·&nbsp; {stats.totalPaidToday} KR PAID
+        </span>
+      </div>
 
-          {/* Header */}
-          <div style={{ marginBottom: 40 }}>
-            <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 16 }}>DUEL · ACCESS</div>
-            <h1 style={{ ...s.display(64), lineHeight: 0.85 }}>
-              {tab === 'signin' ? 'SIGN IN.' : 'JOIN DUEL.'}
+      {/* Minimal nav */}
+      <div style={MINIMAL_NAV_STYLE}>
+        <Link href="/" style={{ ...s.display(18), letterSpacing: '-0.01em', textDecoration: 'none', color: 'var(--ink)' }}>
+          DUELS.
+        </Link>
+        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>18+ &nbsp;·&nbsp; PLAY WITHIN MEANS</span>
+      </div>
+
+      {/* Split layout */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+
+        {/* Left — bone */}
+        <div style={{ padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ ...s.mono, fontSize: 11, color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
+              {counts.live} MATCHES IN PROGRESS
+            </div>
+
+            <h1 style={{ ...s.display(120), lineHeight: 0.84, marginBottom: 40 }}>
+              SIGN IN.
             </h1>
+
+            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.3, maxWidth: 480, color: 'var(--ink)' }}>
+              ONE DOOR. VERIFIED BY MITID.{' '}
+              <span style={{ color: 'var(--ink-soft)' }}>
+                NO USERNAMES TO REMEMBER. NO PASSWORDS TO FORGET. THE STAKES ARE REAL — SO IS THE CHECK.
+              </span>
+            </p>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--rule-soft)', marginBottom: 40 }}>
-            <button style={tabStyle(tab === 'signin')} onClick={() => setTab('signin')}>RETURNING PLAYER</button>
-            <button style={tabStyle(tab === 'register')} onClick={() => setTab('register')}>NEW PLAYER</button>
+          {/* Badges */}
+          <div style={{ display: 'flex', gap: 40, paddingTop: 40, borderTop: '1px solid var(--rule-soft)' }}>
+            {[
+              { label: 'INSTANT', sub: 'VERIFICATION' },
+              { label: '18+', sub: 'GATE' },
+              { label: 'SKILL ONLY', sub: 'NO HOUSE' },
+            ].map(b => (
+              <div key={b.label}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{b.label}</div>
+                <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginTop: 4 }}>{b.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — black panel */}
+        <div style={{ background: 'var(--ink)', padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', marginBottom: 20 }}>ONE WAY IN</div>
+
+            {/* MITID. wordmark */}
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.9, textTransform: 'uppercase', letterSpacing: '-0.02em', marginBottom: 28 }}>
+              <span style={{ color: 'var(--bone-on-dark)' }}>MIT</span>
+              <span style={{ color: 'var(--alarm)' }}>ID.</span>
+            </div>
+
+            <p style={{ ...s.mono, fontSize: 11, color: 'var(--bone-faint)', lineHeight: 1.7, maxWidth: 380 }}>
+              REQUIRED BY DANISH LAW FOR REAL-MONEY SKILL GAMES. YOUR CPR STAYS WITH THE AUTH PROVIDER — WE NEVER SEE IT.
+            </p>
           </div>
 
-          {tab === 'signin' ? (
-            <SignInForm />
-          ) : (
-            <RegisterForm />
-          )}
+          <div>
+            <button
+              onClick={handleMitID}
+              disabled={loading}
+              style={{
+                width: '100%',
+                background: 'var(--bone)',
+                color: 'var(--ink)',
+                border: 'none',
+                padding: '22px 32px',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 18,
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                marginBottom: 16,
+              }}
+            >
+              {loading ? 'CONNECTING TO MITID...' : 'CONTINUE WITH MITID →'}
+            </button>
 
-          <p style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 32, lineHeight: 1.8 }}>
-            DUEL IS A SKILL COMPETITION PLATFORM. 18+ ONLY. IDENTITY VERIFIED VIA MITID.
-            DANISH RESIDENTS ONLY. BY CONTINUING YOU AGREE TO OUR{' '}
-            <Link href="/terms" style={{ color: 'var(--ink-soft)', textDecoration: 'underline' }}>TERMS</Link>{' '}
-            AND{' '}
-            <Link href="/privacy" style={{ color: 'var(--ink-soft)', textDecoration: 'underline' }}>PRIVACY POLICY</Link>.
-          </p>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  )
-}
-
-function SignInForm() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 8 }}>HANDLE OR EMAIL</div>
-        <input
-          type="text"
-          placeholder="your handle"
-          style={{
-            width: '100%', padding: '12px 16px',
-            border: '1.5px solid var(--ink)', background: 'var(--bone)',
-            fontFamily: 'var(--font-mono)', fontSize: 13,
-            color: 'var(--ink)', outline: 'none', boxSizing: 'border-box',
-          }}
-        />
-      </div>
-
-      <div style={{ height: 1, background: 'var(--rule-soft)', margin: '8px 0' }} />
-
-      {/* MitID primary CTA */}
-      <MitIDButton label="SIGN IN WITH MitID →" />
-
-      <p style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', textAlign: 'center' }}>
-        MitID verifies your identity. Required for all accounts.
-      </p>
-    </div>
-  )
-}
-
-function RegisterForm() {
-  const [agreed, setAgreed] = useState(false)
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ padding: '16px 20px', background: 'var(--bone-2)', border: '1px solid var(--rule-soft)' }}>
-        <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 6 }}>HOW IT WORKS</div>
-        <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-          MitID verifies your age and identity. Your real name is never shown to opponents — only your handle.
-          One account per person. Accounts are non-transferable.
+            <p style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)', textAlign: 'center', lineHeight: 1.7 }}>
+              BY CONTINUING YOU AGREE TO THE TERMS AND CONFIRM YOU ARE 18 OR OVER.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div>
-        <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 8 }}>CHOOSE A HANDLE</div>
-        <input
-          type="text"
-          placeholder="e.g. SANDSTORM"
-          maxLength={18}
-          style={{
-            width: '100%', padding: '12px 16px',
-            border: '1.5px solid var(--ink)', background: 'var(--bone)',
-            fontFamily: 'var(--font-mono)', fontSize: 13,
-            color: 'var(--ink)', outline: 'none', boxSizing: 'border-box',
-            textTransform: 'uppercase',
-          }}
-        />
-        <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-ghost)', marginTop: 6 }}>
-          MAX 18 CHARACTERS · VISIBLE TO OPPONENTS · CANNOT BE CHANGED
-        </div>
-      </div>
-
-      {/* Age declaration */}
-      <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={e => setAgreed(e.target.checked)}
-          style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--ink)', flexShrink: 0 }}
-        />
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-          I am 18 years or older and a resident of Denmark. I understand DUEL is a skill competition platform and I accept the Terms of Service.
+      {/* Footer */}
+      <div style={{ background: 'var(--ink)', padding: '14px 56px', display: 'flex', justifyContent: 'space-between' }}>
+        <span style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)' }}>
+          SPILLELOVEN-EXEMPT &nbsp;·&nbsp; SKILL-BASED 1V1 ONLY &nbsp;·&nbsp; CVR 99999999
         </span>
-      </label>
-
-      <div style={{ height: 1, background: 'var(--rule-soft)' }} />
-
-      <MitIDButton label="CREATE ACCOUNT WITH MitID →" disabled={!agreed} />
-
-      <p style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', textAlign: 'center' }}>
-        MitID confirms you are 18+ and a Danish resident. Required.
-      </p>
-    </div>
-  )
-}
-
-function MitIDButton({ label, disabled }: { label: string; disabled?: boolean }) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-
-  function handleClick() {
-    if (disabled || loading) return
-    setLoading(true)
-    setTimeout(() => router.push('/'), 2200)
-  }
-
-  const isDisabled = disabled || loading
-  return (
-    <div>
-      <button
-        disabled={isDisabled}
-        onClick={handleClick}
-        style={{
-          width: '100%',
-          background: isDisabled ? 'var(--ink-ghost)' : 'var(--ink)',
-          color: 'var(--bone)',
-          border: 'none',
-          padding: '18px 24px',
-          fontFamily: 'var(--font-display)',
-          fontWeight: 700,
-          fontSize: 18,
-          textTransform: 'uppercase',
-          letterSpacing: '0.02em',
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-        }}
-      >
-        <span style={{
-          display: 'inline-block',
-          width: 20, height: 20,
-          border: '2px solid currentColor',
-          borderRadius: '50%',
-          flexShrink: 0,
-          opacity: loading ? 0.4 : 1,
-        }} />
-        {loading ? 'CONNECTING TO MITID...' : label}
-      </button>
-      <div style={{
-        padding: '8px 16px',
-        background: isDisabled ? 'rgba(0,0,0,0.03)' : 'rgba(0,0,0,0.05)',
-        border: '1px solid var(--rule-soft)',
-        borderTop: 'none',
-        display: 'flex', alignItems: 'center', gap: 8,
-      }}>
-        <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)' }}>
-          {loading ? 'REDIRECTING TO MITID — DO NOT CLOSE THIS PAGE' : 'MITID · DIGITAL IDENTITY · AGE VERIFIED · DANISH RESIDENTS'}
-        </span>
+        <div style={{ display: 'flex', gap: 20 }}>
+          {['SUPPORT', 'RULES', 'STOPSPILLET.DK'].map(l => (
+            <Link key={l} href="#" style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)', textDecoration: 'none' }}>{l}</Link>
+          ))}
+        </div>
       </div>
     </div>
   )

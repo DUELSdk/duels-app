@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { s } from '@/lib/styles'
 import { loadMatchResult, markBalanceApplied, type MatchResult } from '@/lib/match-state'
 import { adjustBalance, addTransaction } from '@/lib/balance'
-import { getH2HRecord } from '@/lib/mock-data'
+import { getH2HRecord, getStatsStrip, getLiveMatchCount, getBoard } from '@/lib/mock-data'
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -59,6 +59,9 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
   const rake    = result.stakeKr * 2 - result.winnerGets
   const newBal  = 2490 // mock
   const h2h     = getH2HRecord(result.opponent ?? 'BOT')
+  const stats   = getStatsStrip()
+  const counts  = getLiveMatchCount()
+  const board   = getBoard()
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
@@ -66,10 +69,10 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
       <div style={{ background: 'var(--ink)', padding: '6px 56px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
-          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>5.420 KR</strong> — k_8821 vs grimreef
+          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>{stats.biggestPotAmount} KR</strong> — {stats.biggestPotWho}
         </span>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)' }}>
-          1.247 SETTLED TODAY &nbsp;·&nbsp; 96.430 KR PAID
+          {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY &nbsp;·&nbsp; {stats.totalPaidToday} KR PAID
         </span>
       </div>
 
@@ -96,7 +99,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
         <div style={{
           padding: '28px 56px',
           borderBottom: '1.5px solid var(--ink)',
-          borderLeft: '4px solid var(--nemesis)',
+          borderLeft: '3px solid var(--nemesis)',
           background: 'var(--nemesis-soft)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
@@ -210,13 +213,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
           <span style={{ ...display(48) }}>ON THE BOARD.</span>
           <span style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)' }}>TODAY · LIVE</span>
         </div>
-        {[
-          { rank: '01', who: 'K_8821 VS GRIMREEF',   what: 'CARD · 250 ROOM', val: '5.420' },
-          { rank: '02', who: 'SANDMAN VS REEF',        what: 'CYCLE · 500 ROOM', val: '4.500' },
-          { rank: '03', who: 'NOVASTRIKE VS ANON#9',  what: 'CARD · 250 ROOM',  val: '4.500' },
-          { rank: '04', who: 'MADS_KBH VS VIPER99',   what: 'DROP · 100 ROOM',  val: '1.800' },
-          { rank: '05', who: 'SIREN VS ISO_9001',      what: 'CARD · 50 ROOM',   val: '900'   },
-        ].map(r => (
+        {board.biggestPots.map(e => ({ rank: e.rank, who: e.who.toUpperCase(), what: e.what, val: e.value })).map(r => (
           <div key={r.rank} style={{
             display: 'grid', gridTemplateColumns: '32px 1fr auto',
             alignItems: 'baseline', gap: 16,

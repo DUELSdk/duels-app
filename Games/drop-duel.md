@@ -23,7 +23,7 @@ Standard Connect Four on a 6×7 board, but before play begins both players secre
 | Simultaneous decisions | ✅ both block placements committed before either is revealed; per-move play has per-move time limit |
 | RNG | none — all placements are player choices |
 | Skill basis | spatial reasoning / Connect Four strategy / opponent-reading (block placement) |
-| Tiebreaker | board fills with no winner → split pot |
+| Tiebreaker | board fills → overflow column unlocks → threat score → full refund (true tie) |
 
 ---
 
@@ -31,13 +31,16 @@ Standard Connect Four on a 6×7 board, but before play begins both players secre
 
 1. **Phase 1 — Block placement (15 seconds):** Both players secretly and simultaneously choose one cell to block. Blocks reveal together when time expires.
 2. **Phase 2 — Play:** Standard Connect Four on the modified 6×7 board. Players alternate dropping pieces. Per-move time limit enforced — if time expires, system auto-places in first available column from right to left.
-3. First to connect four wins. Board fills with no winner → split pot.
+3. First to connect four wins.
+4. **Overflow:** If main board fills with no winner, a locked 8th column (6 rows) unlocks. Play continues in column 8 only. First to connect four using column 8 pieces wins.
+5. **Threat score:** If overflow column also fills with no winner (extremely rare), count each player's longest unbroken chain. Longest wins. Still tied: player with most chains of length 3+ wins.
+6. **True tie** (all above exhausted): full refund to both players. No rake taken.
 
 ---
 
 ## Scoring
 
-Win = match over. No point accumulation. Draw (full board, no four-in-a-row) = split pot, no rake.
+Win = match over. No point accumulation. Draw resolution: overflow column → threat score → full refund (true tie). Platform never takes rake on a refund.
 
 ---
 

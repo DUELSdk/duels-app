@@ -3,8 +3,11 @@
 @DESIGN.md
 @GAMES.md
 @IDEAS.md
+@COMPONENTS.md
 
-Platform name: **DUEL**. Skill-gaming platform. Players duel 1v1 for real money. Zero casino license required — all games are 100% skill-based under Danish law (Spilleloven). See DESIGN.md for full direction.
+Platform name: **DUELS**. Skill-gaming platform. Players duel 1v1 for real money. Zero casino license required — all games are 100% skill-based under Danish law (Spilleloven).
+
+**Source of truth for any page build:** `/website/designs/[page].html` → `globals.css` tokens → `DESIGN.md`. Never build from DESIGN.md alone if a prototype file exists. Read the prototype first.
 
 Solo build. Stack: Next.js + Supabase + Tailwind + TypeScript. Hosted on Vercel.
 
@@ -68,7 +71,7 @@ Two-phase Connect Four.
 - Block rules: not bottom row, not top row, solid block, pieces stack on top
 - Phase 2: standard Connect Four on modified 6×7 board
 - Per-move time limit — auto-place in first available column right-to-left if expired
-- Draw (board fills) = split pot
+- Draw resolution: overflow column (8th) unlocks → threat score → true tie = full refund, no rake
 
 ---
 

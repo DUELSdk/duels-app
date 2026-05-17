@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DUEL — Card Duel Flow</title>
+<link rel="stylesheet" href="hifi/tokens.css" />
+<style>
+  html, body, #root { height: 100%; }
+  body { background: #0a0a0a; color: var(--bone-on-dark); font-family: var(--font-body); }
+
+  /* Stage layout — left rail + viewport */
+  .stage { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  .rail {
+    background: #0a0a0a; color: var(--bone-on-dark);
+    border-right: 1px solid rgba(240,237,228,0.10);
+    padding: 24px 0;
+    overflow-y: auto;
+  }
+  .rail h1 { font-family: var(--font-display); font-weight: 800; font-size: 28px; letter-spacing: -0.02em; padding: 0 20px 4px; }
+  .rail .sub { font-family: var(--font-mono); font-size: 10px; color: var(--bone-faint); padding: 0 20px 20px; letter-spacing: 0.10em; }
+  .rail .group { font-family: var(--font-mono); font-size: 10px; color: var(--bone-ghost); padding: 14px 20px 6px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .step { display: flex; align-items: baseline; gap: 10px; padding: 9px 20px; cursor: pointer; border-left: 2px solid transparent; }
+  .step:hover { background: rgba(240,237,228,0.04); }
+  .step.on { border-left-color: var(--alarm); background: rgba(239,0,0,0.06); }
+  .step .num { font-family: var(--font-mono); font-size: 10px; color: var(--bone-ghost); width: 22px; }
+  .step.on .num { color: var(--alarm); font-weight: 700; }
+  .step .name { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--bone-on-dark); }
+  .step.on .name { color: #fff; }
+  .step .tag { font-family: var(--font-mono); font-size: 8px; color: var(--bone-faint); margin-left: auto; letter-spacing: 0.10em; }
+
+  .viewport { display: flex; flex-direction: column; min-width: 0; }
+  .toolbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 24px; border-bottom: 1px solid rgba(240,237,228,0.10);
+    background: #0a0a0a;
+  }
+  .toolbar .crumb { font-family: var(--font-mono); font-size: 11px; color: var(--bone-faint); letter-spacing: 0.10em; }
+  .toolbar .crumb b { color: #fff; font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid rgba(240,237,228,0.16); }
+  .seg button {
+    padding: 6px 14px; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.10em; color: var(--bone-faint); background: transparent; border: 0; cursor: pointer;
+  }
+  .seg button.on { background: var(--bone-on-dark); color: #0a0a0a; }
+
+  .stagewrap {
+    flex: 1; min-height: 0; padding: 32px; overflow: auto;
+    background: radial-gradient(ellipse at center, #131311 0%, #0a0a0a 80%);
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+  .frame {
+    background: var(--bone); color: var(--ink);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(240,237,228,0.06);
+  }
+  .frame.bunker { background: var(--concrete); color: var(--bone-on-dark); }
+
+  .navbtn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid rgba(240,237,228,0.16);
+    background: transparent; color: var(--bone-on-dark);
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.10em; font-weight: 600;
+    cursor: pointer;
+  }
+  .navbtn:hover { border-color: var(--alarm); color: #fff; }
+  .navbtn[disabled] { opacity: 0.3; cursor: default; }
+
+  .footer-meta { font-family: var(--font-mono); font-size: 10px; color: var(--bone-ghost); letter-spacing: 0.10em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="hifi/primitives.jsx"></script>
+<script type="text/babel" src="hifi/screen-landing.jsx"></script>
+<script type="text/babel" src="hifi/screen-mid.jsx"></script>
+<script type="text/babel" src="hifi/screen-tournaments.jsx"></script>
+<script type="text/babel" src="hifi/screen-card-flow.jsx"></script>
+<script type="text/babel" src="hifi/screen-lock-combo.jsx"></script>
+<script type="text/babel" src="hifi/screen-leaderboard.jsx"></script>
+<script type="text/babel" src="hifi/screen-forfeit.jsx"></script>
+<script type="text/babel" src="hifi/screen-platform.jsx"></script>
+<script type="text/babel" src="hifi/screen-cycle.jsx"></script>
+<script type="text/babel" src="hifi/screen-drop.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+
+/* The flow — ordered, focused on Card Duel only.
+ * Each step has a desktop + mobile component, and an optional variants list.
+ */
+const FLOW = [
+  { group: 'PLATFORM',   id: 'auth',         name: 'Sign in · MitID',     tag: 'auth',   D: AuthDesktop,               M: AuthMobile },
+  { group: 'PLATFORM',   id: 'profile',      name: 'Profile',             tag: 'hi-fi',  D: ProfileDesktop,            M: ProfileMobile,            tall: true,  dH: 1700, mH: 1400 },
+  { group: 'PLATFORM',   id: 'wallet',       name: 'Wallet',              tag: 'hi-fi',  D: WalletDesktop,             M: WalletMobile,             tall: true,  dH: 1500, mH: 1300 },
+
+  { group: 'BROADCAST',  id: 'landing',      name: 'Landing',             tag: 'hi-fi',  D: LandingDesktop,            M: LandingMobile,            tall: true,  dH: 2400, mH: 1400 },
+  { group: 'BROADCAST',  id: 'library',      name: 'Library · 3 games',   tag: 'mid-fi', D: LibraryDesktop,            M: LibraryMobile },
+  { group: 'BROADCAST',  id: 'leaderboard',  name: 'Leaderboard',         tag: 'live',   D: LeaderboardDesktop,        M: LeaderboardMobile,        tall: true,  dH: 1800, mH: 1400 },
+  { group: 'BROADCAST',  id: 'tourneys',     name: 'Tournaments',         tag: 'hi-fi',  D: TournamentsDesktop,        M: TournamentsMobile,        tall: true,  dH: 2600, mH: 1600 },
+  { group: 'BROADCAST',  id: 'tdetail',      name: 'Tournament detail',   tag: 'hi-fi',  D: TournamentDetailDesktop,   M: TournamentDetailMobile,   tall: true,  dH: 2000, mH: 1400 },
+
+  { group: 'CARD DUEL',  id: 'detail',       name: 'Card Duel page',      tag: 'mid-fi', D: DetailDesktop,             M: DetailMobile,             tall: true,  dH: 1100, mH: 1000 },
+  { group: 'CARD DUEL',  id: 'lobby',        name: 'Lobby',               tag: 'mid-fi', D: LobbyDesktop,              M: LobbyMobile,              tall: true,  dH: 1100, mH: 1000 },
+  { group: 'CARD DUEL',  id: 'finding',      name: 'Finding opponent',    tag: 'live',   D: FindingDesktop,            M: FindingMobile },
+  { group: 'CARD DUEL',  id: 'paired',       name: 'Loading · Paired',    tag: 'loading',D: PairedDesktop,             M: PairedMobile },
+  { group: 'CARD DUEL',  id: 'lock',         name: 'Lock 9',              tag: 'combo',  D: LockComboDesktop,          M: LockComboMobile },
+  { group: 'CARD DUEL',  id: 'reveal',       name: 'Reveal',              tag: 'jumbo',  D: RevealJumboDesktop,        M: RevealJumboMobile },
+  { group: 'CARD DUEL',  id: 'sd',           name: 'Sudden death',        tag: '',       D: SuddenDeathDesktop,        M: SuddenDeathMobile },
+  { group: 'CARD DUEL',  id: 'win',          name: 'Win · Stadium',       tag: '★',      D: WinStadiumDesktop,         M: WinStadiumMobile,         tall: true,  dH: 2100, mH: 1200 },
+  { group: 'CARD DUEL',  id: 'loss',         name: 'Loss',                tag: '',       D: LossDesktop,               M: LossMobile },
+  { group: 'CARD DUEL',  id: 'forfeit',      name: 'Forfeit',             tag: 'abort',  D: ForfeitDesktop,            M: ForfeitMobile,            tall: true,  dH: 1600, mH: 1300 },
+
+  { group: 'CYCLEDUEL',  id: 'c-detail',     name: 'CycleDuel page',      tag: 'hi-fi',  D: CycleDetailDesktop,        M: CycleDetailMobile,        tall: true,  dH: 1500, mH: 1300 },
+  { group: 'CYCLEDUEL',  id: 'c-lock',       name: 'Peek + Lock',         tag: 'combo',  D: CyclePeekLockDesktop,      M: CyclePeekLockMobile,      tall: true,  dH: 1200, mH: 1100 },
+  { group: 'CYCLEDUEL',  id: 'c-reveal',     name: 'Reveal',              tag: 'jumbo',  D: CycleRevealDesktop,        M: CycleRevealMobile },
+  { group: 'CYCLEDUEL',  id: 'c-sd',         name: 'Sudden death',        tag: '',       D: CycleSuddenDesktop,        M: CycleSuddenMobile },
+  { group: 'CYCLEDUEL',  id: 'c-win',        name: 'Win · Stadium',       tag: '★',      D: WinStadiumDesktop,         M: WinStadiumMobile,         tall: true,  dH: 2100, mH: 1200 },
+  { group: 'CYCLEDUEL',  id: 'c-loss',       name: 'Loss',                tag: '',       D: LossDesktop,               M: LossMobile },
+  { group: 'CYCLEDUEL',  id: 'c-forfeit',    name: 'Forfeit',             tag: 'abort',  D: ForfeitDesktop,            M: ForfeitMobile,            tall: true,  dH: 1600, mH: 1300 },
+
+  { group: 'DROPDUEL',   id: 'd-detail',     name: 'DropDuel page',       tag: 'hi-fi',  D: DropDetailDesktop,         M: DropDetailMobile,         tall: true,  dH: 1500, mH: 1400 },
+  { group: 'DROPDUEL',   id: 'd-place',      name: 'Block placement',     tag: 'combo',  D: DropPlacementDesktop,      M: DropPlacementMobile,      tall: true,  dH: 1100, mH: 1100 },
+  { group: 'DROPDUEL',   id: 'd-play',       name: 'Play · Connect 4',    tag: 'live',   D: DropPlayDesktop,           M: DropPlayMobile,           tall: true,  dH: 1200, mH: 1200 },
+  { group: 'DROPDUEL',   id: 'd-win',        name: 'Win · Stadium',       tag: '★',      D: WinStadiumDesktop,         M: WinStadiumMobile,         tall: true,  dH: 2100, mH: 1200 },
+  { group: 'DROPDUEL',   id: 'd-loss',       name: 'Loss',                tag: '',       D: LossDesktop,               M: LossMobile },
+  { group: 'DROPDUEL',   id: 'd-forfeit',    name: 'Forfeit',             tag: 'abort',  D: ForfeitDesktop,            M: ForfeitMobile,            tall: true,  dH: 1600, mH: 1300 },
+];
+
+const DESKTOP_W = 1440;
+const DESKTOP_H = 900;
+const MOBILE_W = 390;
+const MOBILE_H = 844;
+
+const App = () => {
+  const [stepIx, setStepIx] = React.useState(0);
+  const [device, setDevice] = React.useState('desktop');
+
+  const step = FLOW[stepIx];
+  const Comp = device === 'desktop' ? step.D : step.M;
+
+  const wrapRef = React.useRef(null);
+  const [scale, setScale] = React.useState(1);
+  const baseW = device === 'desktop' ? DESKTOP_W : MOBILE_W;
+  const baseH = device === 'desktop'
+    ? (step.dH || (step.tall ? 1900 : DESKTOP_H))
+    : (step.mH || MOBILE_H);
+
+  React.useEffect(() => {
+    const update = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const padding = 64;
+      const availW = el.clientWidth - padding;
+      const availH = el.clientHeight - padding;
+      const sx = availW / baseW;
+      const sy = availH / baseH;
+      setScale(Math.min(sx, sy, 1));
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [baseW, baseH]);
+
+  // Keyboard nav
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') setStepIx(i => Math.min(FLOW.length - 1, i + 1));
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')   setStepIx(i => Math.max(0, i - 1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Group rail items
+  const groups = [];
+  FLOW.forEach((s, i) => {
+    let g = groups.find(x => x.name === s.group);
+    if (!g) { g = { name: s.group, items: [] }; groups.push(g); }
+    g.items.push({ ...s, ix: i });
+  });
+
+  return (
+    <div className="stage">
+      <aside className="rail">
+        <h1>DUEL</h1>
+        <div className="sub">CARD DUEL · FOCUS FLOW</div>
+        {groups.map(g => (
+          <div key={g.name}>
+            <div className="group">{g.name}</div>
+            {g.items.map(it => (
+              <div key={it.id} className={`step ${it.ix === stepIx ? 'on' : ''}`} onClick={() => setStepIx(it.ix)}>
+                <span className="num">{String(it.ix + 1).padStart(2, '0')}</span>
+                <span className="name">{it.name}</span>
+                {it.tag && <span className="tag">{it.tag}</span>}
+              </div>
+            ))}
+          </div>
+        ))}
+        <div style={{ padding: '20px', marginTop: 16, borderTop: '1px solid rgba(240,237,228,0.10)' }}>
+          <div className="footer-meta">← → arrow keys to step</div>
+        </div>
+      </aside>
+
+      <main className="viewport">
+        <div className="toolbar">
+          <button className="navbtn" disabled={stepIx === 0} onClick={() => setStepIx(i => Math.max(0, i - 1))}>← PREV</button>
+          <button className="navbtn" disabled={stepIx === FLOW.length - 1} onClick={() => setStepIx(i => Math.min(FLOW.length - 1, i + 1))}>NEXT →</button>
+          <span className="crumb">{step.group} / <b>{step.name.toUpperCase()}</b> {step.tag && <span style={{ opacity: 0.5 }}>· {step.tag}</span>}</span>
+          <span style={{ flex: 1 }} />
+          <span className="footer-meta">{String(stepIx + 1).padStart(2,'0')} / {FLOW.length}</span>
+          <div className="seg">
+            <button className={device === 'desktop' ? 'on' : ''} onClick={() => setDevice('desktop')}>DESKTOP</button>
+            <button className={device === 'mobile' ? 'on' : ''} onClick={() => setDevice('mobile')}>MOBILE</button>
+          </div>
+        </div>
+
+        <div className="stagewrap" ref={wrapRef}>
+          <div style={{
+            width: baseW * scale,
+            height: baseH * scale,
+            flexShrink: 0,
+          }}>
+            <div className="frame" style={{
+              width: baseW, height: baseH,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              overflow: 'hidden',
+            }}>
+              <Comp />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

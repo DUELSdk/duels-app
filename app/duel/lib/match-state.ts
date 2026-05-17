@@ -9,6 +9,7 @@ export type MatchResult = {
   outcome: 'win' | 'loss' | 'draw'
   myScore: number
   oppScore: number
+  opponent?: string     // opponent handle — always set in production, defaults to 'BOT' in mock
   mySeq?: string[]      // Card Duel: 9-card sequence | CycleDuel: 9-round moves (flat)
   oppSeq?: string[]     // Card Duel: bot's 9-card sequence | CycleDuel: bot's 9-round moves (flat)
   myMoves?: string[][]  // CycleDuel: per-block arrays [[b1r1,b1r2,b1r3],[b2...],[b3...]]

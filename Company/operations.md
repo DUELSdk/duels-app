@@ -12,8 +12,8 @@ updated: 2026-05-02
 
 | Komponent | Valg | Status |
 |-----------|------|--------|
-| Frontend hosting | Vercel | Ikke deployet |
-| Domain | TBD (duel*.dk) | Ikke købt |
+| Frontend hosting | Vercel | Live — duels.dk deployet via GitHub auto-deploy |
+| Domain | duels.dk | Købt — hostet via Dandomain |
 | Game server (server-side rendering) | TBD | Ikke valgt |
 | Database | TBD | Ikke valgt |
 
@@ -44,8 +44,8 @@ Detaljer TBD ved build-time.
 
 ## Åbne operations-punkter
 
-- [ ] Domain købt
-- [ ] Hosting-setup (Vercel + game server)
+- [x] Domain købt — duels.dk via Dandomain
+- [x] Hosting-setup — Vercel live, GitHub auto-deploy pipeline aktiv
 - [ ] Database valgt og opsat
 - [ ] Support-kanal oprettet
 - [ ] Dispute-procedure dokumenteret

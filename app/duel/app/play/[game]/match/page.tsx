@@ -62,7 +62,6 @@ function cardOutcome(me: Move, opp: Move): 'win' | 'loss' | 'tie' {
   return 'loss'
 }
 
-// Card component matching design's sealed envelope style
 function CDCard({ c, size = 56, sealed, win, loss, faceDown, ghost, glow }: {
   c?: string; size?: number; sealed?: boolean; win?: boolean; loss?: boolean; faceDown?: boolean; ghost?: boolean; glow?: boolean;
 }) {
@@ -80,7 +79,7 @@ function CDCard({ c, size = 56, sealed, win, loss, faceDown, ghost, glow }: {
       fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: size * 0.6,
       letterSpacing: '-0.04em', position: 'relative', flexShrink: 0,
       boxShadow: glow ? `0 0 0 1px var(--alarm), 0 0 24px rgba(239,0,0,0.35)` : 'none',
-      transition: 'background 0.2s',
+      transition: 'background 0.15s',
     }}>
       {sealed && (
         <>
@@ -102,27 +101,32 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const searchParams = useSearchParams()
   const tier = parseKr(searchParams.get('kr'))
 
-  // Fixed bot sequence for demo — real game logic is server-side
   const [botSeq] = useState<Move[]>(['P', 'R', 'S', 'R', 'P', 'S', 'S', 'R', 'P'] as Move[])
-
-  const [mySeq,     setMySeq]   = useState<(Move | null)[]>(Array(9).fill(null))
-  const [myHand,    setMyHand]  = useState<Record<Move, number>>({ R: 3, P: 3, S: 3 })
-  const [selCard,   setSelCard] = useState<Move | null>(null)
-  const [botCount,  setBotCount]  = useState(0)
-  const [timeLeft,  setTimeLeft]  = useState(60)
-  const [myLocked,  setMyLocked]  = useState(false)
+  const [mySlots, setMySlots] = useState<(Move | null)[]>(Array(9).fill(null))
+  const [selCard,  setSelCard]  = useState<Move | null>(null)
+  const mySlotsRef = useRef<(Move | null)[]>(Array(9).fill(null))
+  const [botCount, setBotCount] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(60)
+  const [myLocked, setMyLocked] = useState(false)
 
   const [phase,     setPhase]     = useState<CardPhase>('arrange')
   const [revealIdx, setRevealIdx] = useState(-1)
   const [score,     setScore]     = useState({ me: 0, opp: 0 })
 
-  const [sdPick,    setSdPick]    = useState<Move | null>(null)
-  const [sdBot,     setSdBot]     = useState<Move | null>(null)
-  const [sdBusy,    setSdBusy]    = useState(false)
-  const [sdRound,   setSdRound]   = useState(0)
+  const [sdPick, setSdPick] = useState<Move | null>(null)
+  const [sdBot,  setSdBot]  = useState<Move | null>(null)
+  const [sdBusy, setSdBusy] = useState(false)
+  const [sdRound,setSdRound]= useState(0)
 
-  const placed    = mySeq.filter(m => m !== null).length
-  const allPlaced = placed === 9
+  const myHand = (() => {
+    const h: Record<Move, number> = { R: 3, P: 3, S: 3 }
+    for (const c of mySlots) { if (c) h[c]-- }
+    return h
+  })()
+  const slotsUsed = mySlots.filter(Boolean).length
+  const allFilled = slotsUsed === 9
+
+  useEffect(() => { mySlotsRef.current = mySlots }, [mySlots])
 
   useEffect(() => {
     if (phase !== 'arrange' || myLocked || botCount >= 9) return
@@ -138,18 +142,20 @@ function CardDuelMatch({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (timeLeft > 0 || phase !== 'arrange' || myLocked) return
-    const filled = [...mySeq] as (Move | null)[]
-    const h = { ...myHand }
-    for (let i = 0; i < 9; i++) {
-      if (filled[i] === null) {
-        const card = (['R', 'P', 'S'] as Move[]).find(m => h[m] > 0)
-        if (card) { filled[i] = card; h[card]-- }
-      }
+    // auto-fill any empty slots before locking
+    const cur = mySlotsRef.current
+    const h: Record<Move, number> = { R: 3, P: 3, S: 3 }
+    for (const c of cur) { if (c) h[c as Move]-- }
+    const rem: Move[] = []
+    for (const [card, cnt] of Object.entries(h)) {
+      for (let i = 0; i < (cnt as number); i++) rem.push(card as Move)
     }
-    setMySeq(filled)
-    setMyHand(h)
+    const filled = shuffleArray(rem)
+    const next = [...cur]; let ri = 0
+    for (let i = 0; i < 9; i++) { if (!next[i]) next[i] = filled[ri++] }
+    setMySlots(next)
     setMyLocked(true)
-  }, [timeLeft, phase, myLocked, mySeq, myHand])
+  }, [timeLeft, phase, myLocked])
 
   useEffect(() => {
     if (!myLocked || phase !== 'arrange') return
@@ -162,21 +168,22 @@ function CardDuelMatch({ slug }: { slug: string }) {
     if (phase !== 'reveal' || revealIdx < 0 || revealIdx >= 9) return
     const isDecidingSlot = revealIdx === 8 && score.me === score.opp
     const id = setTimeout(() => {
-      const myMove  = mySeq[revealIdx] as Move
+      const slots = mySlotsRef.current
+      const myMove  = slots[revealIdx] as Move
       const oppMove = botSeq[revealIdx]
       const result  = cardOutcome(myMove, oppMove)
       setScore(s => ({ me: s.me + (result === 'win' ? 1 : 0), opp: s.opp + (result === 'loss' ? 1 : 0) }))
       if (revealIdx === 8) {
         let fm = 0, fo = 0
         for (let i = 0; i < 9; i++) {
-          const r = cardOutcome(mySeq[i] as Move, botSeq[i])
+          const r = cardOutcome(slots[i] as Move, botSeq[i])
           if (r === 'win') fm++; else if (r === 'loss') fo++
         }
         setTimeout(() => {
           if (fm === fo) {
             setPhase('sudden')
           } else {
-            saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: fm > fo ? 'win' : 'loss', myScore: fm, oppScore: fo, mySeq: mySeq as Move[], oppSeq: botSeq })
+            saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: fm > fo ? 'win' : 'loss', myScore: fm, oppScore: fo, mySeq: slots as Move[], oppSeq: botSeq })
             setPhase('done')
             setTimeout(() => router.push(`/play/${slug}/result`), 1200)
           }
@@ -186,28 +193,27 @@ function CardDuelMatch({ slug }: { slug: string }) {
       }
     }, isDecidingSlot ? 3400 : 2800)
     return () => clearTimeout(id)
-  }, [phase, revealIdx, score, mySeq, botSeq, slug, tier, router])
+  }, [phase, revealIdx, score, botSeq, slug, tier, router])
 
-  function placeCard(slotIdx: number) {
-    if (phase !== 'arrange' || myLocked) return
-    const existing = mySeq[slotIdx]
-    const next = [...mySeq] as (Move | null)[]
-    if (!selCard) {
-      if (!existing) return
-      next[slotIdx] = null
-      setMySeq(next)
-      setMyHand(h => ({ ...h, [existing]: h[existing] + 1 }))
-      return
-    }
-    next[slotIdx] = selCard
-    setMySeq(next)
-    setMyHand(h => {
-      const updated = { ...h, [selCard]: h[selCard] - 1 }
-      if (existing) updated[existing] = updated[existing] + 1
-      return updated
-    })
-    if (myHand[selCard] - (existing ? 0 : 1) <= 0) setSelCard(null)
+  function handleHandTap(card: Move) {
+    if (myLocked || myHand[card] <= 0) return
+    setSelCard(prev => prev === card ? null : card)
   }
+
+  function handleSlotTap(i: number) {
+    if (myLocked) return
+    const current = mySlots[i]
+    if (current !== null) {
+      const next = [...mySlots]; next[i] = null; setMySlots(next)
+      setSelCard(current); return
+    }
+    if (selCard !== null && myHand[selCard] > 0) {
+      const next = [...mySlots]; next[i] = selCard; setMySlots(next)
+      if (myHand[selCard] - 1 === 0) setSelCard(null)
+    }
+  }
+
+  function handleReset() { setMySlots(Array(9).fill(null)); setSelCard(null) }
 
   function handleSuddenPick(card: Move) {
     if (sdBusy || sdPick) return
@@ -220,10 +226,11 @@ function CardDuelMatch({ slug }: { slug: string }) {
       if (result === 'tie') {
         setSdRound(r => r + 1); setSdPick(null); setSdBot(null); setSdBusy(false)
       } else {
+        const slots = mySlotsRef.current
         let fm = 0, fo = 0
-        for (let i = 0; i < 9; i++) { const r = cardOutcome(mySeq[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
+        for (let i = 0; i < 9; i++) { const r = cardOutcome(slots[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
         if (result === 'win') fm++; else fo++
-        saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: result, myScore: fm, oppScore: fo, mySeq: mySeq as Move[], oppSeq: botSeq })
+        saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: result, myScore: fm, oppScore: fo, mySeq: slots as Move[], oppSeq: botSeq })
         setPhase('done')
         setTimeout(() => router.push(`/play/${slug}/result`), 1200)
       }
@@ -235,9 +242,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const timerStr = `${mins}:${secs.toString().padStart(2, '0')}`
 
   const phaseLabel =
-    phase === 'arrange' && !myLocked ? 'LOCK PHASE · 9 ENVELOPES'
-    : phase === 'arrange' ? 'SEQUENCE LOCKED'
-    : phase === 'reveal'  ? `REVEAL · SLOT ${revealIdx + 1} INCOMING`
+    phase === 'arrange' && !myLocked ? 'PLACING'
+    : phase === 'arrange' ? 'WAITING'
+    : phase === 'reveal'  ? `REVEAL · SLOT ${revealIdx + 1}`
     : phase === 'sudden'  ? 'SUDDEN DEATH'
     : 'MATCH COMPLETE'
 
@@ -248,270 +255,294 @@ function CardDuelMatch({ slug }: { slug: string }) {
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       style={{ background: 'var(--concrete)', color: 'var(--bone-on-dark)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
     >
-      <BunkerTop phase={phaseLabel} pot={tier.winnerGets} game="CARD DUEL" />
-
-      {/* ARRANGE PHASE */}
-      {phase === 'arrange' && (
-        <div style={{ padding: '40px 56px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.08em' }}>
-                {myLocked ? 'SEQUENCE LOCKED · AWAITING REVEAL' : 'YOUR SEQUENCE · BLIND'}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 88, marginTop: 6, lineHeight: 0.9 }}>
-                {myLocked ? 'WAITING.' : 'LOCK 9.'}
-              </div>
-              {!myLocked && (
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-faint)', marginTop: 10, maxWidth: 480 }}>
-                  Drop a move into each envelope. Once sealed, neither you nor your opponent can see it.
-                </div>
-              )}
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>
-                {myLocked ? 'BOT' : 'TIME REMAINING'}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 96, lineHeight: 0.9, color: !myLocked && timeLeft <= 10 ? 'var(--alarm)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums' }}>
-                {myLocked ? '—:—' : timerStr}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', marginTop: 4 }}>
-                BOT · {myLocked ? 9 : botCount}/9 SEALED
-              </div>
-            </div>
-          </div>
-
-          {/* 9 envelopes */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 48, justifyContent: 'space-between' }}>
-            {mySeq.map((move, i) => {
-              const isSealed = myLocked || move !== null
-              const nextEmpty = mySeq.findIndex(m => m === null)
-              const isNext = !myLocked && !isSealed && selCard !== null && i === nextEmpty
-              return (
-                <div key={i} onClick={() => placeCard(i)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: !myLocked && (selCard || move) ? 'pointer' : 'default' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: isSealed ? 'var(--bone-faint)' : isNext ? 'var(--alarm)' : 'rgba(240,237,228,0.3)', letterSpacing: '0.12em' }}>
-                    {String(i + 1).padStart(2, '0')}
-                  </div>
-                  <div style={{
-                    width: '100%', aspectRatio: '0.72',
-                    background: isSealed ? 'var(--concrete-3)' : 'var(--concrete-2)',
-                    border: `1.5px solid ${isSealed ? 'rgba(240,237,228,0.14)' : isNext ? 'var(--alarm)' : 'rgba(240,237,228,0.24)'}`,
-                    boxShadow: isNext ? '0 0 0 1px var(--alarm), 0 0 24px rgba(239,0,0,0.25)' : 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative',
-                  }}>
-                    {isSealed && (
-                      <>
-                        <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5 }}>
-                          <line x1="0" y1="0" x2="100" y2="50" stroke="rgba(240,237,228,0.06)" strokeWidth="0.5"/>
-                          <line x1="100" y1="0" x2="0" y2="50" stroke="rgba(240,237,228,0.06)" strokeWidth="0.5"/>
-                        </svg>
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--alarm)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, zIndex: 1 }}>✕</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontSize: 8, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>SEALED</div>
-                      </>
-                    )}
-                    {!isSealed && isNext && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.10em', color: 'var(--alarm)', textAlign: 'center', padding: 8 }}>DROP<br/>HERE</div>
-                    )}
-                    {!isSealed && !isNext && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>—</div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Hand */}
-          {!myLocked && (
-            <div style={{ marginTop: 40, paddingTop: 24, borderTop: div }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>
-                  YOUR HAND · {selCard ? `TAP A SLOT ABOVE TO PLACE ${selCard}` : 'SELECT A CARD'}
-                </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)' }}>3R · 3P · 3S — ALWAYS</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 48 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                  {(['R', 'P', 'S'] as Move[]).map(card => {
-                    if (myHand[card] === 0) return null
-                    const isSel = selCard === card
-                    return (
-                      <button key={card} onClick={() => setSelCard(isSel ? null : card)}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, padding: 0 }}>
-                        <CDCard c={card} size={84} glow={isSel} />
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--bone-faint)' }}>×{myHand[card]}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-                <div style={{ width: 1, height: 80, background: 'rgba(240,237,228,0.14)', marginLeft: 24 }} />
-                <button onClick={() => setMyLocked(true)} disabled={!allPlaced}
-                  style={{ height: 84, padding: '0 36px', background: allPlaced ? 'var(--alarm)' : 'transparent', color: allPlaced ? '#fff' : 'var(--bone-ghost)', border: allPlaced ? 'none' : `1.5px solid rgba(240,237,228,0.08)`, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: allPlaced ? 'pointer' : 'not-allowed', transition: 'all 0.1s' }}>
-                  {allPlaced ? 'SEAL ALL 9 →' : `PLACE ${9 - placed} MORE`}
-                </button>
-              </div>
-            </div>
-          )}
+      {/* Match nav */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '14px 28px', borderBottom: div, background: 'var(--concrete-2)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)', letterSpacing: '0.08em' }}>
+          CARD DUEL · <span style={{ fontVariantNumeric: 'tabular-nums' }}>STAKE {tier.stakeKr} KR</span>
         </div>
-      )}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--alarm)', letterSpacing: '0.16em' }}>● {phaseLabel}</div>
+        <div style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums' }}>
+          POT {tier.winnerGets} KR
+        </div>
+      </div>
 
-      {/* REVEAL PHASE */}
-      {phase === 'reveal' && (
+      {/* STATE A — PLACING */}
+      {phase === 'arrange' && !myLocked && (
         <>
-          {/* Scoreboard */}
-          <div style={{ padding: '40px 64px', borderBottom: div }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.16em' }}>SCOREBOARD · LIVE</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', letterSpacing: '0.14em' }}>● {revealIdx} / 9 RESOLVED</div>
+          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-ghost)' }}>opponent </span>
+              <strong style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-on-dark)' }}>LASERHAWK</strong>
+              {' '}<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>1240</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-faint)' }}>YOU · NOVASTRIKE</div>
-                <motion.div key={`me-${score.me}`} animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 0.3 }}
-                  style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 200, marginTop: -8, lineHeight: 0.85, color: score.me > score.opp ? 'var(--money)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums' }}>
-                  {score.me}
-                </motion.div>
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 32, color: 'var(--bone-ghost)', letterSpacing: '0.2em' }}>—</div>
-              <div style={{ flex: 1, textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-faint)' }}>BOT · OPP</div>
-                <motion.div key={`opp-${score.opp}`} animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 0.3 }}
-                  style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 200, marginTop: -8, lineHeight: 0.85, color: score.opp > score.me ? 'var(--alarm)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums' }}>
-                  {score.opp}
-                </motion.div>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>{botCount} / 9 locked</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: timeLeft <= 10 ? 'var(--alarm)' : 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums' }}>{timerStr}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>
-                NEED <span style={{ color: 'var(--money)' }}>{Math.max(0, 5 - score.me)}</span> OF NEXT {9 - revealIdx}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, fontVariantNumeric: 'tabular-nums' }}>
-                POT {tier.winnerGets} KR
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>
-                NEED <span style={{ color: 'var(--alarm)' }}>{Math.max(0, 5 - score.opp)}</span> OF NEXT {9 - revealIdx}
-              </div>
-            </div>
-          </div>
+          </section>
 
-          {/* Slot strip */}
-          <div style={{ padding: '40px 64px', flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 16 }}>
-              SLOT-BY-SLOT · YOUR ROW TOP · RESULT MIDDLE · OPP BOTTOM
-            </div>
-            {/* Your row */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              {mySeq.map((move, i) => {
-                const isPlayed = i < revealIdx
-                const isNext   = i === revealIdx
-                const outcome  = isPlayed ? cardOutcome(move as Move, botSeq[i]) : null
-                return (
-                  <div key={i} style={{ flex: 1 }}>
-                    <CDCard c={move ?? undefined} size={72}
-                      sealed={!isPlayed && !isNext}
-                      faceDown={isNext}
-                      win={isPlayed && outcome === 'win'}
-                      loss={isPlayed && outcome === 'loss'}
-                      glow={isNext}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            {/* Result bar */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              {mySeq.map((move, i) => {
-                const isPlayed = i < revealIdx
-                const isNext   = i === revealIdx
-                const outcome  = isPlayed ? cardOutcome(move as Move, botSeq[i]) : null
-                return (
-                  <div key={i} style={{ flex: 1, height: 14, background: outcome === 'win' ? 'var(--money)' : outcome === 'loss' ? 'var(--alarm)' : outcome === 'tie' ? 'rgba(240,237,228,0.3)' : 'transparent', border: !isPlayed ? `1px ${isNext ? 'solid var(--alarm)' : 'dashed rgba(240,237,228,0.10)'}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {outcome && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.10em' }}>{outcome === 'win' ? '+1 YOU' : outcome === 'loss' ? '+1 OPP' : 'TIE'}</span>}
-                    {isNext && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.12em' }}>NEXT</span>}
-                  </div>
-                )
-              })}
-            </div>
-            {/* Opp row */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              {botSeq.map((move, i) => {
-                const isPlayed = i < revealIdx
-                const isNext   = i === revealIdx
-                const outcome  = isPlayed ? cardOutcome(mySeq[i] as Move, move) : null
-                return (
-                  <div key={i} style={{ flex: 1 }}>
-                    <CDCard c={move} size={72}
-                      sealed={!isPlayed && !isNext}
-                      faceDown={isNext}
-                      win={isPlayed && outcome === 'loss'}
-                      loss={isPlayed && outcome === 'win'}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            {/* Slot labels */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              {mySeq.map((_, i) => (
-                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: i === revealIdx ? 'var(--alarm)' : 'var(--bone-ghost)', letterSpacing: '0.10em' }}>
-                    SLOT {String(i + 1).padStart(2, '0')}
-                  </span>
+          {/* THEIR row */}
+          <section style={{ padding: '14px 32px 10px', borderBottom: divS }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8 }}>THEIR PLAN · SEALED</div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {Array(9).fill(null).map((_, i) => (
+                <div key={i} style={{ flex: 1 }}>
+                  <CDCard size={52} sealed={i < botCount} ghost={i >= botCount} />
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* Round rail */}
+          <div style={{ display: 'flex', gap: 5, padding: '7px 32px' }}>
+            {[1,2,3,4,5,6,7,8,9].map(n => (
+              <div key={n} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>{n}</div>
+            ))}
+          </div>
+
+          {/* YOUR row */}
+          <section style={{ padding: '0 32px 4px', borderTop: divS }}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {mySlots.map((card, i) => (
+                <div key={i} style={{ flex: 1, cursor: 'pointer' }} onClick={() => handleSlotTap(i)}>
+                  <CDCard c={card ?? undefined} size={52} ghost={card === null} />
+                </div>
+              ))}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginTop: 6, textAlign: 'center' }}>YOUR PLAN · LIVE</div>
+          </section>
+
+          {/* Hand separator */}
+          <div style={{ display: 'flex', alignItems: 'center', margin: '8px 32px', gap: 10 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(240,237,228,0.14)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>your hand · tap to place</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(240,237,228,0.14)' }} />
+          </div>
+
+          {/* Hand */}
+          <section style={{ padding: '0 32px', flex: 1 }}>
+            <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+              {(['R', 'S', 'P'] as Move[]).flatMap((card) => {
+                const usedCount = 3 - myHand[card]
+                return Array(3).fill(null).map((_, j) => {
+                  const isUsed = j < usedCount
+                  const isSelected = !isUsed && selCard === card && j === usedCount
+                  return (
+                    <div key={`${card}-${j}`}
+                      style={{ flex: '0 0 auto', opacity: isUsed ? 0.25 : 1, cursor: isUsed ? 'default' : 'pointer' }}
+                      onClick={() => !isUsed && handleHandTap(card)}>
+                      <CDCard c={card} size={52} glow={isSelected} />
+                    </div>
+                  )
+                })
+              })}
+            </div>
+          </section>
+
+          {/* Bottom bar */}
+          <section style={{ padding: '16px 32px 28px', borderTop: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={handleReset} style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-ghost)', cursor: 'pointer', letterSpacing: '0.08em', padding: '8px 0' }}>
+              ← Reset
+            </button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>
+              {slotsUsed} of 9 placed
+            </span>
+            <button onClick={() => allFilled && setMyLocked(true)} disabled={!allFilled}
+              style={{ padding: '14px 28px', background: allFilled ? 'var(--amber)' : 'var(--amber-soft)', color: allFilled ? '#0d0d0d' : 'rgba(245,158,11,0.4)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: allFilled ? 'pointer' : 'not-allowed', transition: 'all 0.12s' }}>
+              Lock in
+            </button>
+          </section>
+        </>
+      )}
+
+      {/* STATE B — WAITING */}
+      {phase === 'arrange' && myLocked && (
+        <>
+          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-ghost)' }}>opponent </span>
+              <strong style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-on-dark)' }}>LASERHAWK</strong>
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>9 / 9 locked</span>
+          </section>
+
+          <section style={{ padding: '14px 32px 10px', borderBottom: divS }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8 }}>THEIR PLAN · SEALED</div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {Array(9).fill(null).map((_, i) => <div key={i} style={{ flex: 1 }}><CDCard size={52} sealed /></div>)}
+            </div>
+          </section>
+
+          <section style={{ padding: '10px 32px', borderTop: divS }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8, textAlign: 'center' }}>YOUR PLAN · LOCKED</div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {mySlots.map((c, i) => <div key={i} style={{ flex: 1 }}><CDCard c={c ?? undefined} size={52} sealed /></div>)}
+            </div>
+          </section>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.18em' }}>● WAITING FOR OPPONENT…</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>~7s avg lock time at this stake</div>
           </div>
         </>
       )}
 
-      {/* SUDDEN DEATH */}
-      {phase === 'sudden' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <section style={{ padding: '40px 56px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
-              ● ONE PICK · NO PEEK{sdRound > 0 ? ` · ROUND ${sdRound + 1}` : ''}
+      {/* STATE C — REVEAL */}
+      {phase === 'reveal' && (
+        <>
+          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--bone-on-dark)' }}>
+              <strong>YOU</strong> {score.me} — {score.opp} LASERHAWK
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 180, marginTop: 6, lineHeight: 0.85, color: 'var(--alarm)' }}>
-              SUDDEN.
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>round {revealIdx + 1} / 9</div>
+          </section>
+
+          <section style={{ padding: '20px 32px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textAlign: 'center', marginBottom: 10 }}>RESOLVING…</div>
+
+            {/* THEIR row */}
+            <div style={{ display: 'flex', gap: 5 }}>
+              {botSeq.map((move, i) => {
+                const isPlayed = i < revealIdx
+                const isNext   = i === revealIdx
+                const outcome  = isPlayed ? cardOutcome(mySlots[i] as Move, move) : null
+                return (
+                  <div key={i} style={{ flex: 1 }}>
+                    <CDCard c={move} size={56} sealed={!isPlayed && !isNext} faceDown={isNext}
+                      win={isPlayed && outcome === 'loss'} loss={isPlayed && outcome === 'win'} />
+                  </div>
+                )
+              })}
             </div>
-            <div style={{ fontSize: 22, color: 'var(--bone-faint)', marginTop: 6 }}>
-              Tied. Pick one card — so do they. Highest beats wins the pot.
+
+            {/* Round rail with ▼ on active slot */}
+            <div style={{ display: 'flex', gap: 5, margin: '10px 0' }}>
+              {[1,2,3,4,5,6,7,8,9].map(n => {
+                const isActive = n === revealIdx + 1
+                return (
+                  <div key={n} style={{ flex: 1, textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: isActive ? 'var(--accent)' : 'var(--bone-ghost)', fontWeight: isActive ? 700 : 400 }}>
+                      {isActive ? '▼' : n}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* YOUR row */}
+            <div style={{ display: 'flex', gap: 5 }}>
+              {mySlots.map((card, i) => {
+                const isPlayed = i < revealIdx
+                const isNext   = i === revealIdx
+                const outcome  = isPlayed ? cardOutcome(card as Move, botSeq[i]) : null
+                return (
+                  <div key={i} style={{ flex: 1 }}>
+                    <CDCard c={card ?? undefined} size={56} sealed={!isPlayed && !isNext} faceDown={isNext}
+                      win={isPlayed && outcome === 'win'} loss={isPlayed && outcome === 'loss'} glow={isNext} />
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Scoreboard */}
+            <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: div }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textAlign: 'center', marginBottom: 8 }}>SCOREBOARD</div>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 28 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>YOU</div>
+                  <motion.div key={`me-${score.me}`} animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 0.25 }}
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 88, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.88 }}>
+                    {score.me}
+                  </motion.div>
+                </div>
+                <div style={{ width: 2, height: 56, background: 'rgba(240,237,228,0.2)', flexShrink: 0 }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>THEM</div>
+                  <motion.div key={`opp-${score.opp}`} animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 0.25 }}
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 88, color: 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.88 }}>
+                    {score.opp}
+                  </motion.div>
+                </div>
+              </div>
             </div>
           </section>
-          <section style={{ flex: 1, background: 'var(--concrete-2)', borderTop: div, borderBottom: div, padding: '32px 56px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>PICK ONE</div>
-            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end' }}>
-              {(['R', 'P', 'S'] as Move[]).map(card => (
-                <div key={card} style={{ textAlign: 'center' }}>
-                  <button onClick={() => handleSuddenPick(card)} disabled={sdBusy || !!sdPick}
-                    style={{ background: 'transparent', border: 'none', cursor: sdBusy || !!sdPick ? 'not-allowed' : 'pointer', padding: 0 }}>
-                    <CDCard c={card} size={96} glow={sdPick === card} win={sdPick === card && !!sdBot && cardOutcome(card, sdBot!) === 'win'} />
-                  </button>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: sdPick === card ? 'var(--alarm)' : 'var(--bone-ghost)', marginTop: 8, letterSpacing: '0.10em', fontWeight: sdPick === card ? 700 : 400 }}>
-                    {sdPick === card ? '● PICKED' : 'TAP'}
-                  </div>
-                </div>
-              ))}
-              {sdBot && (
-                <div style={{ marginLeft: 48, textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginBottom: 8 }}>BOT</div>
-                  <CDCard c={sdBot} size={96} loss />
-                </div>
-              )}
+        </>
+      )}
+
+      {/* STATE E — SUDDEN DEATH */}
+      {phase === 'sudden' && (
+        <>
+          <section style={{ padding: '16px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>
+              {score.me}–{score.opp} · ONE SLOT DECIDES
+            </span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, fontVariantNumeric: 'tabular-nums' }}>POT {tier.winnerGets} KR</span>
+          </section>
+
+          <section style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 40px', gap: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.20em' }}>
+              ● TIE · SUDDEN DEATH{sdRound > 0 ? ` · ROUND ${sdRound + 1}` : ''}
             </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, marginTop: 6, color: 'var(--bone-on-dark)' }}>
+              ONE PICK. ONE WINNER.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 16 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>YOU</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, fontVariantNumeric: 'tabular-nums' }}>{score.me}</div>
+              </div>
+              <div style={{ width: 1, height: 48, background: 'rgba(240,237,228,0.14)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>THEM</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums' }}>{score.opp}</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: div, width: '100%', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 16 }}>FRESH HAND · PICK ONE</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+                {(['R', 'P', 'S'] as Move[]).map(card => (
+                  <div key={card} style={{ textAlign: 'center' }}>
+                    <button onClick={() => handleSuddenPick(card)} disabled={sdBusy || !!sdPick}
+                      style={{ background: 'transparent', border: 'none', cursor: sdBusy || !!sdPick ? 'not-allowed' : 'pointer', padding: 0 }}>
+                      <CDCard c={card} size={96} glow={sdPick === card} win={sdPick === card && !!sdBot && cardOutcome(card, sdBot!) === 'win'} />
+                    </button>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: sdPick === card ? 'var(--alarm)' : 'var(--bone-ghost)', marginTop: 8, letterSpacing: '0.10em', fontWeight: sdPick === card ? 700 : 400 }}>
+                      {sdPick === card ? '● PICKED' : 'TAP'}
+                    </div>
+                  </div>
+                ))}
+                {sdBot && (
+                  <div style={{ textAlign: 'center', marginLeft: 16 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginBottom: 8 }}>BOT</div>
+                    <CDCard c={sdBot} size={96} loss />
+                  </div>
+                )}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginTop: 12, letterSpacing: '0.10em' }}>simultaneous reveal</div>
+            </div>
+
             {sdPick && sdBot && (
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36, color: cardOutcome(sdPick, sdBot) === 'win' ? 'var(--money)' : cardOutcome(sdPick, sdBot) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)', marginTop: 12 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: cardOutcome(sdPick, sdBot) === 'win' ? 'var(--money)' : cardOutcome(sdPick, sdBot) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)', marginTop: 16 }}>
                 {cardOutcome(sdPick, sdBot) === 'tie' ? 'TIE — AGAIN' : cardOutcome(sdPick, sdBot) === 'win' ? 'NOVASTRIKE WINS.' : 'BOT WINS.'}
               </div>
             )}
           </section>
-        </div>
+
+          <section style={{ padding: '16px 32px 24px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', letterSpacing: '0.12em' }}>
+              TIE AGAIN → INSTANT REPLAY · NO LIMIT
+            </div>
+          </section>
+        </>
       )}
 
       {/* DONE */}
       {phase === 'done' && (() => {
+        const slots = mySlotsRef.current
         let fm = 0, fo = 0
-        for (let i = 0; i < 9; i++) { const r = cardOutcome(mySeq[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
+        for (let i = 0; i < 9; i++) { const r = cardOutcome(slots[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
         const won = fm > fo
         return (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -615,10 +646,11 @@ function CycleDuelMatch({ slug }: { slug: string }) {
   const [score,    setScore]    = useState({ me: 0, opp: 0 })
   const [myPeek,   setMyPeek]   = useState<CycleMove | null>(null)
   const [oppPeek,  setOppPeek]  = useState<CycleMove | null>(null)
-  const [blockPhase, setBlockPhase] = useState<'choosePeek' | 'bench' | 'lock' | 'waiting'>('choosePeek')
+  const [blockPhase, setBlockPhase] = useState<'choosePeek' | 'bench' | 'lock' | 'resolving'>('choosePeek')
   const [benchCards, setBenchCards] = useState<CycleMove[]>([])
   const [timeLeft,   setTimeLeft]   = useState(30)
-  const [blockLog,   setBlockLog]   = useState<string[]>([])
+  const [botBlockSeq,    setBotBlockSeq]    = useState<CycleMove[]>([])
+  const [blockRevealIdx, setBlockRevealIdx] = useState(0)
 
   const [gamePhase, setGamePhase] = useState<'game' | 'sudden' | 'done'>('game')
   const [sdPick,    setSdPick]    = useState<CycleMove | null>(null)
@@ -643,7 +675,6 @@ function CycleDuelMatch({ slug }: { slug: string }) {
     setMyPeek(null)
     setSequence([null, null, null])
     setTimeLeft(30)
-    setBlockLog([])
     if (b === 3) {
       const cards = CYCLE_ALL.filter(m => h[m] > 0)
       setBenchCards(cards)
@@ -675,7 +706,6 @@ function CycleDuelMatch({ slug }: { slug: string }) {
     setMyPeek(null)
     setSequence([null, null, null])
     setTimeLeft(30)
-    setBlockLog([])
     setBlockPhase('choosePeek')
   }
 
@@ -698,7 +728,6 @@ function CycleDuelMatch({ slug }: { slug: string }) {
 
   const lockBlock = useCallback(() => {
     if (!seqFull || blockPhase !== 'lock') return
-    setBlockPhase('waiting')
 
     const mySeq = sequence as CycleMove[]
     const botSeq = randomSeq(botHand, 3, oppPeek ?? undefined)
@@ -708,40 +737,54 @@ function CycleDuelMatch({ slug }: { slug: string }) {
     roundMovesRef.current = [...roundMovesRef.current, ...mySeq.map((my, i) => ({ my, bot: botSeq[i] }))]
 
     let newMe = score.me, newOpp = score.opp
-    const log: string[] = []
     for (let i = 0; i < 3; i++) {
       const res = cycleOutcome(mySeq[i], botSeq[i])
-      if (res === 'win')  { newMe++;  log.push(`ROUND ${(block-1)*3 + i+1} · ${CYCLE_KEY[mySeq[i]]} vs ${CYCLE_KEY[botSeq[i]]} · YOU +1`) }
-      if (res === 'loss') { newOpp++; log.push(`ROUND ${(block-1)*3 + i+1} · ${CYCLE_KEY[mySeq[i]]} vs ${CYCLE_KEY[botSeq[i]]} · OPP +1`) }
-      if (res === 'tie')  { log.push(`ROUND ${(block-1)*3 + i+1} · ${CYCLE_KEY[mySeq[i]]} vs ${CYCLE_KEY[botSeq[i]]} · TIE`) }
+      if (res === 'win')  newMe++
+      if (res === 'loss') newOpp++
     }
-    setScore({ me: newMe, opp: newOpp })
-    setBlockLog(log)
-    setBotHand(usedByBot)
 
-    if (block === 3) {
-      if (newMe === newOpp) {
-        setGamePhase('sudden')
+    setScore({ me: newMe, opp: newOpp })
+    setBotBlockSeq(botSeq)
+    setBotHand(usedByBot)
+    setBlockRevealIdx(0)
+    setBlockPhase('resolving')
+  }, [seqFull, blockPhase, sequence, botHand, oppPeek, score])
+
+  // Slot-by-slot reveal within a block
+  useEffect(() => {
+    if (blockPhase !== 'resolving' || blockRevealIdx >= 3) return
+    const id = setTimeout(() => setBlockRevealIdx(i => i + 1), 1400)
+    return () => clearTimeout(id)
+  }, [blockPhase, blockRevealIdx])
+
+  // After all 3 revealed, advance to next block or end game
+  useEffect(() => {
+    if (blockPhase !== 'resolving' || blockRevealIdx < 3) return
+    const id = setTimeout(() => {
+      if (block === 3) {
+        if (score.me === score.opp) {
+          setGamePhase('sudden')
+        } else {
+          const outcome = score.me > score.opp ? 'win' : 'loss'
+          saveMatchResult({
+            game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee,
+            winnerGets: tier.winnerGets, outcome, myScore: score.me, oppScore: score.opp,
+            mySeq: roundMovesRef.current.map(r => r.my),
+            oppSeq: roundMovesRef.current.map(r => r.bot),
+            myMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.my)),
+            oppMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.bot)),
+          })
+          setGamePhase('done')
+          setTimeout(() => router.push(`/play/${slug}/result`), 1200)
+        }
       } else {
-        const outcome = newMe > newOpp ? 'win' : 'loss'
-        saveMatchResult({
-          game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee,
-          winnerGets: tier.winnerGets, outcome, myScore: newMe, oppScore: newOpp,
-          mySeq: roundMovesRef.current.map(r => r.my),
-          oppSeq: roundMovesRef.current.map(r => r.bot),
-          myMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.my)),
-          oppMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.bot)),
-        })
-        setTimeout(() => router.push(`/play/${slug}/result`), 2000)
-      }
-    } else {
-      setTimeout(() => {
         const nextBlock = block + 1
         setBlock(nextBlock)
-        setupBlock(nextBlock, hand, usedByBot)
-      }, 2000)
-    }
-  }, [seqFull, blockPhase, sequence, botHand, oppPeek, score, block, hand, slug, tier, router, setupBlock])
+        setupBlock(nextBlock, hand, botHand)
+      }
+    }, 1500)
+    return () => clearTimeout(id)
+  }, [blockPhase, blockRevealIdx, block, score, slug, tier, hand, botHand, router, setupBlock])
 
   function handleSuddenPick(card: CycleMove) {
     if (sdBusy || sdPick) return
@@ -797,7 +840,8 @@ function CycleDuelMatch({ slug }: { slug: string }) {
     : blockPhase === 'choosePeek' ? `BLOCK ${block} OF 3 · REVEAL YOUR CARD`
     : blockPhase === 'bench' ? 'BLOCK 3 · BENCH ONE CARD'
     : blockPhase === 'lock' ? `PEEK + LOCK · BLOCK ${block} OF 3`
-    : `REVEAL · BLOCK ${block} OF 3`
+    : blockPhase === 'resolving' ? `REVEAL · BLOCK ${block} OF 3`
+    : 'MATCH COMPLETE'
 
   return (
     <motion.div
@@ -808,32 +852,18 @@ function CycleDuelMatch({ slug }: { slug: string }) {
     >
       <BunkerTop phase={cyPhaseLabel} pot={tier.winnerGets} game="CYCLEDUEL" />
 
-      {/* SCORE STRIP */}
+      {/* Context strip — block progress (always visible during game) */}
       {gamePhase === 'game' && (
-        <section style={{ padding: '20px 32px', borderBottom: div }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>LASERHAWK · OPP</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, color: score.opp > score.me ? 'var(--alarm)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.85 }}>
-                {score.opp}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>BLOCK {block}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36, color: 'var(--bone-on-dark)' }}>—</div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 4 }}>
-                {[1,2,3].map(b => (
-                  <div key={b} style={{ width: 10, height: 10, borderRadius: '50%', background: b < block ? 'var(--bone-on-dark)' : b === block ? 'rgba(240,237,228,0.45)' : 'rgba(240,237,228,0.1)', border: b === block ? `1.5px solid rgba(240,237,228,0.6)` : 'none' }} />
-                ))}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>YOU · NOVASTRIKE</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, color: score.me > score.opp ? 'var(--money)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.85 }}>
-                {score.me}
-              </div>
-            </div>
+        <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>LASERHAWK · OPP</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[1,2,3].map(b => (
+              <div key={b} style={{ width: 8, height: 8, borderRadius: '50%', background: b < block ? 'var(--bone-on-dark)' : b === block ? 'rgba(240,237,228,0.5)' : 'rgba(240,237,228,0.12)', border: b === block ? '1.5px solid rgba(240,237,228,0.5)' : 'none' }} />
+            ))}
           </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>
+            BLOCK {block} OF 3 · ROUND {(block - 1) * 3 + sequence.filter(Boolean).length + 1} OF 9
+          </span>
         </section>
       )}
 
@@ -889,42 +919,51 @@ function CycleDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* LOCK PHASE */}
-      {gamePhase === 'game' && (blockPhase === 'lock' || blockPhase === 'waiting') && (
+      {gamePhase === 'game' && blockPhase === 'lock' && (
         <>
-          {/* Peek panel */}
-          <section style={{ padding: '20px 32px', textAlign: 'center', borderBottom: div }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.18em', fontWeight: 700 }}>● PEEK · THEIR SLOT 1 IS REVEALED</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, alignItems: 'flex-end' }}>
-              {oppPeek ? <CycleMCard move={oppPeek} size={80} /> : <CycleMCard faceDown size={80} />}
-              <CycleMCard faceDown size={80} />
-              <CycleMCard faceDown size={80} />
-            </div>
-            {oppPeek && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)', marginTop: 10, letterSpacing: '0.12em' }}>
-                SLOT 1 · {oppPeek.toUpperCase()} · BEATS {CYCLE_BEATS[oppPeek][0].toUpperCase()} · LOSES TO {CYCLE_BEATS[oppPeek][1].toUpperCase()}
+          {/* Peek + cycle diagram side-by-side */}
+          <section style={{ padding: '20px 32px', borderBottom: div }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 12 }}>
+                  OPPONENT'S FIRST CARD · THIS BLOCK
+                </div>
+                {oppPeek
+                  ? <CycleMCard move={oppPeek} size={88} />
+                  : <CycleMCard faceDown size={88} />
+                }
+                {oppPeek && (
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-faint)', marginTop: 8, letterSpacing: '0.10em' }}>
+                    BEATS {CYCLE_BEATS[oppPeek][0].toUpperCase()} · LOSES TO {CYCLE_BEATS[oppPeek][1].toUpperCase()}
+                  </div>
+                )}
               </div>
-            )}
+              <div style={{ width: 160, border: `1px solid rgba(240,237,228,0.24)`, padding: '14px 16px', background: 'var(--concrete-3)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 10 }}>THE CYCLE</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', lineHeight: 1.8 }}>
+                  FEINT → GUARD<br/>
+                  ↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
+                  GRAB&nbsp;&nbsp;&nbsp;&nbsp;STRIKE<br/>
+                  ↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;RUSH&nbsp;←
+                </div>
+              </div>
+            </div>
           </section>
 
-          {/* Lock sequence area */}
+          {/* Sequence + hand */}
           <section style={{ flex: 1, background: 'var(--concrete-2)', borderTop: div, borderBottom: div, padding: '24px 32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>YOUR SEQUENCE</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--bone-on-dark)', marginTop: 4 }}>
-                  Pick three. Slot order matters.
-                </div>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>YOUR BLOCK · 3 SLOTS</div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>LOCK IN</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 52, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums' }}>
-                  {blockPhase === 'lock' ? `${mins}:${secs.toString().padStart(2, '0')}` : '—:—'}
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>LOCK IN</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                  {mins}:{secs.toString().padStart(2, '0')}
                 </div>
               </div>
             </div>
 
-            {/* 3-slot sequence */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 8 }}>
               {sequence.map((move, i) => (
                 <div key={i} style={{ textAlign: 'center' }}>
                   <button onClick={() => move && removeFromSequence(i)}
@@ -937,59 +976,96 @@ function CycleDuelMatch({ slug }: { slug: string }) {
                 </div>
               ))}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-faint)', textAlign: 'center', marginBottom: 24, letterSpacing: '0.12em' }}>
-              {sequence.filter(Boolean).length}/3 SLOTS LOCKED
-            </div>
 
-            {/* Hand */}
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.10em', marginBottom: 12 }}>PICK YOUR NEXT</div>
+            <div style={{ borderTop: div, marginTop: 20, paddingTop: 18 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em', marginBottom: 12 }}>YOUR HAND</div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
                 {CYCLE_ALL.map(move => {
                   const count = hand[move]
-                  const used = !sequence.includes(move) ? false : true
-                  const disabled = seqFull || blockPhase === 'waiting' || count === 0
+                  const disabled = seqFull || count === 0
                   return (
                     <div key={move} style={{ textAlign: 'center' }}>
                       <CycleMCard move={move} size={72} onClick={!disabled ? () => addToSequence(move) : undefined} dim={disabled} />
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--bone-ghost)', marginTop: 4, letterSpacing: '0.08em' }}>
-                        {count === 0 ? 'USED' : 'TAP'}
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: count === 0 ? 'rgba(240,237,228,0.25)' : 'var(--bone-faint)', marginTop: 4, letterSpacing: '0.08em', borderStyle: count === 0 ? 'dashed' : 'solid' }}>
+                        {move.toUpperCase().slice(0, 3)}×{count}
                       </div>
                     </div>
                   )
                 })}
               </div>
             </div>
-
-            {/* Block results (waiting) */}
-            {blockPhase === 'waiting' && blockLog.length > 0 && (
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: div }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginBottom: 10, letterSpacing: '0.12em' }}>BLOCK {block} RESULT</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {blockLog.map((l, i) => {
-                    const isWin = l.includes('YOU +1')
-                    const isLoss = l.includes('OPP +1')
-                    return (
-                      <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1, duration: 0.25 }}
-                        style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: isWin ? 'var(--money)' : isLoss ? 'var(--alarm)' : 'rgba(240,237,228,0.4)', lineHeight: 1.5 }}>
-                        {l}
-                      </motion.div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
           </section>
 
-          {/* CTA */}
-          <section style={{ padding: '24px 32px 32px' }}>
-            <button onClick={lockBlock} disabled={!seqFull || blockPhase !== 'lock'}
-              style={{ width: '100%', padding: 20, background: seqFull && blockPhase === 'lock' ? 'var(--alarm)' : 'rgba(239,0,0,0.15)', color: seqFull && blockPhase === 'lock' ? '#fff' : 'rgba(239,0,0,0.35)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: seqFull && blockPhase === 'lock' ? 'pointer' : 'not-allowed', transition: 'all 0.1s' }}>
-              {blockPhase === 'waiting' ? 'RESOLVING…' : seqFull ? `LOCK SEQUENCE — COMMIT 3` : `FILL SEQUENCE (${sequence.filter(Boolean).length}/3)`}
+          <section style={{ padding: '16px 32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>
+              {sequence.filter(Boolean).length} OF 3 PLACED
+            </span>
+            <button onClick={lockBlock} disabled={!seqFull}
+              style={{ padding: '14px 28px', background: seqFull ? 'var(--alarm)' : 'rgba(239,0,0,0.15)', color: seqFull ? '#fff' : 'rgba(239,0,0,0.35)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: seqFull ? 'pointer' : 'not-allowed' }}>
+              LOCK IN BLOCK →
             </button>
           </section>
         </>
       )}
+
+      {/* RESOLVING PHASE — slot-by-slot reveal with cycle reasoning */}
+      {gamePhase === 'game' && blockPhase === 'resolving' && (() => {
+        const mySeq = sequence as CycleMove[]
+        return (
+          <>
+            <section style={{ padding: '16px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--bone-on-dark)' }}>
+                YOU {score.me} — {score.opp} OPP
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>
+                BLOCK {block} REVEAL
+              </div>
+            </section>
+
+            <section style={{ flex: 1, background: 'var(--concrete-2)', borderTop: div, borderBottom: div, padding: '24px 32px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 12 }}>THEM</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+                {botBlockSeq.map((move, i) => (
+                  <CycleMCard key={i} size={96}
+                    move={i < blockRevealIdx ? move : undefined}
+                    faceDown={i >= blockRevealIdx}
+                    win={i < blockRevealIdx && cycleOutcome(mySeq[i], move) === 'loss'}
+                    loss={i < blockRevealIdx && cycleOutcome(mySeq[i], move) === 'win'}
+                  />
+                ))}
+              </div>
+
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginTop: 24, marginBottom: 12, textAlign: 'right' }}>YOU</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+                {mySeq.map((move, i) => {
+                  if (i >= blockRevealIdx) return <CycleMCard key={i} size={96} dim />
+                  const o = cycleOutcome(move, botBlockSeq[i])
+                  return <CycleMCard key={i} move={move} size={96} win={o === 'win'} loss={o === 'loss'} />
+                })}
+              </div>
+
+              {blockRevealIdx > 0 && (
+                <div style={{ marginTop: 24, paddingTop: 16, borderTop: div }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 10 }}>CYCLE REASONING</div>
+                  {Array.from({ length: Math.min(blockRevealIdx, 3) }).map((_, i) => {
+                    const o = cycleOutcome(mySeq[i], botBlockSeq[i])
+                    return (
+                      <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.7, color: o === 'win' ? 'var(--money)' : o === 'loss' ? 'var(--alarm)' : 'rgba(240,237,228,0.4)' }}>
+                        {mySeq[i].toUpperCase()} {o === 'win' ? 'BEATS' : o === 'loss' ? 'LOSES TO' : 'TIES'} {botBlockSeq[i].toUpperCase()} → {o === 'win' ? '+1' : o === 'loss' ? '−1' : '0'}
+                      </div>
+                    )
+                  })}
+                  {blockRevealIdx < 3 && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', lineHeight: 1.7 }}>
+                      SLOT {blockRevealIdx + 1} PENDING…
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </>
+        )
+      })()}
 
       {/* SUDDEN DEATH */}
       {gamePhase === 'sudden' && (
@@ -1017,6 +1093,11 @@ function CycleDuelMatch({ slug }: { slug: string }) {
                 </div>
               ))}
             </div>
+            {sdPick && !sdBot && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-on-dark)', letterSpacing: '0.14em', textAlign: 'center' }}>
+                {sdPick.toUpperCase()} — BEATS {CYCLE_BEATS[sdPick][0].toUpperCase()} · LOSES TO {CYCLE_BEATS[sdPick][1].toUpperCase()}
+              </div>
+            )}
             {sdBot && sdPick && (
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36, color: cycleOutcome(sdPick, sdBot) === 'win' ? 'var(--money)' : cycleOutcome(sdPick, sdBot) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)', marginTop: 12 }}>
                 {cycleOutcome(sdPick, sdBot) === 'tie' ? 'TIE — AGAIN' : cycleOutcome(sdPick, sdBot) === 'win' ? 'NOVASTRIKE WINS.' : 'BOT WINS.'}
@@ -1051,30 +1132,26 @@ type CellState = null | 'me' | 'opp' | 'block-me' | 'block-opp'
 const ROWS = 6, COLS = 7
 const DROP_COL_LABELS = ['A','B','C','D','E','F','G']
 
-function DropMCell({ fill, hidden, last, size = 44 }: {
-  fill?: 'you' | 'opp' | null; hidden?: boolean; last?: boolean; size?: number;
+function DropMCell({ fill, block, ghost, picked, last, size = 44 }: {
+  fill?: 'you' | 'opp' | null; block?: boolean; ghost?: boolean; picked?: boolean; last?: boolean; size?: number;
 }) {
+  let bg = 'var(--concrete-2)', border = 'none'
+  if (fill === 'you')  { bg = 'var(--amber)' }
+  else if (fill === 'opp') { bg = 'var(--accent)' }
+  else if (block)      { bg = 'rgba(80,76,70,0.7)'; border = '1.5px solid rgba(90,86,79,0.9)' }
+  else if (ghost)      { bg = 'var(--amber-soft)'; border = '1.5px dashed var(--amber)' }
+  else if (picked)     { bg = 'var(--amber)' }
+  if (last && !block)  { border = '2px solid var(--bone-on-dark)' }
   return (
     <div style={{ width: size, height: size, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{
-        width: size * 0.78, height: size * 0.78, borderRadius: '50%',
-        background:
-          fill === 'you' ? 'var(--bone)' :
-          fill === 'opp' ? 'var(--alarm)' :
-          hidden ? 'transparent' : 'var(--concrete-2)',
-        border:
-          hidden ? '1.5px dashed rgba(239,237,228,0.5)' :
-          last ? '2px solid var(--bone-on-dark)' : 'none',
-        transition: 'background 0.25s',
-      }} />
+      <div style={{ width: size * 0.78, height: size * 0.78, borderRadius: '50%', background: bg, border, transition: 'background 0.15s' }} />
     </div>
   )
 }
 
 function cellToFill(cell: CellState): 'you' | 'opp' | null {
-  if (cell === 'me')         return 'you'
-  if (cell === 'opp')        return 'opp'
-  if (cell === 'block-opp')  return 'opp'
+  if (cell === 'me')  return 'you'
+  if (cell === 'opp') return 'opp'
   return null
 }
 
@@ -1144,7 +1221,15 @@ function DropDuelMatch({ slug }: { slug: string }) {
   const [winCells, setWinCells] = useState<[number, number][]>([])
   const [isDraw, setIsDraw] = useState(false)
   const [lastCell, setLastCell] = useState<[number, number] | null>(null)
+  const [hoveredCol, setHoveredCol] = useState<number | null>(null)
   const prevBoardRef = useRef<CellState[][]>(Array(ROWS).fill(null).map(() => Array(COLS).fill(null)))
+
+  const getGhostRow = (col: number): number | null => {
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (board[r][col] === null) return r
+    }
+    return null
+  }
 
   function doReveal(cell: [number, number]) {
     const [mr, mc] = cell
@@ -1288,71 +1373,65 @@ function DropDuelMatch({ slug }: { slug: string }) {
       {/* BLOCK PLACEMENT PHASE */}
       {dropPhase === 'block' && (
         <>
-          <section style={{ padding: '32px 56px', textAlign: 'center', borderBottom: div }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>● ONE BLOCK · ANYWHERE · HIDDEN FROM OPP</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 160, marginTop: 6, lineHeight: 0.85, color: 'var(--bone-on-dark)' }}>PLACE.</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 14 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>TIMER</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56, color: blockTimer <= 5 ? 'var(--alarm)' : 'var(--bone-on-dark)', fontVariantNumeric: 'tabular-nums' }}>
-                  {`00:${blockTimer.toString().padStart(2, '0')}`}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>OPP</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, color: 'var(--bone-on-dark)' }}>placing…</div>
-              </div>
+          <section style={{ padding: '14px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', fontWeight: 700, letterSpacing: '0.18em' }}>
+              ● PHASE 1 · PLACE ONE BLOCKED CELL
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36, color: blockTimer <= 5 ? 'var(--alarm)' : 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums' }}>
+              {`00:${blockTimer.toString().padStart(2, '0')}`}
             </div>
           </section>
 
-          <section style={{ flex: 1, background: 'var(--concrete-2)', borderTop: div, borderBottom: div, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '32px 56px' }}>
+          <section style={{ flex: 1, background: 'var(--concrete-2)', borderTop: div, borderBottom: div, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px 32px' }}>
             <div>
-              {/* Column labels */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
                 {DROP_COL_LABELS.map(c => (
                   <div key={c} style={{ width: CELL_SIZE, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>{c}</div>
                 ))}
               </div>
-              {/* Board */}
-              <div style={{ background: 'var(--ink)', padding: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`, gap: 4 }}>
+              <div style={{ background: 'var(--ink)', padding: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`, gap: 3 }}>
                   {Array.from({ length: ROWS * COLS }).map((_, idx) => {
                     const r = Math.floor(idx / COLS)
                     const c = idx % COLS
                     const validRow = r >= 1 && r <= 4
+                    const isTopBot = r === 0 || r === ROWS - 1
                     const isPicked = myBlockCell?.[0] === r && myBlockCell?.[1] === c
                     return (
-                      <div key={idx} id={`cell-${r}-${c}`} className="board-cell"
+                      <div key={idx}
                         onClick={() => { if (validRow) selectBlock(isPicked ? null : [r, c]) }}
-                        style={{ cursor: validRow ? 'pointer' : 'default' }}>
-                        <DropMCell size={CELL_SIZE} hidden={isPicked} fill={null} />
-                        {!validRow && !isPicked && (
-                          <div style={{ position: 'absolute', pointerEvents: 'none', display: 'none' }} />
-                        )}
+                        style={{ cursor: validRow ? 'pointer' : 'default', width: CELL_SIZE, height: CELL_SIZE, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{
+                          width: CELL_SIZE * 0.78, height: CELL_SIZE * 0.78, borderRadius: '50%',
+                          background: isPicked ? 'var(--amber)' : 'var(--concrete-2)',
+                          border: isTopBot && !isPicked ? '1.5px dashed rgba(240,237,228,0.12)' : 'none',
+                          opacity: isTopBot && !isPicked ? 0.35 : 1,
+                          transition: 'background 0.12s',
+                        }} />
                       </div>
                     )
                   })}
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>
-                  BOARD 6×7 · TAP ROWS 2–5
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>
+                  TOP + BOTTOM ROWS LOCKED · ROWS 2–5 VALID
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--money)', fontWeight: 700, letterSpacing: '0.12em' }}>
-                  {myBlockCell ? `${DROP_COL_LABELS[myBlockCell[1]]}${myBlockCell[0] + 1} PICKED — CHANGE OR LOCK` : 'TAP A CELL'}
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: myBlockCell ? 'var(--amber)' : 'var(--bone-faint)', fontWeight: 700, letterSpacing: '0.10em' }}>
+                  {myBlockCell ? `${DROP_COL_LABELS[myBlockCell[1]]}${myBlockCell[0] + 1} SELECTED` : 'TAP A CELL'}
                 </span>
               </div>
             </div>
           </section>
 
-          <section style={{ padding: '24px 56px 32px' }}>
+          <section style={{ padding: '20px 32px 28px' }}>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => selectBlock(null)} style={{ flex: 1, padding: 18, background: 'transparent', border: `1.5px solid rgba(240,237,228,0.3)`, color: 'var(--bone-on-dark)', fontFamily: 'var(--font-mono)', fontSize: 13, cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em' }}>
+              <button onClick={() => selectBlock(null)} style={{ padding: '16px 24px', background: 'transparent', border: `1.5px solid rgba(240,237,228,0.3)`, color: 'var(--bone-on-dark)', fontFamily: 'var(--font-mono)', fontSize: 12, cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em' }}>
                 CLEAR
               </button>
               <button onClick={() => { if (myBlockCell) doReveal(myBlockCell) }} disabled={!myBlockCell}
-                style={{ flex: 3, padding: 20, background: myBlockCell ? 'var(--alarm)' : 'rgba(239,0,0,0.15)', color: myBlockCell ? '#fff' : 'rgba(239,0,0,0.35)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: myBlockCell ? 'pointer' : 'not-allowed', transition: 'all 0.1s' }}>
-                {myBlockCell ? `LOCK BLOCK AT ${DROP_COL_LABELS[myBlockCell[1]]}${myBlockCell[0] + 1}` : 'SELECT A CELL FIRST'}
+                style={{ flex: 1, padding: 18, background: myBlockCell ? 'var(--amber)' : 'var(--amber-soft)', color: myBlockCell ? '#0d0d0d' : 'rgba(245,158,11,0.4)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: myBlockCell ? 'pointer' : 'not-allowed', transition: 'all 0.1s' }}>
+                {myBlockCell ? `CONFIRM BLOCK — ${DROP_COL_LABELS[myBlockCell[1]]}${myBlockCell[0] + 1}` : 'SELECT A CELL FIRST'}
               </button>
             </div>
           </section>
@@ -1372,66 +1451,57 @@ function DropDuelMatch({ slug }: { slug: string }) {
       {/* PLAY PHASE */}
       {dropPhase === 'play' && (
         <>
-          {/* Turn strip */}
-          <section style={{ padding: '16px 32px', borderBottom: div }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>OPP · LASERHAWK</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--bone-on-dark)', marginTop: 2 }}>
-                  {winner === 'opp' ? '4 IN A ROW' : 'PLAYING'}
-                </div>
+          <section style={{ padding: '14px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>OPPONENT</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--bone-on-dark)', marginTop: 2 }}>LASERHAWK</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums' }}>
+                {myTurn && !winner ? `00:${playTimer.toString().padStart(2, '0')}` : '—:——'}
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.14em' }}>
-                  ● {myTurn ? 'YOUR TURN' : 'BOT THINKING'}
-                </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums' }}>
-                  {myTurn && !winner ? `00:${playTimer.toString().padStart(2, '0')}` : '—:——'}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>YOU · 3 → 4</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: winner === 'me' ? 'var(--money)' : 'var(--bone-on-dark)', marginTop: 2 }}>
-                  {winner === 'me' ? '4 IN A ROW' : '3 IN A ROW?'}
-                </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: myTurn && !winner ? 'var(--amber)' : 'var(--bone-ghost)', fontWeight: 700, letterSpacing: '0.14em' }}>
+                {winner ? (winner === 'me' ? '4 IN A ROW' : 'OPPONENT WINS') : isDraw ? 'DRAW' : myTurn ? '● YOUR MOVE' : '● BOT THINKING'}
               </div>
             </div>
           </section>
 
           <section style={{ flex: 1, background: 'var(--concrete-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 32px' }}>
-            <div>
-              {/* Drop arrows */}
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                {DROP_COL_LABELS.map((c, ci) => (
-                  <div key={c} style={{ width: CELL_SIZE, textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>{c}</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: CELL_SIZE * 0.55, color: myTurn && canDrop(ci) ? 'var(--alarm)' : 'rgba(239,237,228,0.18)', lineHeight: 1, cursor: myTurn && canDrop(ci) ? 'pointer' : 'default' }}
-                      onClick={() => myTurn && canDrop(ci) && dropPiece(ci)}>
-                      ↓
-                    </div>
+            <div onMouseLeave={() => setHoveredCol(null)}>
+              <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
+                {DROP_COL_LABELS.map((l, ci) => (
+                  <div key={l} style={{ width: CELL_SIZE, textAlign: 'center', cursor: myTurn && canDrop(ci) && !winner ? 'pointer' : 'default' }}
+                    onClick={() => myTurn && canDrop(ci) && !winner && dropPiece(ci)}
+                    onMouseEnter={() => myTurn && !winner && setHoveredCol(ci)}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>{l}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: CELL_SIZE * 0.5, color: myTurn && canDrop(ci) && !winner ? 'var(--amber)' : 'rgba(240,237,228,0.10)', lineHeight: 1.1 }}>↓</div>
                   </div>
                 ))}
               </div>
 
-              {/* Board */}
-              <div id="drop-board" style={{ background: 'var(--ink)', padding: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`, gap: 4 }}>
+              <div id="drop-board" style={{ background: 'var(--ink)', padding: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`, gap: 3 }}>
                   {board.flatMap((row, r) => row.map((cell, c) => {
                     const isWin = winCells.some(([wr, wc]) => wr === r && wc === c)
                     const isLast = lastCell?.[0] === r && lastCell?.[1] === c
-                    const f = cellToFill(cell)
+                    const isBlock = cell === 'block-me' || cell === 'block-opp'
+                    const gRow = hoveredCol === c ? getGhostRow(c) : null
+                    const isGhost = !isBlock && cell === null && r === gRow && myTurn && !winner
+                    const f = isBlock ? null : cellToFill(cell)
                     return (
                       <div key={`${r}-${c}`} id={`cell-${r}-${c}`} className="board-cell"
-                        onClick={() => myTurn && canDrop(c) && dropPiece(c)}
-                        style={{ cursor: myTurn && canDrop(c) ? 'pointer' : 'default', position: 'relative' }}>
+                        onClick={() => myTurn && canDrop(c) && !winner && dropPiece(c)}
+                        onMouseEnter={() => myTurn && !winner && setHoveredCol(c)}
+                        style={{ cursor: myTurn && canDrop(c) && !winner ? 'pointer' : 'default', position: 'relative' }}>
                         {isWin ? (
-                          <motion.div
-                            animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}
+                          <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}
                             style={{ width: CELL_SIZE, height: CELL_SIZE, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: CELL_SIZE * 0.78, height: CELL_SIZE * 0.78, borderRadius: '50%', background: cell === 'me' ? 'var(--money)' : 'var(--alarm)', border: '2px solid var(--bone-on-dark)' }} />
+                            <div style={{ width: CELL_SIZE * 0.78, height: CELL_SIZE * 0.78, borderRadius: '50%', background: cell === 'me' ? 'var(--amber)' : 'var(--accent)', border: '2px solid var(--bone-on-dark)' }} />
                           </motion.div>
                         ) : (
-                          <DropMCell size={CELL_SIZE} fill={f} hidden={cell === 'block-me'} last={isLast} />
+                          <DropMCell size={CELL_SIZE} fill={f} block={isBlock} ghost={isGhost} last={isLast} />
                         )}
                       </div>
                     )
@@ -1439,26 +1509,28 @@ function DropDuelMatch({ slug }: { slug: string }) {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>
-                  ◇ YOUR HIDDEN BLOCK · OPP&apos;S REVEALED ON COLLISION
-                </span>
-                {myTurn && !winner && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.12em' }}>
-                    TAP A COLUMN ↑
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 12 }}>
+                {[
+                  { color: 'var(--amber)', label: 'YOU' },
+                  { color: 'var(--accent)', label: 'THEM' },
+                  { color: 'rgba(80,76,70,0.9)', label: 'BLOCK' },
+                ].map(({ color, label }) => (
+                  <span key={label} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', letterSpacing: '0.10em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                    {label}
                   </span>
-                )}
+                ))}
               </div>
             </div>
           </section>
 
-          <section style={{ padding: '24px 32px 32px' }}>
+          <section style={{ padding: '20px 32px 28px' }}>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button style={{ flex: 1, padding: 18, background: 'transparent', border: `1.5px solid rgba(240,237,228,0.3)`, color: 'var(--bone-on-dark)', fontFamily: 'var(--font-mono)', fontSize: 13, cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em' }}>
+              <button style={{ padding: '16px 24px', background: 'transparent', border: `1.5px solid rgba(240,237,228,0.3)`, color: 'var(--bone-on-dark)', fontFamily: 'var(--font-mono)', fontSize: 12, cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em' }}>
                 FORFEIT
               </button>
-              <button style={{ flex: 3, padding: 20, background: myTurn && !winner ? 'var(--alarm)' : 'rgba(239,0,0,0.15)', color: myTurn && !winner ? '#fff' : 'rgba(239,0,0,0.35)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'default' }}>
-                {winner === 'me' ? 'YOU WIN →' : winner === 'opp' ? 'BOT WINS' : isDraw ? 'DRAW · SPLIT POT' : myTurn ? 'TAP A COLUMN TO DROP' : 'BOT IS THINKING…'}
+              <button style={{ flex: 1, padding: 18, background: myTurn && !winner && !isDraw ? 'var(--amber)' : 'var(--amber-soft)', color: myTurn && !winner && !isDraw ? '#0d0d0d' : 'rgba(245,158,11,0.4)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'default' }}>
+                {winner === 'me' ? 'YOU WIN →' : winner === 'opp' ? 'OPPONENT WINS' : isDraw ? 'DRAW · SPLIT POT' : myTurn ? 'TAP A COLUMN TO DROP' : 'BOT IS THINKING…'}
               </button>
             </div>
           </section>

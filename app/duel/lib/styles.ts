@@ -20,8 +20,8 @@ export const s = {
   }),
 
   rule: {
-    height: 1,
-    background: 'var(--ink)',
+    height: 2,
+    background: 'var(--alarm)',
   } as React.CSSProperties,
 
   ruleSoft: {

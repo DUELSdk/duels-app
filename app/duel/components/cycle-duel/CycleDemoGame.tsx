@@ -189,7 +189,7 @@ function ClashRow({ myCard, botCard, outcome, roundIndex, delay, onDone }: Clash
       <span className="text-white/20 text-xs w-5 shrink-0">{roundIndex + 1}</span>
 
       {/* Clash arena */}
-      <div className="relative flex items-center justify-center flex-1 h-[72px]">
+      <div className="relative flex items-center justify-center flex-1 h-[84px]">
         {/* Shockwave ring — center */}
         <div
           ref={shockwaveRef}
@@ -238,7 +238,7 @@ function ClashCard({ card, dim, win }: { card: CycleCard; dim: boolean; win: boo
   const m = CARD_META[card]
   return (
     <div className={`
-      flex flex-col items-center justify-center gap-0.5 w-14 h-[68px] rounded-lg border-2 text-xl
+      flex flex-col items-center justify-center gap-0.5 w-[58px] h-[76px] rounded-lg border-2 text-2xl
       transition-all duration-200
       ${m.bg} ${m.border}
       ${win ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-black brightness-110' : ''}
@@ -264,7 +264,7 @@ function CycleCardBtn({ card, onClick, disabled, selected, dimmed }: {
       whileTap={onClick && !disabled ? { scale: 0.93 } : undefined}
       transition={{ type: 'spring', stiffness: 480, damping: 22 }}
       className={`
-        flex flex-col items-center justify-center gap-0.5 w-14 h-[72px] rounded-lg border-2 text-xl font-medium
+        flex flex-col items-center justify-center gap-0.5 w-[58px] h-20 rounded-lg border-2 text-xl font-medium
         select-none
         ${m.bg} ${m.border}
         ${onClick && !disabled ? 'cursor-pointer' : 'cursor-default'}
@@ -549,7 +549,7 @@ export function CycleDemoGame() {
                   : (
                     <div
                       key={`empty-${i}`}
-                      className="w-14 h-[72px] rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center"
+                      className="w-[58px] h-20 rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center"
                     >
                       <span className="text-white/20 text-xs">{i + 1}</span>
                     </div>

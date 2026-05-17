@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Cell, Grid, ROWS, COLS,
   withBlocks, dropPiece, checkWin, isFull, validColumns, botMove, randomBotBlock, getWinningCells,
@@ -9,8 +9,8 @@ import {
 
 type Phase = 'place_block' | 'reveal' | 'playing' | 'complete'
 
-// Track the most recently landed piece for drop animation
-type LandedPiece = { row: number; col: number; id: number }
+// Overlay piece that animates falling from board top to target cell
+type DroppingPiece = { row: number; col: number; id: number; player: 1 | 2 }
 
 function cellColor(cell: Cell, isWin: boolean): string {
   if (isWin) return 'bg-amber-400'
@@ -21,7 +21,7 @@ function cellColor(cell: Cell, isWin: boolean): string {
 }
 
 // Cell size in px — drives both width/height and the fall distance calculation
-const CELL_PX = 68
+const CELL_PX = 82
 const GAP_PX = 5
 
 export function DropDemoGame() {
@@ -34,8 +34,8 @@ export function DropDemoGame() {
   const [winCells, setWinCells] = useState<[number, number][]>([])
   const [botThinking, setBotThinking] = useState(false)
   const [hoverCol, setHoverCol] = useState<number | null>(null)
-  // landedPiece tracks the most recently dropped piece for animation
-  const [landedPiece, setLandedPiece] = useState<LandedPiece | null>(null)
+  // droppingPiece: the overlay piece currently animating from board top to target cell
+  const [droppingPiece, setDroppingPiece] = useState<DroppingPiece | null>(null)
   const dropIdRef = useRef(0)
 
   function handleBlockClick(row: number, col: number) {
@@ -56,12 +56,11 @@ export function DropDemoGame() {
     }, 1200)
   }
 
-  function registerDrop(prevGrid: Grid, col: number) {
-    // The new piece lands at the lowest empty row in the column before the drop
+  function registerDrop(prevGrid: Grid, col: number, player: 1 | 2) {
     for (let row = 0; row < ROWS; row++) {
       if (prevGrid[row][col] === null) {
         const id = ++dropIdRef.current
-        setLandedPiece({ row, col, id })
+        setDroppingPiece({ row, col, id, player })
         return
       }
     }
@@ -75,7 +74,7 @@ export function DropDemoGame() {
     const next = dropPiece(grid, col, 1)
     if (!next) return
     setGrid(next)
-    registerDrop(prevGrid, col)
+    registerDrop(prevGrid, col, 1)
 
     if (checkWin(next, 1)) {
       setWinCells(getWinningCells(next, 1))
@@ -97,7 +96,7 @@ export function DropDemoGame() {
       const afterBot = dropPiece(next, botCol, 2)
       if (!afterBot) return
       setGrid(afterBot)
-      registerDrop(gridBeforeBot, botCol)
+      registerDrop(gridBeforeBot, botCol, 2)
       if (checkWin(afterBot, 2)) {
         setWinCells(getWinningCells(afterBot, 2))
         setWinner('bot')
@@ -122,7 +121,7 @@ export function DropDemoGame() {
     setWinCells([])
     setBotThinking(false)
     setHoverCol(null)
-    setLandedPiece(null)
+    setDroppingPiece(null)
   }
 
   const displayGrid = grid ?? (() => {
@@ -185,86 +184,103 @@ export function DropDemoGame() {
         </div>
       )}
 
-      {/* Grid — displayed top-to-bottom (row 5 first, row 0 at bottom) */}
-      <div
-        className="flex flex-col"
-        style={{ gap: GAP_PX, width: boardWidth }}
-      >
-        {Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i).map(row => (
-          <div key={row} className="flex" style={{ gap: GAP_PX }}>
-            {Array.from({ length: COLS }, (_, col) => {
-              const cell = displayGrid[row][col]
-              const isWin = winCells.some(([r, c]) => r === row && c === col)
-              const isPlayerBlock = phase === 'place_block' && playerBlock?.[0] === row && playerBlock?.[1] === col
-              const isHover = hoverCol === col && phase === 'playing' && turn === 1
-              const isClickable = phase === 'place_block' && row >= 1 && row <= ROWS - 2
+      {/* Grid — board-relative wrapper so the falling overlay can span full height */}
+      <div style={{ position: 'relative', width: boardWidth }}>
+        <div
+          className="flex flex-col"
+          style={{ gap: GAP_PX, width: boardWidth }}
+        >
+          {Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i).map(row => (
+            <div key={row} className="flex" style={{ gap: GAP_PX }}>
+              {Array.from({ length: COLS }, (_, col) => {
+                const cell = displayGrid[row][col]
+                const isWin = winCells.some(([r, c]) => r === row && c === col)
+                const isPlayerBlock = phase === 'place_block' && playerBlock?.[0] === row && playerBlock?.[1] === col
+                const isHover = hoverCol === col && phase === 'playing' && turn === 1
+                const isClickable = phase === 'place_block' && row >= 1 && row <= ROWS - 2
+                // Hide the static piece while the overlay animation is in-flight for this cell
+                const isInFlight = droppingPiece !== null && droppingPiece.row === row && droppingPiece.col === col
 
-              // Check if this cell is the one that just landed
-              const isJustLanded = landedPiece !== null && landedPiece.row === row && landedPiece.col === col
-
-              // How many rows does this piece fall from top to its landing row?
-              // Display order is top-down: visual row index 0 = grid row (ROWS-1), last = grid row 0
-              // The piece enters from above visual row 0. Landing visual row = (ROWS - 1 - row).
-              // Fall distance = landing_visual_row cells + gaps + a bit of overshoot entry
-              const visualLandingRow = ROWS - 1 - row
-              const fallDistance = visualLandingRow * (CELL_PX + GAP_PX) + CELL_PX
-
-              return (
-                <div
-                  key={`cell-${row}-${col}`}
-                  style={{ width: CELL_PX, height: CELL_PX, flexShrink: 0, position: 'relative' }}
-                  className="rounded-lg"
-                >
-                  {/* Background / empty cell layer — always visible */}
-                  <button
-                    onClick={() => handleBlockClick(row, col)}
-                    disabled={!isClickable}
-                    style={{ width: CELL_PX, height: CELL_PX }}
-                    className={`
-                      absolute inset-0 rounded-lg border transition-all
-                      ${cell ? '' : cellColor(cell, isWin)}
-                      ${isPlayerBlock ? 'ring-2 ring-amber-400' : ''}
-                      ${isClickable ? 'cursor-pointer hover:border-amber-400/50 hover:bg-amber-500/10' : 'cursor-default'}
-                      ${isHover && !cell ? 'bg-amber-500/20 border-amber-500/30' : ''}
-                      ${(row === 0 || row === ROWS - 1) && phase === 'place_block' ? 'opacity-20' : ''}
-                    `}
-                  />
-
-                  {/* Filled cell — animated if just landed, static otherwise */}
-                  {cell && (
-                    <motion.div
-                      key={isJustLanded ? `landed-${landedPiece!.id}` : `static-${row}-${col}`}
-                      style={{ width: CELL_PX, height: CELL_PX, position: 'absolute', inset: 0, zIndex: isJustLanded ? 10 : 1 }}
-                      className={`rounded-lg border ${cellColor(cell, isWin)}`}
-                      initial={isJustLanded ? { y: -fallDistance } : false}
-                      animate={isJustLanded
-                        ? {
-                            y: [
-                              -fallDistance,  // start: above the board
-                              0,              // land
-                              2,              // thud compress down 2px
-                              0,              // settle
-                            ],
-                          }
-                        : { y: 0 }
-                      }
-                      transition={isJustLanded
-                        ? {
-                            y: {
-                              times: [0, 0.72, 0.86, 1],
-                              duration: 0.26,
-                              ease: ['easeIn', 'easeOut', 'easeOut'],
-                            },
-                          }
-                        : { duration: 0 }
-                      }
+                return (
+                  <div
+                    key={`cell-${row}-${col}`}
+                    style={{ width: CELL_PX, height: CELL_PX, flexShrink: 0, position: 'relative' }}
+                    className="rounded-lg"
+                  >
+                    {/* Background / empty cell layer */}
+                    <button
+                      onClick={() => handleBlockClick(row, col)}
+                      disabled={!isClickable}
+                      style={{ width: CELL_PX, height: CELL_PX }}
+                      className={`
+                        absolute inset-0 rounded-lg border transition-all
+                        ${cell ? '' : cellColor(cell, isWin)}
+                        ${isPlayerBlock ? 'ring-2 ring-amber-400' : ''}
+                        ${isClickable ? 'cursor-pointer hover:border-amber-400/50 hover:bg-amber-500/10' : 'cursor-default'}
+                        ${isHover && !cell ? 'bg-amber-500/20 border-amber-500/30' : ''}
+                        ${(row === 0 || row === ROWS - 1) && phase === 'place_block' ? 'opacity-20' : ''}
+                      `}
                     />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ))}
+
+                    {/* Static filled piece — hidden while overlay animation plays for this cell */}
+                    {cell && (
+                      <div
+                        style={{
+                          width: CELL_PX,
+                          height: CELL_PX,
+                          position: 'absolute',
+                          inset: 0,
+                          opacity: isInFlight ? 0 : 1,
+                        }}
+                        className={`rounded-lg border ${cellColor(cell, isWin)}`}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Falling piece overlay — absolutely positioned on the board, animates top-to-cell */}
+        <AnimatePresence>
+          {droppingPiece && (() => {
+            const targetTop = (ROWS - 1 - droppingPiece.row) * (CELL_PX + GAP_PX)
+            const targetLeft = droppingPiece.col * (CELL_PX + GAP_PX)
+            const pieceClass = droppingPiece.player === 1 ? 'bg-amber-500' : 'bg-zinc-500'
+            return (
+              <motion.div
+                key={droppingPiece.id}
+                style={{
+                  position: 'absolute',
+                  left: targetLeft,
+                  width: CELL_PX,
+                  height: CELL_PX,
+                  zIndex: 20,
+                  borderRadius: 8,
+                }}
+                className={`${pieceClass} border border-white/10`}
+                initial={{ top: -CELL_PX }}
+                animate={{
+                  top: [
+                    -CELL_PX,        // enters from just above the board
+                    targetTop,       // lands
+                    targetTop + 2,   // thud compress 2px
+                    targetTop,       // settle
+                  ],
+                }}
+                transition={{
+                  top: {
+                    times: [0, 0.72, 0.86, 1],
+                    duration: 0.3,
+                    ease: ['easeIn', 'easeOut', 'easeOut'],
+                  },
+                }}
+                onAnimationComplete={() => setDroppingPiece(null)}
+              />
+            )
+          })()}
+        </AnimatePresence>
       </div>
 
       {/* Controls */}

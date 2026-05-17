@@ -1,6 +1,63 @@
 // Placeholder data — replace each function with a real Supabase query when ready.
 // Shape of each type is the contract. Data source changes, components stay the same.
 
+// ── Match record (contract for Supabase matches table) ───────────────────────
+// Production: every settled match writes one record. Aggregation (win rates,
+// tendencies) is computed from this table — do not derive stats elsewhere.
+//
+// moves is game-specific. Spec per game BEFORE building aggregation:
+//   card-duel  → sequence of 9 cards:       ['R','P','S','R','S','P','P','R','S']
+//   cycleduel  → 3 blocks of 3 cards:       [['Feint','Guard','Strike'], ...]
+//   dropduel   → sequence of column picks:  [3, 2, 4, 1, 3, ...]
+//
+// Data retention: keep all match data while account is active.
+// On account deletion: anonymise player references, aggregate stats survive.
+
+export type GameType = 'card-duel' | 'cycleduel' | 'dropduel'
+
+export type Match = {
+  id: string
+  game: GameType
+  player1: string        // handle
+  player2: string        // handle
+  winner: string | null  // handle — null = split/draw
+  moves: {
+    player1: unknown     // game-specific — see comment above
+    player2: unknown     // game-specific — see comment above
+  }
+  entryKrEach: number
+  purseKr: number
+  createdAt: string      // ISO timestamp
+}
+
+// ── Rivals (Nemesis system) ───────────────────────────────────────────────────
+// Production: query match_history grouped by opponent_id, compute streaks server-side.
+// Capture a rivalSnapshot at match start — stored in the match record so result screen
+// reflects state BEFORE the match, not after (H2H updates on settlement, not display).
+
+export type Rival = {
+  handle: string
+  played: number
+  wins: number        // your wins vs this opponent
+  losses: number      // your losses vs this opponent
+  currentStreak: number  // positive = win streak, negative = loss streak (vs this opponent only)
+  revengeActive: boolean // true when currentStreak <= -3
+}
+
+export function getRivals(): Rival[] {
+  return [
+    { handle: 'BOT',      played: 8,  wins: 3, losses: 5, currentStreak: -3, revengeActive: true  },
+    { handle: 'GRIMREEF', played: 12, wins: 3, losses: 9, currentStreak: -4, revengeActive: true  },
+    { handle: 'K_8821',   played: 8,  wins: 5, losses: 3, currentStreak:  2, revengeActive: false },
+    { handle: 'VIPER99',  played: 6,  wins: 4, losses: 2, currentStreak:  1, revengeActive: false },
+    { handle: 'SANDMAN',  played: 5,  wins: 2, losses: 3, currentStreak: -1, revengeActive: false },
+  ]
+}
+
+export function getH2HRecord(handle: string): Rival | null {
+  return getRivals().find(r => r.handle === handle) ?? null
+}
+
 // ── Current user ─────────────────────────────────────────────────────────────
 
 export type RecentMatch = {
@@ -72,104 +129,78 @@ export function getLeaderboard(): { today: LeaderEntry[]; week: LeaderEntry[]; a
 
 // ── Tournament detail ─────────────────────────────────────────────────────────
 
-export type BracketMatch = {
-  p1: string
-  p2: string
-  winner?: string
-}
-
 export type TournamentDetail = {
   id: string
-  time: string
-  label: string
+  name: string
   game: string
-  format: string
-  seats: number
-  filled: number
-  entryKr: number
-  purseKr: number
+  fmt: string
+  fee: number
+  pool: number
+  seatsFilled: number
+  seatsTotal: number
+  start: string
   status: 'OPEN' | 'LIVE' | 'DONE'
-  prizeBreakdown: { place: string; kr: number }[]
-  bracket: { round: string; matches: BracketMatch[] }[]
+  description: string
+  seatedHandles: string[]
 }
 
 export function getTournamentDetail(id: string): TournamentDetail | null {
   const tournaments: Record<string, TournamentDetail> = {
-    't1': {
-      id: 't1', time: '20:00', label: "TONIGHT'S MARQUEE",
-      game: 'CARD DUEL', format: 'Single elim · 16p',
-      seats: 16, filled: 14, entryKr: 250, purseKr: 3600,
-      status: 'OPEN',
-      prizeBreakdown: [
-        { place: '1ST',    kr: 2520 },
-        { place: '2ND',    kr: 720  },
-        { place: '3RD–4TH', kr: 180 },
-      ],
-      bracket: [],
+    'TNS50': {
+      id: 'TNS50', name: 'THURSDAY NIGHT SEALED 50',
+      game: 'CARD DUEL', fmt: 'SINGLE ELIM · 64 SEATS',
+      fee: 50, pool: 2720, seatsFilled: 22, seatsTotal: 64,
+      start: '1H 14M', status: 'OPEN',
+      description: 'The marquee fight of the week. 50 KR entry, 64-seat single-elim bracket, last one standing takes 2.720 KR after rake. Bracket freezes at 20:00.',
+      seatedHandles: ['k_8821','NovaStrike','sandman','reef','grimreef','laserhawk','siren','iso_9001','jeppe_92','mads_kbh','ghost_n','piloto','anon#3','anon#7','viper99','calico','oslomint','blackbird','sigil','rune-kbh','axiom','torpid_42'],
     },
-    't2': {
-      id: 't2', time: '20:30', label: 'WEEKLY OPEN',
-      game: 'CYCLEDUEL', format: 'Single elim · 128p',
-      seats: 128, filled: 91, entryKr: 50, purseKr: 5440,
-      status: 'OPEN',
-      prizeBreakdown: [
-        { place: '1ST',    kr: 3808 },
-        { place: '2ND',    kr: 1088 },
-        { place: '3RD–4TH', kr: 272  },
-      ],
-      bracket: [],
+    'QF10': {
+      id: 'QF10', name: 'QUICKFIRE 10',
+      game: 'CARD DUEL', fmt: 'SINGLE ELIM · 32 SEATS',
+      fee: 10, pool: 272, seatsFilled: 32, seatsTotal: 32,
+      start: 'LIVE NOW', status: 'LIVE',
+      description: 'Fast and cheap. 10 KR entry, 32 seats, already live. Join as spectator or queue for the next one.',
+      seatedHandles: ['k_8821','NovaStrike','sandman','reef','grimreef','laserhawk','siren','iso_9001','jeppe_92','mads_kbh','ghost_n','piloto','anon#3','anon#7','viper99','calico','oslomint','blackbird','sigil','rune-kbh','axiom','torpid_42','dusk99','ironveil','pulse99','coastline','redhex','zael','sandstorm','hexlock','mirror7','coldfront'],
     },
-    't3': {
-      id: 't3', time: '21:00', label: 'KING OF THE BLOCK',
-      game: 'DROPDUEL', format: 'Single elim · 32p',
-      seats: 32, filled: 32, entryKr: 100, purseKr: 2720,
-      status: 'LIVE',
-      prizeBreakdown: [
-        { place: '1ST',    kr: 1904 },
-        { place: '2ND',    kr: 544  },
-        { place: '3RD–4TH', kr: 136  },
-      ],
-      bracket: [
-        { round: 'QF', matches: [
-          { p1: 'PLAYER 1', p2: 'PLAYER 2', winner: 'PLAYER 1' },
-          { p1: 'PLAYER 3', p2: 'PLAYER 4', winner: 'PLAYER 3' },
-          { p1: 'PLAYER 5', p2: 'PLAYER 6', winner: 'PLAYER 5' },
-          { p1: 'PLAYER 7', p2: 'PLAYER 8', winner: 'PLAYER 7' },
-        ]},
-        { round: 'SF', matches: [
-          { p1: 'PLAYER 1', p2: 'PLAYER 3' },
-          { p1: 'PLAYER 5', p2: 'PLAYER 7' },
-        ]},
-        { round: 'F', matches: [
-          { p1: 'TBD', p2: 'TBD' },
-        ]},
-      ],
+    'COP100': {
+      id: 'COP100', name: 'CYCLE OPEN 100',
+      game: 'CYCLEDUEL', fmt: 'DOUBLE ELIM · 64 SEATS',
+      fee: 100, pool: 5440, seatsFilled: 8, seatsTotal: 64,
+      start: '4H', status: 'OPEN',
+      description: 'Double elimination. 64 seats, CycleDuel only. One loss keeps you in — two and you\'re out.',
+      seatedHandles: ['k_8821','grimreef','laserhawk','siren','iso_9001','jeppe_92','mads_kbh','ghost_n'],
     },
-    't4': {
-      id: 't4', time: 'DONE', label: 'AFTERNOON CUP',
-      game: 'CARD DUEL', format: 'Single elim · 16p',
-      seats: 16, filled: 16, entryKr: 100, purseKr: 1360,
-      status: 'DONE',
-      prizeBreakdown: [
-        { place: '1ST',    kr: 952  },
-        { place: '2ND',    kr: 272  },
-        { place: '3RD–4TH', kr: 68   },
-      ],
-      bracket: [
-        { round: 'QF', matches: [
-          { p1: 'PLAYER 1', p2: 'PLAYER 2', winner: 'PLAYER 1' },
-          { p1: 'PLAYER 3', p2: 'PLAYER 4', winner: 'PLAYER 3' },
-          { p1: 'PLAYER 5', p2: 'PLAYER 6', winner: 'PLAYER 5' },
-          { p1: 'PLAYER 7', p2: 'PLAYER 8', winner: 'PLAYER 7' },
-        ]},
-        { round: 'SF', matches: [
-          { p1: 'PLAYER 1', p2: 'PLAYER 3', winner: 'PLAYER 1' },
-          { p1: 'PLAYER 5', p2: 'PLAYER 7', winner: 'PLAYER 7' },
-        ]},
-        { round: 'F', matches: [
-          { p1: 'PLAYER 1', p2: 'PLAYER 7', winner: 'PLAYER 1' },
-        ]},
-      ],
+    'NW25': {
+      id: 'NW25', name: 'NIGHT WINDOW 25',
+      game: 'CARD DUEL', fmt: 'SINGLE ELIM · 16 SEATS',
+      fee: 25, pool: 340, seatsFilled: 4, seatsTotal: 16,
+      start: '6H', status: 'OPEN',
+      description: 'Late night bracket. 16 seats, 25 KR entry. Starts at 23:30 — for the night owls.',
+      seatedHandles: ['reef','piloto','anon#7','torpid_42'],
+    },
+    'DB25': {
+      id: 'DB25', name: 'DROP BLOCK 25',
+      game: 'DROPDUEL', fmt: 'SINGLE ELIM · 32 SEATS',
+      fee: 25, pool: 680, seatsFilled: 4, seatsTotal: 32,
+      start: '24H', status: 'OPEN',
+      description: 'Tomorrow\'s DropDuel bracket. 32 seats, single elimination. Block placement sealed at bracket start.',
+      seatedHandles: ['k_8821','sandman','viper99','calico'],
+    },
+    'CD500': {
+      id: 'CD500', name: 'CARD DUEL 500',
+      game: 'CARD DUEL', fmt: 'INVITE · 16 SEATS',
+      fee: 500, pool: 6800, seatsFilled: 11, seatsTotal: 16,
+      start: '25H', status: 'OPEN',
+      description: 'Invite-only. 16 seats. Request access — entry confirmed by organiser. 500 KR, winner takes 6.800 KR.',
+      seatedHandles: ['k_8821','NovaStrike','grimreef','laserhawk','reef','piloto','ironveil','pulse99','coastline','redhex','zael'],
+    },
+    'WK500': {
+      id: 'WK500', name: 'WEEKLY 500',
+      game: 'CARD DUEL', fmt: 'DOUBLE ELIM · 64 SEATS',
+      fee: 500, pool: 27200, seatsFilled: 14, seatsTotal: 64,
+      start: 'SAT 20:00', status: 'OPEN',
+      description: 'Saturday\'s marquee fight. 64 seats, double elimination, 500 KR entry. The biggest pot of the week — 27.200 KR.',
+      seatedHandles: ['k_8821','NovaStrike','grimreef','laserhawk','reef','piloto','ironveil','pulse99','coastline','redhex','zael','sandstorm','hexlock','mirror7'],
     },
   }
   return tournaments[id] ?? null
@@ -242,11 +273,13 @@ export type TickerItem = {
 // ── Mock implementations ──────────────────────────────────────────────────────
 
 export function getStatsStrip(): StatsStrip {
+  // Production: SELECT biggest_pot_who, biggest_pot_kr, settled_today, total_paid_kr
+  // FROM platform_stats WHERE date = today LIMIT 1
   return {
-    biggestPotWho: '—',
-    biggestPotAmount: '—',
-    settledToday: 0,
-    totalPaidToday: '0',
+    biggestPotWho:    'k_8821 vs grimreef',
+    biggestPotAmount: '5.420',
+    settledToday:     1247,
+    totalPaidToday:   '96.430',
   }
 }
 
@@ -267,10 +300,29 @@ export function getLiveMatch(): LiveMatch {
 }
 
 export function getBoard(): Board {
+  // Production: query matches table, group/sort server-side, return top 5 per category
   return {
-    biggestPots:    [],
-    longestStreaks: [],
-    biggestDays:    [],
+    biggestPots: [
+      { rank: '01', who: 'k_8821 vs grimreef',   what: 'CARD · 250 ROOM',   value: '5.420' },
+      { rank: '02', who: 'sandman vs reef',       what: 'CYCLE · 500 ROOM',  value: '4.500' },
+      { rank: '03', who: 'NovaStrike vs anon#9',  what: 'CARD · 250 ROOM',   value: '4.500' },
+      { rank: '04', who: 'mads_kbh vs viper99',   what: 'DROP · 100 ROOM',   value: '1.800' },
+      { rank: '05', who: 'siren vs iso_9001',      what: 'CARD · 50 ROOM',    value: '900'   },
+    ],
+    longestStreaks: [
+      { rank: '01', who: 'NovaStrike', what: 'CARD · ACTIVE',        value: '7' },
+      { rank: '02', who: 'k_8821',     what: 'CARD · BROKEN 12:18',  value: '6' },
+      { rank: '03', who: 'sandman',    what: 'CYCLE · ACTIVE',        value: '5' },
+      { rank: '04', who: 'piloto',     what: 'CYCLE · BROKEN 11:42', value: '4' },
+      { rank: '05', who: 'reef',       what: 'CYCLE · ACTIVE',        value: '3' },
+    ],
+    biggestDays: [
+      { rank: '01', who: 'k_8821',     what: '11 MATCHES · 9W 2L', value: '8.420' },
+      { rank: '02', who: 'NovaStrike', what: '8 MATCHES · 7W 1L',  value: '6.250' },
+      { rank: '03', who: 'grimreef',   what: '6 MATCHES · 5W 1L',  value: '4.100' },
+      { rank: '04', who: 'reef',       what: '5 MATCHES · 4W 1L',  value: '3.100' },
+      { rank: '05', who: 'sandman',    what: '7 MATCHES · 4W 3L',  value: '2.450' },
+    ],
   }
 }
 
@@ -308,7 +360,8 @@ export function getTicker(): TickerItem[] {
 }
 
 export function getLiveMatchCount() {
-  return { live: 0, queued: 0, settledToday: 0 }
+  // Production: SELECT count(*) FROM matches WHERE status = 'live' / 'queued' / settled today
+  return { live: 47, queued: 12, settledToday: 1247 }
 }
 
 // ── Library ───────────────────────────────────────────────────────────────────
@@ -333,14 +386,14 @@ export function getLibraryCategories(): LibraryCategory[] {
     {
       label: 'CLASSIC',
       games: [
-        { num: '01', slug: 'card-duel',  name: 'CARD DUEL',  desc: 'Sealed sequential rock paper scissors. 9 moves, locked blind.', format: '1V1 · 60s',  liveCount: 0, todayCount: 0 },
-        { num: '02', slug: 'cycleduel',  name: 'CYCLEDUEL',  desc: 'Five-type cycle with peek mechanic.',                           format: '1V1 · 90s',  liveCount: 0, todayCount: 0 },
+        { num: '01', slug: 'card-duel',  name: 'CARD DUEL',  desc: 'Sealed sequential rock paper scissors. 9 moves, locked blind.', format: '1V1 · 60s',  liveCount: 12, todayCount: 247 },
+        { num: '02', slug: 'cycleduel',  name: 'CYCLEDUEL',  desc: 'Five-type cycle with peek mechanic.',                           format: '1V1 · 90s',  liveCount: 8,  todayCount: 127 },
       ],
     },
     {
       label: 'BLOCK',
       games: [
-        { num: '03', slug: 'dropduel',   name: 'DROPDUEL',   desc: 'Connect 4 with placed blocks. Pure positional.',               format: '1V1 · 120s', liveCount: 0,  todayCount: 0  },
+        { num: '03', slug: 'dropduel',   name: 'DROPDUEL',   desc: 'Connect 4 with placed blocks. Pure positional.',               format: '1V1 · 120s', liveCount: 5,  todayCount: 61  },
       ],
     },
   ]

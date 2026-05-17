@@ -82,6 +82,57 @@ Hvis sessionsdata indsamles via cookie: kræver samtykke-banner jf. cookiebekend
 
 ---
 
+## Anti-Cheat Policy
+
+### Prohibited conduct (T&C basis)
+
+- Use of external tools, solvers, or bots during a match
+- Collusion with opponent (pre-agreed moves, shared codes, etc.)
+- Account sharing or playing on behalf of another person
+- Any form of match manipulation to influence outcome
+
+### Enforcement tiers
+
+| Tier | Trigger | Action |
+|------|---------|--------|
+| Warning | First flag, low confidence | Account noted, no action |
+| Restriction | Confirmed pattern or statistical anomaly | Locked to low-stake rooms (≤50kr), tournament ban |
+| Ban | Confirmed cheating | Permanent ban, balance forfeiture, winnings clawback |
+| Referral | Large-scale or repeat fraud | Case referred to Politiet |
+
+### Legal basis
+
+Cheating to extract money from other players constitutes **bedrageri** under §279 straffeloven — obtaining financial gain through deception. This is not a T&C violation only; it is a criminal act.
+
+T&Cs must include:
+- Explicit prohibition of external tools, collusion, and account sharing
+- **Winnings clawback clause** — winnings obtained through prohibited conduct are forfeited and recoverable by DUELS
+- **Balance forfeiture clause** — confirmed cheating = account balance seized
+- Notice that serious cases are referred to Politiet
+
+### Detection methods
+
+| Method | Applies to |
+|--------|-----------|
+| MitID identity — real CPR attached to every account | All games |
+| Server-side game state — no client manipulation possible | All games |
+| Input fingerprinting — bot timing vs human variance | All games |
+| Statistical flagging — near-perfect efficiency across many games | CodeDuel, HexDuel |
+| Collusion detection — same-guess tie pattern analysis | CodeDuel |
+
+### Financial disincentives (built into platform mechanics)
+
+- Same-guess ties in CodeDuel → split pot = both players lose entry fee
+- Flagged accounts locked to low-stake rooms = capped earning potential
+- Tournament ban = locked out of largest purses
+- Balance forfeiture on confirmed ban = no safe exit
+
+### Note on human-assisted bots
+
+Players may use external tools to calculate optimal moves but input them manually. Input fingerprinting does not catch this. Mitigation: statistical flagging over many games + MitID identity risk (bedrageri exposure if confirmed). Accepted residual risk — same problem as chess.com engine assistance.
+
+---
+
 ## Åbne compliance-punkter
 
 - [ ] Hvidvask-procedure dokumenteret

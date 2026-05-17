@@ -1,6 +1,6 @@
-# GAMES.md — DUEL Game Specifications
+# GAMES.md — DUEL Game Specifications (Build Reference)
 
-Full rules for all games. Referenced by CLAUDE.md.
+Condensed rules for build context. **Source of truth is `Games/[game].md`** in the vault — read that for full rules, UI specs, and visibility rules. Update both if rules change.
 
 ---
 
@@ -83,7 +83,7 @@ Both players secretly and simultaneously place 1 blocked cell. Revealed at game 
 **Phase 2 — Play:**
 Standard Connect Four on modified 6×7 board. Per-move time limit — auto-place in first available column right-to-left on timeout.
 
-**Draw:** Board fills with no winner = split pot, no rake.
+**Draw resolution:** Board fills → overflow column (8th column, 6 rows) unlocks, play continues until four connected or column fills. Still no winner → threat score (longest chain wins). True tie (all exhausted) → full refund, no rake.
 
 **Themes & variants:**
 | Name | Theme | Board | Blocks | Win |

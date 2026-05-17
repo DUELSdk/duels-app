@@ -1,0 +1,180 @@
+/* DUEL v2 — broadcast / bunker tokens
+ * Two surfaces with maximum tonal contrast:
+ *   .broadcast — ESPN sportsbook. Bone paper, stadium green ticker, tabular nums.
+ *   .bunker    — concrete + red alarm. Match-only. Felt as a room temperature drop.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Type */
+  --font-display:   'Barlow Condensed', 'Helvetica Neue Condensed', sans-serif;
+  --font-body:      'Inter', system-ui, sans-serif;
+  --font-mono:      'JetBrains Mono', ui-monospace, monospace;
+
+  /* BROADCAST surface (marketing / lobby / library) */
+  --bone:        #efece4;     /* paper */
+  --bone-2:      #e6e2d6;     /* secondary paper */
+  --bone-3:      #d8d3c2;
+  --ink:         #0d0d0d;
+  --ink-2:       #1c1c1a;
+  --ink-soft:    #4a4845;
+  --ink-faint:   #807c74;
+  --ink-ghost:   #b8b3a4;
+  --rule:        #0d0d0d;
+  --rule-soft:   rgba(13,13,13,0.14);
+
+  /* BUNKER surface (match) */
+  --concrete:      #0a0a0a;
+  --concrete-2:    #131311;
+  --concrete-3:    #1c1b18;
+  --concrete-4:    #2a2926;
+  --bone-on-dark:  #f0ede4;
+  --bone-faint:    #8a8780;
+  --bone-ghost:    #5a5853;
+
+  /* Brand accent + danger */
+  --accent:      #1d4ed8;     /* Danish Blue — used in rare hits */
+  --alarm:       #ef0000;     /* Pure red — alarm / timer / danger */
+  --alarm-hot:   #ff1f1f;
+  --alarm-soft:  rgba(239,0,0,0.10);
+  --money:       #1d8a3a;     /* Stadium green — money / live / positive */
+  --money-soft:  rgba(29,138,58,0.10);
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--font-body); color: var(--ink); background: var(--bone); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+/* ── Typography utility ── */
+.t-mega    { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; line-height: 0.85; text-transform: uppercase; }
+.t-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; line-height: 0.92; text-transform: uppercase; }
+.t-cond    { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.01em; line-height: 1; text-transform: uppercase; }
+.t-body    { font-family: var(--font-body); font-weight: 400; }
+.t-mono    { font-family: var(--font-mono); }
+.t-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.tabnums   { font-variant-numeric: tabular-nums; }
+
+/* Surfaces */
+.surf-bone     { background: var(--bone); color: var(--ink); }
+.surf-bone-2   { background: var(--bone-2); color: var(--ink); }
+.surf-ink      { background: var(--ink); color: var(--bone); }
+.surf-bunker   { background: var(--concrete); color: var(--bone-on-dark); }
+.surf-bunker-2 { background: var(--concrete-2); color: var(--bone-on-dark); }
+.surf-alarm    { background: var(--alarm); color: #fff; }
+
+/* Mockup screen */
+.screen { width: 100%; height: 100%; overflow: hidden; position: relative; background: var(--bone); color: var(--ink); }
+.screen.bunker { background: var(--concrete); color: var(--bone-on-dark); }
+
+/* Layout */
+.row { display: flex; }
+.col { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-5 { gap: 24px; } .gap-6 { gap: 32px; } .gap-7 { gap: 48px; }
+.between { justify-content: space-between; }
+.center { align-items: center; justify-content: center; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.items-baseline { align-items: baseline; }
+.flex-1 { flex: 1; min-width: 0; }
+.text-c { text-align: center; }
+.text-r { text-align: right; }
+.wrap { flex-wrap: wrap; }
+.uppercase { text-transform: uppercase; }
+
+/* Color helpers */
+.c-soft   { color: var(--ink-soft); }
+.c-faint  { color: var(--ink-faint); }
+.c-money  { color: var(--money); }
+.c-alarm  { color: var(--alarm); }
+.c-bone-faint { color: var(--bone-faint); }
+
+/* Rules */
+.rule    { height: 1px; background: var(--ink); width: 100%; }
+.rule.soft { background: var(--rule-soft); }
+.rule.thick { height: 2px; }
+.rule.dark { background: rgba(240,237,228,0.14); }
+.vrule   { width: 1px; background: var(--ink); align-self: stretch; }
+.vrule.soft { background: var(--rule-soft); }
+.vrule.dark { background: rgba(240,237,228,0.14); }
+
+/* Live dot */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--alarm); display: inline-block; box-shadow: 0 0 0 0 rgba(239,0,0,0.6); animation: pulse 1.4s infinite; }
+.live-dot.money { background: var(--money); animation-name: pulseGreen; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239,0,0,0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(239,0,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,0,0,0); }
+}
+@keyframes pulseGreen {
+  0% { box-shadow: 0 0 0 0 rgba(29,138,58,0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(29,138,58,0); }
+  100% { box-shadow: 0 0 0 0 rgba(29,138,58,0); }
+}
+
+/* Buttons (only used minimally — no chips/labels in v2) */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: 14px;
+  padding: 12px 20px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+  border-radius: 0; line-height: 1; letter-spacing: 0.01em;
+  transition: background 0.12s, color 0.12s;
+}
+.btn:hover { background: var(--ink); color: var(--bone); }
+.btn.lg { padding: 18px 28px; font-size: 15px; }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.btn.primary { background: var(--ink); color: var(--bone); }
+.btn.primary:hover { background: var(--ink-2); }
+.btn.alarm { background: var(--alarm); color: #fff; border-color: var(--alarm); }
+.btn.alarm:hover { background: var(--alarm-hot); border-color: var(--alarm-hot); }
+.btn.ghost { border-color: transparent; padding-left: 0; padding-right: 0; }
+.btn.ghost:hover { background: transparent; color: var(--alarm); }
+.btn.block { width: 100%; }
+.btn.bunker-alarm { background: var(--alarm); color: #fff; border: none; padding: 20px 24px; font-family: var(--font-display); text-transform: uppercase; font-size: 18px; letter-spacing: 0.04em; font-weight: 700; }
+.btn.bunker-alarm:hover { background: var(--alarm-hot); }
+
+/* Animated ticker — continuously scrolls */
+.ticker-rail {
+  display: flex; gap: 0;
+  animation: tickerScroll 60s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 0 24px;
+  font-family: var(--font-mono); font-size: 12px;
+  border-right: 1px solid var(--rule-soft);
+}
+.ticker-item.dark { border-right-color: rgba(240,237,228,0.14); }
+
+/* Thinking indicator — three dots */
+.thinking { display: inline-flex; gap: 3px; align-items: center; height: 12px; }
+.thinking span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: thinking 1.2s infinite; }
+.thinking span:nth-child(2) { animation-delay: 0.15s; }
+.thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes thinking { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+/* Cursor blink */
+.cursor { display: inline-block; width: 8px; height: 14px; background: currentColor; vertical-align: text-bottom; animation: blink 0.9s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Pulse on opponent action */
+@keyframes redFlash {
+  0% { background: var(--alarm); }
+  100% { background: var(--concrete-3); }
+}
+.flash { animation: redFlash 0.8s ease-out; }
+
+/* Number counters */
+.num-mega { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 0.85; font-variant-numeric: tabular-nums; }
+
+/* No focus outlines on these mockups (we don't navigate) */
+button:focus-visible { outline: 2px solid var(--alarm); outline-offset: 2px; }

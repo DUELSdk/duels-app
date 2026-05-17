@@ -1,6 +1,8 @@
-# CLAUDE.md — DUEL Vault
+# CLAUDE.md — DUELS Vault
 
-DUEL skill-gaming platform. Shared vault rules live one level up in `../CLAUDE.md`.
+**Platform name: DUELS** (not DUEL). Domain: `duels.dk`. Any existing file or code that says "DUEL" as the platform name means DUELS — the rename was decided 2026-05-12 but a full file sweep was skipped for cost reasons. New content always uses DUELS.
+
+DUELS skill-gaming platform. Shared vault rules live one level up in `../CLAUDE.md`.
 
 Read order: `CLAUDE.md` → `_brain/index.md` → `_context.md`
 
@@ -30,12 +32,19 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 
 | Task | Read these files |
 |------|-----------------|
+| Anything money touches (payments, wallet, fees, MangoPay) | `_brain/agent-banker.md` |
+| Game rules, legal position, new game review, disputes | `_brain/agent-referee.md` |
+| Building or changing anything in `app/duel/` | `_brain/agent-builder.md` |
+| Any public-facing copy, brand, launch, campaigns | `_brain/agent-promoter.md` |
 | Product / design | `duel_product.md` |
-| UI / visual design system | `design.md` → points to codebase design files |
+| UI / visual design system | `website/designs/style-guide.html` — tokens, surfaces, components, voice. Then `design.md` for build rules. |
 | Design a game mechanic | `duel_product.md` Platform Design Rule section |
 | Legal question (product rules) | `duel_product.md` Legal Framework section |
 | Legal entity / CVR / aftaler | `Company/legal.md` |
 | Finance / regnskab / betalinger | `Company/finance.md` |
+| Payment provider decision | `Company/payment-provider-research.md` — comparison, fees, status. Stripe BLOCKED. MangoPay primary candidate, inquiry sent. |
+| UI copy / locked strings / brand vocabulary | `_brain/copy-library.md` — every repeated UI string, match flow copy, broadcaster voice templates, financial labels, legal micro-copy. Pull from here when building. Also translation source for DE/SE expansion. |
+| Component inventory / what's already built | `app/duel/COMPONENTS.md` — every shared component, game component, lib utility, their props, surface, and usage. Read before building to avoid duplication. Also flags what does NOT exist yet. |
 | Compliance / hvidvask / GDPR | `Company/compliance.md` |
 | Marketing / brand / kanaler | `Company/marketing.md` |
 | Drift / hosting / support | `Company/operations.md` |
@@ -43,7 +52,17 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 | Legal market research | `Research/market-legality_research.md` |
 | Launch strategy | `Research/launch-strategy_research.md` |
 | Add a new game | `duel_product.md` Games section + `Templates/Duel-Game.md` |
-| Build or change UI for a specific game | `Games/[game-name]-ui.md` — animations, components, states. Also read `Games/[game-name].md` for rules/visibility. |
+| Build or change UI for a specific game | `Games/[game-name]-ui.md` — animations, components, states. Also read `Games/[game-name].md` for rules/visibility. Exists for: card-duel, cycle-duel, drop-duel, ship-duel |
+| Game rules (authoritative) | `Games/[game-name].md` — master. `app/duel/GAMES.md` is a build summary derived from this. |
+| Unbuilt feature ideas (build-layer) | `app/duel/IDEAS.md` — short concepts waiting to be built. Promoted to GAMES.md or DESIGN.md when decided. |
+| Fully spec'd format research | `Research/Formats/` — deep specs with math, legal notes, variables. Not the same as IDEAS.md. |
+| Bracket tournament math (seat tiers, prize formula, time estimate) | `Research/Formats/bracket-tournament-format.md` |
+| Pre-launch testing | `app/duel/TEST.md` — full manual test checklist across all pages and features |
+| Master launch plan | `PLAN.md` — phased plan with gates and dependency map |
+| Terms and Conditions (draft) | `Company/terms-and-conditions.md` — draft for MangoPay submission, lawyer review before go-live |
+| AML Policy (draft) | `Company/aml-policy.md` — anti-money laundering policy for MangoPay submission |
+| Shareholding structure | `Company/shareholding-structure.md` — ownership chart for MangoPay submission |
+| MangoPay integration workflow | `Company/mangopay-integration-workflow.md` — money flow diagram for MangoPay submission |
 | Create any new note | Matching template from `/Templates` first |
 
 ---
@@ -76,6 +95,31 @@ Every game added to DUEL must have all of these before it's spec-complete:
 - [ ] Added to the games list in `duel_product.md`
 
 Use `Templates/Duel-Game.md` as the base block.
+
+---
+
+## File Hygiene Rules
+
+**New file rule:** Every new `.md` file created in the vault must be added to the Routing table above in the same session. No exceptions. If a file has no routing entry, it is invisible to future sessions.
+
+**Memory rule:** Never create a `memory/` folder inside the vault. Memory files belong exclusively in `~/.claude/projects/C--Users-sylva-OneDrive-Skrivebord-DUEL/memory/` and are written via the memory tool. A vault `memory/` folder will not be loaded by the memory system and is dead weight.
+
+**Design session cleanup:** After a design session is archived into `website/designs/` or a named subfolder in `website/`, delete the root-level `uploads/` source folder. The archive is the record — the source is redundant once bundled.
+
+---
+
+## Design-to-Build Workflow
+
+Discuss what the page needs to do, then build it directly in Next.js. The dev server is the live preview. Do not create new HTML prototypes — it doubles the work and the tokens.
+
+If an existing prototype exists in `/website/designs/` for the page being built, read it first as build reference. Existing prototypes are source of truth. New ones are not created.
+
+### Flow
+
+1. **Discuss direction** — page purpose, layout, copy, any decisions
+2. **Check `/website/designs/`** — if a prototype exists for this page, read it before touching code
+3. **Build directly in Next.js** — Claude codes it, dev server shows it live
+4. **Iterate in the codebase** — changes go straight into the component
 
 ---
 

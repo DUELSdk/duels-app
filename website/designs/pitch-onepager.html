@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUELS — Introduktion</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #18181b;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.10);
+    --border-dim: rgba(255,255,255,0.06);
+    --red: #dc2626;
+    --red-dim: rgba(220,38,38,0.12);
+    --red-border: rgba(220,38,38,0.25);
+    --white: #ffffff;
+    --white-60: rgba(255,255,255,0.60);
+    --white-40: rgba(255,255,255,0.40);
+    --white-25: rgba(255,255,255,0.25);
+    --white-15: rgba(255,255,255,0.15);
+    --white-08: rgba(255,255,255,0.08);
+    --green: #34d399;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 56px 48px;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .wordmark {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--white);
+  }
+
+  .wordmark span {
+    color: var(--red);
+  }
+
+  .header-meta {
+    text-align: right;
+  }
+
+  .header-meta .tagline {
+    font-size: 13px;
+    color: var(--white-60);
+    line-height: 1.5;
+    max-width: 240px;
+  }
+
+  .header-meta .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--white-25);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ── CONCEPT ────────────────────────────── */
+  .concept {
+    margin-bottom: 48px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--white-25);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .concept-body {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--white-60);
+    line-height: 1.7;
+    max-width: 620px;
+  }
+
+  .concept-body strong {
+    color: var(--white);
+    font-weight: 500;
+  }
+
+  /* ── SPLIT LAYOUT ───────────────────────── */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .split-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  /* ── CARDS ──────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card-accent {
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .game-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .game-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .game-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+
+  .game-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--white-40);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .game-desc {
+    font-size: 12px;
+    color: var(--white-40);
+    line-height: 1.6;
+  }
+
+  /* ── BUSINESS MODEL ─────────────────────── */
+  .model-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+
+  .model-cell {
+    background: var(--bg);
+    padding: 16px 20px;
+  }
+
+  .model-cell:first-child { border-radius: 10px 0 0 10px; }
+  .model-cell:last-child  { border-radius: 0 10px 10px 0; }
+
+  .model-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--white-25);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .model-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .model-note {
+    font-size: 11px;
+    color: var(--white-40);
+    margin-top: 3px;
+  }
+
+  /* ── LEGAL ──────────────────────────────── */
+  .legal-card {
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 48px;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  .legal-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .legal-content {}
+
+  .legal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.06em;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .legal-body {
+    font-size: 13px;
+    color: var(--white-60);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  .legal-body strong {
+    color: var(--white);
+  }
+
+  .legal-journal {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--white-40);
+    letter-spacing: 0.06em;
+  }
+
+  .legal-journal span {
+    color: var(--white-60);
+  }
+
+  /* ── STATUS ─────────────────────────────── */
+  .status-list {
+    list-style: none;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .status-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--white-60);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: #fbbf24; }
+  .dot-dim { background: var(--white-25); }
+
+  /* ── SEEKING ────────────────────────────── */
+  .seeking-list {
+    list-style: none;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .seeking-list li {
+    font-size: 13px;
+    color: var(--white-60);
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .seeking-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+  }
+
+  /* ── FOOTER ─────────────────────────────── */
+  .footer {
+    border-top: 1px solid var(--border-dim);
+    padding-top: 28px;
+    margin-top: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    color: var(--white-25);
+  }
+
+  .footer-info {
+    text-align: right;
+    font-size: 12px;
+    color: var(--white-40);
+    line-height: 1.8;
+  }
+
+  .footer-info strong {
+    color: var(--white-60);
+    font-weight: 500;
+  }
+
+  /* ── PRINT ──────────────────────────────── */
+  @media print {
+    body { background: #18181b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 32px 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="wordmark">DUEL<span>S</span></div>
+    <div class="header-meta">
+      <div class="label">Introduktion · 2026</div>
+      <div class="tagline">Dansk færdighedsspilet platform.<br>1v1. Rigtige penge. Nul tilfældighed.</div>
+    </div>
+  </header>
+
+  <!-- CONCEPT -->
+  <section class="concept">
+    <div class="section-label">Hvad er DUELS</div>
+    <p class="concept-body">
+      En dansk platform hvor spillere udfordrer hinanden <strong>1v1 i færdighedsspil om rigtige penge.</strong>
+      Ikke casino — ingen tilfældighed, ingen husfordel, ingen licenskrav.
+      Spillerne konkurrerer. Platformen faciliterer. Vinder tager det hele.
+    </p>
+  </section>
+
+  <!-- GAMES -->
+  <section style="margin-bottom: 48px;">
+    <div class="section-label">Tre spil ved launch</div>
+    <div class="split-3">
+      <div class="game-card">
+        <div class="game-number">SPIL 01</div>
+        <div class="game-name">Card Duel</div>
+        <div class="game-sub">Sten · Saks · Papir</div>
+        <div class="game-desc">Begge spillere arrangerer 9 kort i en forseglet sekvens og låser simultant. Ren psykologi — nul tilfældighed.</div>
+      </div>
+      <div class="game-card">
+        <div class="game-number">SPIL 02</div>
+        <div class="game-name">CycleDuel</div>
+        <div class="game-sub">5-type hierarki</div>
+        <div class="game-desc">Kortspil med 5 typer i en cyklus. Én kort afsløres per blok — informationskrig og bluffing.</div>
+      </div>
+      <div class="game-card">
+        <div class="game-number">SPIL 03</div>
+        <div class="game-name">DropDuel</div>
+        <div class="game-sub">Fire på Stribe variant</div>
+        <div class="game-desc">To-fase: hemmelig blokplacering, derefter klassisk Fire på Stribe på modificeret bræt.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGAL — the credibility anchor -->
+  <div class="legal-card">
+    <div class="legal-icon">✦</div>
+    <div class="legal-content">
+      <div class="legal-title">Juridisk afklaring — Spillemyndigheden</div>
+      <div class="legal-body">
+        Spillemyndigheden, brev af 20. april 2026:<br><br>
+        <em style="color: var(--white); font-style: italic; line-height: 1.8; display: block; padding-left: 14px; border-left: 2px solid var(--red);">
+          "I de fremførte eksempler er det Spillemyndighedens umiddelbare vurdering at der er tale om færdighedsspil, hvorfor det som udgangspunkt ikke er omfattet af spillelovens anvendelsesområde, og der derfor ikke kræves en tilladelse."
+        </em><br>
+        Tre betingelser udløser spillelovens krav: betaling + præmiechance + tilfældighedselement. DUELS-spil opfylder ikke betingelse 3.
+      </div>
+      <div class="legal-journal">JOURNAL · <span>26-632347</span> &nbsp;·&nbsp; SAGSBEHANDLER · <span>Peter Vedel Jakobsen</span></div>
+    </div>
+  </div>
+
+  <!-- BUSINESS MODEL + STATUS -->
+  <div class="split" style="margin-bottom: 48px;">
+    <div class="card">
+      <div class="section-label">Forretningsmodel</div>
+      <div class="model-grid">
+        <div class="model-cell">
+          <div class="model-label">Entry fee</div>
+          <div class="model-value">10%</div>
+          <div class="model-note">per standard match</div>
+        </div>
+        <div class="model-cell">
+          <div class="model-label">Turneringer</div>
+          <div class="model-value">15%</div>
+          <div class="model-note">entry fee</div>
+        </div>
+        <div class="model-cell">
+          <div class="model-label">Husfordel</div>
+          <div class="model-value">0%</div>
+          <div class="model-note">aldrig</div>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--white-40); margin-top: 14px; line-height: 1.6;">
+        Platformen tjener udelukkende entry fees — aldrig en andel af præmiepuljen. Vinder tager det hele.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Nuværende status</div>
+      <ul class="status-list">
+        <li><span class="dot dot-green"></span>CVR registreret (PMV)</li>
+        <li><span class="dot dot-green"></span>Spillemyndigheden afklaring bekræftet</li>
+        <li><span class="dot dot-green"></span>Tre spilmekanikker specifikationsklare</li>
+        <li><span class="dot dot-green"></span>UI næsten færdig — platform under build</li>
+        <li><span class="dot dot-yellow"></span>Betalingsintegration (MangoPay) · igangværende</li>
+        <li><span class="dot dot-yellow"></span>KYC / MitID integration · planlagt</li>
+        <li><span class="dot dot-dim"></span>Server-side game logic · planlagt</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SEEKING -->
+  <section style="margin-bottom: 0;">
+    <div class="section-label">Hvad vi søger</div>
+    <div class="split" style="margin-bottom: 0;">
+      <div>
+        <ul class="seeking-list">
+          <li>Rådgivning om startup-rejsen og næste skridt</li>
+          <li>Connections mod relevante angels og investorer</li>
+          <li>Netværk i dansk startup- og gaming-miljø</li>
+        </ul>
+      </div>
+      <div>
+        <ul class="seeking-list">
+          <li>Sparring om go-to-market og launch-strategi</li>
+          <li>Erfaring med real-money platforme og compliance</li>
+          <li>Potentielle early advisors med domæneviden</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">DUELS</div>
+    <div class="footer-info">
+      <strong>Silas Greve Abainza</strong><br>
+      Founder · DUEL v/Silas Greve Abainza<br>
+      greveabainza@pm.me &nbsp;·&nbsp; duels.dk
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

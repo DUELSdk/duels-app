@@ -57,5 +57,12 @@ Indtil da: sheets + Claude.
 ## Åbne finansielle punkter
 
 - [ ] Opret erhvervskonto (Lunar Business) — åbn når MangoPay-setup starter, ikke før
-- [ ] Afklar momspligt ved vækst over 50.000 kr
-- [ ] Betalingsudbyder (MangoPay + Trustly) — opret efter Spillemyndighed-udtalelse
+- [ ] Betalingsudbyder (MangoPay + Trustly) — opret efter Spillemyndighed-udtalelse ✅ svar modtaget 2026-05-13
+
+### Skal løses før første omsætning
+
+- [ ] **Bogføringsskabelon** — hvad registreres per kamp: entry fee ind, præmie ud, MangoPay-gebyr fratrukket. Konkret skabelon i sheets.
+- [ ] **Skatteopsparingsregel** — PMV-overskud beskattes som personlig indkomst. Beslut hvad % der sættes til side løbende (typisk 40-50%).
+- [ ] **Momsgrænse-plan** — hvad sker konkret den dag omsætning rammer 50.000 kr: momsregistrering, første angivelse, Dinero-skift.
+- [ ] **MangoPay nettoomsætning** — kortlæg processorgebyr per transaktion. Platformens reelle nettoindtægt = entry fee minus gebyr.
+- [ ] **Bilag og dokumentation** — Bogføringsloven kræver 5 års opbevaring. Beslut format (PDF-bilag fra MangoPay?) og where de gemmes.

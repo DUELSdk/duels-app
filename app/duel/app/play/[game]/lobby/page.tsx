@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { use } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav, StadiumStrip } from '@/components/BroadcastNav'
+import { BroadcastNav } from '@/components/BroadcastNav'
 import { s } from '@/lib/styles'
 import { getGameDetail } from '@/lib/mock-data'
 import { notFound } from 'next/navigation'
@@ -25,7 +25,6 @@ const ROOMS: Room[] = [
   { kr: 500, liveCount: 1,  waitSec: 120 },
 ]
 
-const HIGH_ROLLER_KR: number[] = []
 const MOCK_BALANCE = 2450
 
 function waitLabel(sec: number) {
@@ -59,8 +58,6 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
   const formatLabel = detail.format.split('·')[0].trim()
   const matchHref = `/play/${slug}/finding?kr=${selectedKr}`
 
-  const standardRooms   = availableRooms.filter(r => !HIGH_ROLLER_KR.includes(r.kr))
-  const highRollerRooms = availableRooms.filter(r => HIGH_ROLLER_KR.includes(r.kr))
 
   function RoomButton({ room, i }: { room: Room; i: number }) {
     const selected = selectedKr === room.kr
@@ -91,7 +88,7 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
         <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 8 }}>
           ROOM 0{i + 1}
         </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
           {room.kr}
         </div>
         <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 12 }}>
@@ -113,7 +110,6 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
-      <StadiumStrip />
 
       <main style={{ padding: `28px ${s.px} 80px`, maxWidth: 1200 }}>
 

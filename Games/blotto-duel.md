@@ -42,7 +42,11 @@ Colonel Blotto format. Each player has 10 units to distribute across 5 battlefie
 
 ## Scoring
 
-Each field won = 1 point per round. Total across 3 rounds determines winner. Tie after 3 rounds → sudden death round (same mechanic, one round). Tie in sudden death → split pot.
+Each field won = 1 point per round. Total across 3 rounds determines winner.
+
+**Sudden death (no split pot — play until winner):**
+1. SD at 3 fields, 10 units — play up to 2 rounds. Still tied after both →
+2. SD at 2 fields, 10 units — repeat until decisive. No round limit. No split.
 
 ---
 
@@ -71,7 +75,7 @@ Not applicable. No spatial board or shared cell to claim — Crown has no mappin
 | **BlottoDuel** | Neutral / standard | — | Base |
 | Blitz Blotto | Neutral speed | 7 units, 3 fields, 1 round | Fast single-round variant |
 | Deep Blotto | Neutral extended | 15 units, 7 fields, 5 rounds | Longer match |
-| Fog Blotto | Neutral | 10 units, 5 fields, 3 rounds | Allocations hidden until all 3 rounds complete — no read layer |
+| Fog of War | Military | 10 units, 5 fields, 6 battles (3 Wars × 2) | Commit 2-battle plan per War sealed. Between Wars: after-action report shows field W/L only — no enemy unit numbers. Full reveal at match end. Deduction replaces direct read. |
 | Escalating | Neutral | 10/15/20 units, 5 fields, 3 rounds | Unit pool grows each round |
 
 ---

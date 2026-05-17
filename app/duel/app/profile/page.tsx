@@ -1,191 +1,211 @@
 import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
+import { SignOutButton } from '@/components/SignOutButton'
 import { s } from '@/lib/styles'
-import { getCurrentUser, type RecentMatch } from '@/lib/mock-data'
+import { getCurrentUser, getRivals } from '@/lib/mock-data'
+
+const MOCK_WINS   = 142
+const MOCK_LOSSES = 89
+const MOCK_TIES   = 16
+const MOCK_NET    = '+4.260'
+const MOCK_STREAK = 7
+
+const ACHIEVEMENTS = [
+  { label: 'FIRST BLOOD',  sub: 'first win'            },
+  { label: 'CENTURY',      sub: '100 wins'             },
+  { label: 'HEATER',       sub: '5-streak'             },
+  { label: 'ROOM CLIMBER', sub: '500 KR room cleared'  },
+]
 
 export default function ProfilePage() {
-  const user = getCurrentUser()
-  const winPct = Math.round(user.wins / (user.wins + user.losses) * 100)
+  const user   = getCurrentUser()
+  const rivals = getRivals().sort((a, b) => {
+    if (a.revengeActive && !b.revengeActive) return -1
+    if (!a.revengeActive && b.revengeActive) return 1
+    return b.played - a.played
+  })
+  const activeRival = rivals.find(r => r.revengeActive) ?? null
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <BroadcastNav balance={user.balance.toLocaleString('da-DK')} />
+      <BroadcastNav />
 
-      <section style={{ padding: `56px ${s.px} 40px`, maxWidth: 900 }}>
-        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 20 }}>PROFILE</div>
-        <h1 style={{ ...s.display(80), lineHeight: 0.85 }}>YOUR STATS.</h1>
-
-        {/* Avatar + handle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 40 }}>
-          <div style={{
-            width: 64, height: 64,
-            border: '1.5px solid var(--ink)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
-          }}>
-            {user.initials}
+      {/* ── Header ── */}
+      <section style={{ padding: `40px ${s.px} 24px` }}>
+        <div style={{ borderBottom: '3px double var(--ink)', paddingBottom: 16 }}>
+          <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.18em', color: 'var(--ink-faint)' }}>
+            MEMBER SINCE {user.memberSince} · {MOCK_WINS + MOCK_LOSSES + MOCK_TIES} MATCHES · LV1 PLAYER
           </div>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, textTransform: 'uppercase' }}>
-              {user.handle}
-            </div>
-            <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 4 }}>
-              MEMBER SINCE {user.memberSince} · RANK #{user.rank}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+            <h1 style={{ ...s.display(132), lineHeight: 0.85 }}>NOVASTRIKE.</h1>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)' }}>ELO · CARD DUEL</div>
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56,
+                  letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                }}>1.842</div>
+                <div style={{ ...s.mono, fontSize: 10, fontWeight: 700, color: 'var(--money)', letterSpacing: '0.12em' }}>↑ 24 LAST 7D</div>
+              </div>
+              <SignOutButton />
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Overall stats grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, marginTop: 40 }}>
+      {/* ── Stats strip ── */}
+      <section style={{ padding: `12px ${s.px} 24px` }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+          borderTop: '1px solid var(--rule-soft)',
+          borderBottom: '1px solid var(--rule-soft)',
+        }}>
           {[
-            { label: 'MATCHES PLAYED', value: `${user.wins + user.losses}`                             },
-            { label: 'WIN RATE',       value: `${winPct}%`                                             },
-            { label: 'NET EARNED',     value: `+${user.netKr.toLocaleString('da-DK')} KR`              },
-            { label: 'BALANCE',        value: `${user.balance.toLocaleString('da-DK')} KR`             },
-          ].map(stat => (
-            <div key={stat.label} style={{ border: '1.5px solid var(--ink)', padding: '20px 24px' }}>
-              <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 10 }}>{stat.label}</div>
+            ['WINS',    String(MOCK_WINS),   'var(--money)'],
+            ['LOSSES',  String(MOCK_LOSSES), 'var(--alarm)'],
+            ['TIES',    String(MOCK_TIES),   'var(--ink)'],
+            ['NET KR',  MOCK_NET,            'var(--money)'],
+            ['STREAK',  String(MOCK_STREAK), 'var(--alarm)'],
+          ].map(([label, value, color], i, a) => (
+            <div key={label} style={{
+              padding: '20px 24px',
+              borderRight: i < a.length - 1 ? '1px solid var(--rule-soft)' : 'none',
+            }}>
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.14em', marginBottom: 4 }}>{label}</div>
               <div style={{
-                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32,
-                letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 48,
+                letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color, lineHeight: 1,
               }}>
-                {stat.value}
+                {value}
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Per-game stats */}
-      <section style={{ padding: `0 ${s.px} 40px`, maxWidth: 900 }}>
-        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 12 }}>BY GAME</div>
-        <div style={s.rule} />
+      {/* ── Two-column: Last Ten + By Game ── */}
+      <section style={{ padding: `24px ${s.px} 48px` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 40 }}>
 
-        {user.gameStats.map(g => {
-          const pct = g.played > 0 ? Math.round(g.won / g.played * 100) : 0
-          return (
-            <div key={g.game} style={{
-              display: 'grid', gridTemplateColumns: '1fr 100px 100px 120px 100px',
-              alignItems: 'center', gap: 24,
-              padding: '16px 0', borderBottom: '1px solid var(--rule-soft)',
-            }}>
-              <Link href={`/play/${g.slug}`} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, textTransform: 'uppercase', color: 'var(--ink)', textDecoration: 'none' }}>
-                {g.game}
-              </Link>
-              {[
-                { label: 'PLAYED', value: g.played },
-                { label: 'WON',    value: g.won },
-                { label: 'WIN RATE', value: `${pct}%` },
-                { label: 'LOST',   value: g.played - g.won },
-              ].map(col => (
-                <div key={col.label} style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, fontVariantNumeric: 'tabular-nums' }}>
-                    {col.value}
-                  </div>
-                  <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 2 }}>{col.label}</div>
-                </div>
-              ))}
+          {/* LAST TEN */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+              <h2 style={{ ...s.display(44) }}>LAST TEN.</h2>
+              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>TODAY · RECENT</span>
             </div>
-          )
-        })}
-      </section>
-
-      {/* Recent matches */}
-      <section style={{ padding: `0 ${s.px} 40px`, maxWidth: 900 }}>
-        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 12 }}>RECENT MATCHES</div>
-        <div style={s.rule} />
-
-        {user.recentMatches.map(m => (
-          <MatchRow key={m.id} match={m} />
-        ))}
-      </section>
-
-      {/* Account settings */}
-      <section style={{ padding: `0 ${s.px} 56px`, maxWidth: 900 }}>
-        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 12 }}>ACCOUNT</div>
-        <div style={s.rule} />
-
-        {[
-          { label: 'EMAIL',         value: 'greveabainza@pm.me',  action: 'EDIT' },
-          { label: 'MitID',         value: 'VERIFIED',             action: null   },
-          { label: 'DEPOSIT LIMIT', value: 'No limit set',         action: 'SET'  },
-          { label: 'NOTIFICATIONS', value: 'Off',                  action: 'EDIT' },
-        ].map(row => (
-          <div key={row.label} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '16px 0', borderBottom: '1px solid var(--rule-soft)',
-          }}>
-            <span style={{ ...s.mono, fontSize: 10 }}>{row.label}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)' }}>{row.value}</span>
-              {row.action && (
-                <button disabled style={{
-                  ...s.mono, fontSize: 9, color: 'var(--ink-ghost)',
-                  border: '1px solid var(--rule-soft)', padding: '4px 10px',
-                  background: 'transparent', cursor: 'not-allowed',
+            <div style={s.rule} />
+            {user.recentMatches.slice(0, 10).map((m, i) => {
+              const isWin  = m.result === 'WIN'
+              const isLoss = m.result === 'LOSS'
+              const color  = isWin ? 'var(--money)' : isLoss ? 'var(--alarm)' : 'var(--ink-faint)'
+              return (
+                <div key={m.id} style={{
+                  display: 'grid', gridTemplateColumns: '52px 60px 1fr 32px 80px',
+                  gap: 12, alignItems: 'baseline',
+                  padding: '13px 0', borderBottom: '1px solid var(--rule-soft)',
                 }}>
-                  {row.action}
-                </button>
-              )}
+                  <span style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)', fontVariantNumeric: 'tabular-nums' }}>{m.ago}</span>
+                  <span style={{ ...s.mono, fontSize: 10, letterSpacing: '0.10em' }}>{m.game.split(' ')[0]}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>VS {m.opponent}</span>
+                  <span style={{ ...s.mono, fontSize: 11, fontWeight: 700, color }}>{m.result[0]}</span>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16,
+                    textAlign: 'right', fontVariantNumeric: 'tabular-nums', color,
+                  }}>
+                    {isWin ? '+' : isLoss ? '−' : '±'}{Math.abs(m.earnedKr)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* BY GAME + ACHIEVEMENTS */}
+          <div>
+            <h2 style={{ ...s.display(36), marginBottom: 12 }}>BY GAME.</h2>
+            <div style={s.rule} />
+            {user.gameStats.map((g, i, a) => {
+              const pct = g.played > 0 ? Math.round(g.won / g.played * 100) : 0
+              return (
+                <div key={g.game} style={{
+                  padding: '16px 0',
+                  borderBottom: i < a.length - 1 ? '1px solid var(--rule-soft)' : 'none',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, textTransform: 'uppercase' }}>{g.game}</span>
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: i === 0 ? 'var(--money)' : 'var(--ink)',
+                    }}>
+                      {pct}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                    <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>{g.played} PLAYED</span>
+                    <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>{g.won}W · {g.played - g.won}L</span>
+                  </div>
+                </div>
+              )
+            })}
+
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.14em', marginTop: 28, marginBottom: 10 }}>
+              ACHIEVEMENTS
+            </div>
+            <div style={s.rule} />
+            {ACHIEVEMENTS.map((a, i) => (
+              <div key={a.label} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                padding: '11px 0', borderBottom: '1px solid var(--rule-soft)',
+              }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>{a.label}</span>
+                <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>{a.sub}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Rivals ── */}
+      {activeRival && (
+        <section style={{ padding: `0 ${s.px} 56px` }}>
+          <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 12 }}>RIVALS</div>
+          <div style={s.rule} />
+          <div style={{
+            background: 'var(--ink)', color: 'var(--bone-on-dark)',
+            padding: '32px 40px', marginTop: 20,
+          }}>
+            <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
+              REVENGE ACTIVE · LOST {Math.abs(activeRival.currentStreak)} IN A ROW
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-ghost)', marginBottom: 12 }}>YOUR NEMESIS</div>
+                <div style={{ ...s.display(80), color: 'var(--bone-on-dark)', lineHeight: 0.88 }}>
+                  {activeRival.handle}.
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-ghost)', marginBottom: 10 }}>HEAD TO HEAD</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64,
+                    color: 'var(--money)', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>{activeRival.wins}W</span>
+                  <span style={{ ...s.mono, color: 'var(--bone-ghost)' }}>–</span>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64,
+                    color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>{activeRival.losses}L</span>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-
-        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-          <Link href="/responsible-gaming" style={{
-            ...s.mono, fontSize: 10,
-            border: '1.5px solid var(--ink)', padding: '10px 18px',
-            textDecoration: 'none', color: 'var(--ink)',
-          }}>
-            RESPONSIBLE GAMING TOOLS
-          </Link>
-          <button disabled style={{
-            ...s.mono, fontSize: 10, color: 'var(--ink-faint)',
-            border: '1px solid var(--rule-soft)', padding: '10px 18px',
-            background: 'transparent', cursor: 'not-allowed',
-          }}>
-            SELF-EXCLUSION
-          </button>
-        </div>
-      </section>
+        </section>
+      )}
 
       <Footer />
-    </div>
-  )
-}
-
-function MatchRow({ match }: { match: RecentMatch }) {
-  const color = match.result === 'WIN' ? 'var(--money)' : match.result === 'LOSS' ? 'var(--alarm)' : 'var(--ink-ghost)'
-  const sign  = match.result === 'WIN' ? '+' : match.result === 'LOSS' ? '' : '±'
-
-  return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: '140px 80px 1fr 120px 100px',
-      alignItems: 'center', gap: 24,
-      padding: '14px 0', borderBottom: '1px solid var(--rule-soft)',
-    }}>
-      <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)' }}>{match.ago}</span>
-      <span style={{ ...s.mono, fontSize: 10, fontWeight: 600, color }}>{match.result}</span>
-      <div>
-        <div style={{ fontSize: 14, color: 'var(--ink)' }}>
-          {match.game} · vs {match.opponent}
-        </div>
-        <div style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 2 }}>
-          {match.roomKr} KR ROOM
-        </div>
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        <span style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20,
-          color, fontVariantNumeric: 'tabular-nums',
-        }}>
-          {sign}{match.earnedKr !== 0 ? Math.abs(match.earnedKr) : 0}
-        </span>
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-ghost)' }}>KR</span>
-      </div>
     </div>
   )
 }

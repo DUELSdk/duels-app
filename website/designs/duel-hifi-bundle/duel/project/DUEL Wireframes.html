@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DUEL — Wireframes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Architects+Daughter&family=Caveat:wght@400;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="page-overview.jsx"></script>
+  <script type="text/babel" src="page-landing.jsx"></script>
+  <script type="text/babel" src="page-library.jsx"></script>
+  <script type="text/babel" src="page-library-full.jsx"></script>
+  <script type="text/babel" src="page-detail.jsx"></script>
+  <script type="text/babel" src="page-lobby.jsx"></script>
+  <script type="text/babel" src="page-match.jsx"></script>
+  <script type="text/babel" src="page-tournaments.jsx"></script>
+  <script type="text/babel" src="page-supporting.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect } = React;
+
+    const PAGES = [
+      { id: 'overview',   num: '00', label: 'Overview',     Cmp: () => <PageOverview /> },
+      { id: 'landing',    num: '01', label: 'Landing',      Cmp: () => <PageLanding /> },
+      { id: 'library',    num: '02', label: 'Library',      Cmp: () => <PageLibrary /> },
+      { id: 'libraryfull',num: '02b',label: 'Library — full',Cmp: () => <PageLibraryFull /> },
+      { id: 'detail',     num: '03', label: 'Game Detail',  Cmp: () => <PageDetail /> },
+      { id: 'lobby',      num: '04', label: 'Lobby',        Cmp: () => <PageLobby /> },
+      { id: 'match',      num: '05', label: 'Match',        Cmp: () => <PageMatch /> },
+      { id: 'tournaments',num: '06', label: 'Tournaments',  Cmp: () => <PageTournaments /> },
+      { id: 'wallet',     num: '07', label: 'Wallet',       Cmp: () => <PageWallet /> },
+      { id: 'profile',    num: '08', label: 'Profile',      Cmp: () => <PageProfile /> },
+      { id: 'notfound',   num: '09', label: '404',          Cmp: () => <Page404 /> },
+    ];
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "showAnnotations": true,
+      "recommendedOnly": false,
+      "tightFrames": true
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [active, setActive] = useState(() => {
+        const hash = window.location.hash.replace('#', '');
+        return PAGES.find(p => p.id === hash)?.id || 'overview';
+      });
+      const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      useEffect(() => {
+        window.location.hash = active;
+        document.body.classList.toggle('no-annotations', !tweaks.showAnnotations);
+        document.body.classList.toggle('recommended-only', tweaks.recommendedOnly);
+        document.body.classList.toggle('tight', tweaks.tightFrames);
+      }, [active, tweaks]);
+
+      const Page = PAGES.find(p => p.id === active)?.Cmp;
+
+      return (
+        <>
+          <div className="tabbar">
+            <div className="brand">DUEL <span className="sub">/ wireframes v0</span></div>
+            {PAGES.map(p => (
+              <button
+                key={p.id}
+                className={`tab ${active === p.id ? 'active' : ''}`}
+                data-screen-label={`${p.num} ${p.label}`}
+                onClick={() => setActive(p.id)}
+              >
+                <span className="num">{p.num}</span>{p.label}
+              </button>
+            ))}
+          </div>
+
+          <div data-screen-label={`${PAGES.find(p=>p.id===active).num} ${PAGES.find(p=>p.id===active).label}`}>
+            {Page && <Page />}
+          </div>
+
+          <TweaksPanel title="Wireframe controls">
+            <TweakSection title="Display">
+              <TweakToggle
+                label="Show annotations"
+                hint="Margin notes in blue ink"
+                value={tweaks.showAnnotations}
+                onChange={v => setTweak('showAnnotations', v)}
+              />
+              <TweakToggle
+                label="Recommended only"
+                hint="Hide non-★ variations"
+                value={tweaks.recommendedOnly}
+                onChange={v => setTweak('recommendedOnly', v)}
+              />
+              <TweakToggle
+                label="Tight corners"
+                hint="Less wobble, sharper frames"
+                value={tweaks.tightFrames}
+                onChange={v => setTweak('tightFrames', v)}
+              />
+            </TweakSection>
+            <TweakSection title="Jump to page">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {PAGES.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => setActive(p.id)}
+                    style={{
+                      padding: '6px 8px',
+                      fontSize: 11,
+                      fontFamily: 'var(--mono)',
+                      background: active === p.id ? 'var(--accent)' : 'transparent',
+                      color: active === p.id ? '#fff' : 'inherit',
+                      border: '1px solid rgba(0,0,0,0.15)',
+                      borderRadius: 3,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {p.num} {p.label}
+                  </button>
+                ))}
+              </div>
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+  <style>
+    body.recommended-only .variation:not(.recommended) { display: none; }
+    body.recommended-only .var-grid { grid-template-columns: 1fr !important; max-width: 720px; margin: 0 auto; }
+  </style>
+</body>
+</html>

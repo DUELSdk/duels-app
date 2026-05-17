@@ -6,23 +6,17 @@ updated: 2026-04-26
 
 # DUEL Design System
 
-All design files live in the codebase — not duplicated here.
-
-**Root:** `C:\Users\sylva\OneDrive\Skrivebord\DUEL\app\duel\`
+All design files live in the codebase or website prototypes — not duplicated here.
 
 ## Files
 
 | File | What it covers |
 |------|---------------|
-| `DESIGN.md` | **Direction 1: Underground** — master doc, vision, colors, type, components, copy rules |
-| `design/DESIGN-arena.md` | **Direction 2: Arena** — alternative concept, not implemented |
-| `design/SITEMAP.md` | Full site IA — every page, user journeys, responsive nav |
-| `design/WIREFRAMES.md` | Low-fi sketches for every page (landing, lobby, match, wallet, profile, 404) |
-| `design/tokens.css` | Single source of truth for all design tokens (colors, spacing, radii, motion) |
-| `design/base.css` | Full component library in CSS |
-| `design/pages/landing.html` | HTML mockup — landing page |
-| `design/pages/library.html` | HTML mockup — game library |
-| `design/pages/card-duel.html` | HTML mockup — card duel page |
+| `app/duel/DESIGN.md` | Master design doc — vision, colors, type, components, copy, animation |
+| `app/duel/app/globals.css` | Live CSS tokens and component styles |
+| `website/designs/DUEL Hi-Fi.html` | Hi-fi prototype — reference for any page build |
+| `website/lo-fi-wireframes/DUEL Wireframes.html` | Lo-fi wireframes — page structure reference |
+| `website/mid-fi/pages/` | Mid-fi HTML pages (landing, library, card-duel) |
 
 ## Directions
 

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Barlow_Condensed, Inter, JetBrains_Mono } from 'next/font/google'
+import { TournamentNotch } from '@/components/TournamentNotch'
+import { TournamentProvider } from '@/components/TournamentContext'
 import './globals.css'
 
 const barlowCondensed = Barlow_Condensed({
@@ -19,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'DUEL',
+  title: 'DUELS',
   description: '1v1 skill games for real money. No luck. No license.',
 }
 
@@ -29,7 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="da"
       className={`${barlowCondensed.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <TournamentProvider>
+          {children}
+          <TournamentNotch />
+        </TournamentProvider>
+      </body>
     </html>
   )
 }

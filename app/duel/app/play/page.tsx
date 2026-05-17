@@ -6,29 +6,8 @@ import {
   getLibraryCategories,
   getLibraryThemes,
   getLiveMatchCount,
-  getTicker,
   type LibraryGame,
 } from '@/lib/mock-data'
-
-function LiveTicker({ items }: { items: { game: string; text: string }[] }) {
-  const doubled = [...items, ...items]
-  return (
-    <div style={{ borderBottom: '1px solid var(--ink)', overflow: 'hidden', height: 36 }}>
-      <div className="ticker-track" style={{ alignItems: 'center', height: '100%' }}>
-        {doubled.map((item, i) => (
-          <span key={i} style={{
-            ...s.mono, padding: '0 24px', whiteSpace: 'nowrap',
-            borderRight: '1px solid var(--rule-soft)',
-            height: '100%', display: 'inline-flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ color: 'var(--ink-faint)' }}>{item.game}</span>
-            {item.text}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function GameRow({ game }: { game: LibraryGame }) {
   const isLive = game.liveCount > 0
@@ -37,7 +16,7 @@ function GameRow({ game }: { game: LibraryGame }) {
       display: 'grid',
       gridTemplateColumns: '28px 1fr auto auto auto',
       alignItems: 'center', gap: 24,
-      padding: '24px 0', borderBottom: '1px solid var(--rule-soft)',
+      padding: '24px 0', borderBottom: '1px solid rgba(13,13,13,0.22)',
     }}>
       {/* Number */}
       <span style={{ ...s.mono, color: 'var(--ink-faint)' }}>{game.num}</span>
@@ -74,11 +53,12 @@ function GameRow({ game }: { game: LibraryGame }) {
         href={`/play/${game.slug}`}
         style={{
           ...s.mono,
+          background: 'var(--ink)', color: 'var(--bone)',
           border: '1.5px solid var(--ink)',
           padding: '10px 18px',
           whiteSpace: 'nowrap',
           textDecoration: 'none',
-          fontWeight: 600,
+          fontWeight: 700,
         }}
       >
         ENTER →
@@ -91,14 +71,12 @@ export default function Library() {
   const categories = getLibraryCategories()
   const themes     = getLibraryThemes()
   const counts     = getLiveMatchCount()
-  const ticker     = getTicker()
 
   const totalGames = categories.reduce((n, c) => n + c.games.length, 0)
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
-      <BroadcastNav balance="2.450" activePage="games" />
-      <LiveTicker items={ticker} />
+      <BroadcastNav activePage="games" />
 
       {/* Header */}
       <section style={{ padding: `56px ${s.px} 32px` }}>

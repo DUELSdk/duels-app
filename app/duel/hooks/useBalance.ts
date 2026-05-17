@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getBalance, adjustBalance as _adjust, addTransaction } from '@/lib/balance'
+import { isLoggedIn } from '@/lib/auth'
 
 export function useBalance() {
   const [balance, setBalance] = useState<number | null>(null)
 
   const refresh = useCallback(() => {
-    setBalance(getBalance())
+    setBalance(isLoggedIn() ? getBalance() : null)
   }, [])
 
   useEffect(() => {

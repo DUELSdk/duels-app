@@ -1,6 +1,8 @@
-# DUEL — Design Document
+# DUELS — Design Document
 
-Platform name: **DUEL**. Always ALL CAPS in UI.
+Platform name: **DUELS**. Always ALL CAPS in UI.
+
+**Visual source of truth:** `/website/designs/style-guide.html` — design system, tokens, components, voice. Read before building any page. The hifi bundle (`/website/designs/duel-hifi-bundle/`) is historical reference only — superseded by the style guide.
 
 ---
 
@@ -10,182 +12,183 @@ The duel is the product. Every design choice reinforces two sides facing off —
 
 - **Feel:** A library of confrontations. You browse, you pick, you commit.
 - **Not:** Pitch black gamer aesthetic. Neon. Overwrought. Decorated.
-- **Yes:** Dark charcoal with breathing room. Red as tension, not decoration. Structure that feels intentional.
+- **Yes:** Bone paper with breathing room. Red as tension, not decoration. Structure that feels earned.
 - **Duel details:** Underdo. A split line here, a mirrored element there. If you have to point it out, it's too much.
 
 ---
 
-## Color
+## Design Surfaces
 
-### Platform (pages, nav, UI)
+Two surfaces. Never mix them on the same screen.
 
-| Role | Value | Usage |
+### BROADCAST — platform, marketing, lobby, library
+
+Paper background. Ink text. Sports-editorial feel. This is the face of DUELS outside the match.
+
+| Token | Value | Usage |
 |---|---|---|
-| Background | `#18181b` (zinc-900) | Every page — dark charcoal, not pitch black |
-| Surface | white at 4% opacity | Cards, panels |
-| Surface dim | white at 2% opacity | Empty states, locked sections |
-| Border | white at 10% opacity | Default card/panel borders |
-| Border dim | white at 6% opacity | Subtle dividers, nav border |
-| Border hover | white at 20% opacity | On hover |
-| Text — primary | white | Headings, labels |
-| Text — secondary | white at 50% opacity | Body, descriptions |
-| Text — tertiary | white at 30% opacity | Breadcrumbs, hints |
-| Text — disabled | white at 20% opacity | Locked UI |
-| Accent | `#dc2626` (red-600) | Primary CTAs, brand highlights |
-| Accent hover | `#ef4444` (red-500) | Button hover |
-| Accent dim | red at 10% opacity | Callout backgrounds |
-| Win | `#34d399` (emerald-400) | Win states |
-| Loss | `#f87171` (red-400) | Loss states only — never use for CTAs |
-| Neutral result | white at 40% opacity | Draw / tie |
+| `--bone` | `#efece4` | Page background |
+| `--bone-2` | `#e6e2d6` | Secondary surface, section fills |
+| `--bone-3` | `#d8d3c2` | Tertiary surface |
+| `--ink` | `#0d0d0d` | Primary text, borders, rules |
+| `--ink-soft` | `#4a4845` | Secondary text |
+| `--ink-faint` | `#807c74` | Tertiary text, labels |
+| `--ink-ghost` | `#b8b3a4` | Disabled, empty states |
+| `--rule-soft` | `rgba(13,13,13,0.14)` | Soft dividers |
+| `--alarm` | `#ef0000` | CTAs, live indicators, tension |
+| `--money` | `#1d8a3a` | Win states, live positive |
+| `--accent` | `#1d4ed8` | Danish Blue — rare brand hits |
 
-### In-game only (game boards, pieces — never platform UI)
+### BUNKER — match only
 
-| Role | Value | Usage |
+Concrete black. The room temperature drops when you enter. This is the match.
+
+| Token | Value | Usage |
 |---|---|---|
-| Player piece | `#f59e0b` (amber-500) | Player 1 game piece |
-| Win highlight | `#fbbf24` (amber-400) | Winning move, score emphasis |
-| Tie result | `#facc15` (yellow-400) | Tie result screen |
+| `--concrete` | `#0a0a0a` | Match background |
+| `--concrete-2` | `#131311` | Header bar, raised surfaces |
+| `--concrete-3` | `#1c1b18` | Mid-level surface |
+| `--concrete-4` | `#2a2926` | Elevated panels |
+| `--bone-on-dark` | `#f0ede4` | Primary text on dark |
+| `--bone-faint` | `#8a8780` | Secondary text on dark |
+| `--bone-ghost` | `#5a5853` | Tertiary text on dark |
+| `--alarm` | `#ef0000` | Timer, danger, active state |
+| `--money` | `#1d8a3a` | Win confirmation |
 
-> **Rule:** Red is the platform accent. Amber is in-game only. Never mix.
+---
+
+## Game Identity Tiers
+
+Not every game follows the same visual rules. Three tiers:
+
+### Platform layer — always locked
+Nav, entry flow, typography base, token variables, rule lines, live dots. Every game lives inside this container. Non-negotiable.
+
+### The Big Three — brothers
+Card Duel, CycleDuel, DropDuel. Same presentation language. Same color treatment. Same motion feel. If you've seen one, you recognize the others. They set the visual standard for *each other*, not for the platform at large.
+
+- Match surface: BUNKER (concrete + alarm red)
+- Accent: `--alarm` (#ef0000)
+- Match structure: BunkerTop → timer → 3-column board layout
+- Piece style: flat, typographic
+
+### New games — own identity within the container
+ShipDuel, HexDuel, and future games are not required to look like the Big Three. They share the platform layer (nav, entry flow, match screen structure) but can own:
+
+- Accent color (ShipDuel can use blue, not alarm red)
+- Board aesthetic and piece design
+- Match surface treatment (still BUNKER structure, different feel)
+- Animation style and timing character
+
+**Rule:** Platform structure = locked. Match skin = per game. Decide the identity before building.
 
 ---
 
 ## Typography
 
-| Element | Size | Weight | Other |
-|---|---|---|---|
-| Hero title | fluid — min 5rem, max 12rem, scales with viewport | Black (900) | Tight tracking, no line gap |
-| Page title | 2.25rem (36px) | Bold | Tight tracking |
-| Section title | 1.25rem (20px) | Bold or Semibold | — |
-| Eyebrow / label | 0.75rem (12px) | Regular | ALL CAPS, wide letter-spacing, white at 30% |
-| Body | 0.875rem (14px) | Regular | white at 50%, relaxed line height |
-| Small / hint | 0.75rem (12px) | Regular | white at 30% |
-| Monospace tag | 0.75rem (12px) | Monospace | For counts, codes |
-| Nav brand | 1rem (16px) | Black (900) | Tight tracking |
-| Nav link | 0.875rem (14px) | Regular | white at 40%, white on hover |
+Three fonts. Each has a role. Never substitute.
 
-Headings always use tight or tighter tracking. Never default tracking on large type.
+| Font | Variable | Usage |
+|---|---|---|
+| Barlow Condensed | `--font-display` | All display text — headings, titles, scores, labels in ALL CAPS |
+| Inter | `--font-body` | Body copy, descriptions, form fields |
+| JetBrains Mono | `--font-mono` | Counters, codes, tags, metadata, eyebrows |
+
+### Type classes (defined in globals.css)
+
+| Class | Description |
+|---|---|
+| `.t-mega` | Barlow 800, -0.02em tracking, 0.85 line-height, uppercase — hero titles |
+| `.t-display` | Barlow 700, -0.01em tracking, 0.92 line-height, uppercase — section titles, player names |
+| `.t-cond` | Barlow 600, 0.01em tracking, uppercase — secondary display labels |
+| `.t-mono` | JetBrains Mono — all metadata, counts, eyebrows |
+| `.t-eyebrow` | Mono 11px, 500w, +0.12em tracking, uppercase, `--ink-soft` color |
+| `.num-mega` | Barlow 800, -0.03em tracking, tabular-nums — big numbers (scores, pots, timers) |
+
+**Rule:** Large type always uses tight or negative tracking. Never default tracking on display sizes.
 
 ---
 
 ## Layout
 
-| Page type | Width | Padding |
+| Page type | Width | Horizontal padding |
 |---|---|---|
-| Content pages (games, library) | Full width | 24px sides, 48px vertical |
-| Focused pages (wallet, profile) | Max 768px centered | 24px sides, 48px vertical |
-| Game / demo pages | Max 672px centered | 24px sides, 40px vertical |
+| Full-width pages (library, landing) | Full width | 56px |
+| Focused pages (wallet, profile, auth) | Max 768px centered | 24px |
+| Match pages | Full width, flex column | 28px |
 
-- Section gap (between major sections): 56px
-- Gap within a section: 24px
-- Gap between small items: 12px
-- Nav height: 48px
-
----
-
-## Radius
-
-| Element | Radius |
-|---|---|
-| Large card | 16px |
-| Medium card | 12px |
-| Small element | 8px |
-| Pill / badge | Full (9999px) |
-| Button | 8px |
+- Section gap: 56px between major sections
+- Within a section: 24–32px
+- Small item gap: 8–12px
 
 ---
 
 ## Components
 
-### Nav
+### BroadcastNav
+Sticky. Bone background. Bottom rule (`--ink`, 1px). Left: DUELS wordmark (Barlow 800). Center/right: nav links in mono. Right: balance + profile.
 
-Sticky. 48px tall. Dark charcoal background at 95% opacity with blur behind it. Bottom border at white 6% opacity.
+### StadiumStrip
+Top-of-page accent band. Bone-2 background with ticker content. Sits above BroadcastNav.
 
-Left: **DUEL** brand mark — black weight, tight tracking. Red on hover.
-Center/right links: Games, Tournaments.
-Right: balance pill (border only, no fill), profile avatar (border only, no fill).
+### LiveTicker
+Scrolling strip. Mono text. Rule-bordered items. Animates continuously at 60s loop.
 
----
-
-### Page Header
-
-Left-aligned. Eyebrow label sits above the title with spacing below it. Title is large and tight. One-line description beneath — one sharp sentence, no padding. Optional CTA or status badge floats to the right on wide screens.
-
----
-
-### Cards
-
-Three variants:
-
-- **Standard:** white at 4% fill, white at 10% border. On hover: border lifts to white at 20%.
-- **Dim / locked:** white at 2% fill, white at 6% border. No hover state.
-- **Accent callout:** red at 5% fill, red at 15% border.
-
----
+### BunkerTop (match header)
+3-column grid. `--concrete-2` background. Bottom dark rule (`rgba(240,237,228,0.14)`).
+- Left: match ID + game name in mono bone-faint
+- Center: active phase label in alarm mono
+- Right: meta info
 
 ### Buttons
 
-| Type | Description |
+Zero border-radius. No pill shapes. No rounded corners anywhere.
+
+| Class | Description |
 |---|---|
-| Primary | Red-600 fill, white text, bold. Hover: red-500. Height 48px. |
-| Secondary | No fill, white at 8% border, white at 60% text. Hover: white text, white at 20% border. Height 40px. |
-| Disabled | No fill, white at 6% border, white at 20% text. Not interactive. |
-| Game action (in-game only) | Amber fill, black text, ALL CAPS, wide tracking. Hover: amber lighter. Active: slight scale down. |
+| `.btn` | Transparent fill, `--ink` border 1.5px. Hover: ink fill, bone text |
+| `.btn.primary` | Ink fill, bone text. Hover: `--ink-2` |
+| `.btn.alarm` | Alarm fill, white text |
+| `.btn.ghost` | No border, no fill. Hover: alarm text |
+| `.btn.bunker-alarm` | Match CTA — alarm fill, Barlow display, ALL CAPS |
+| `.btn.lg / .sm` | Size variants |
+| `.btn.block` | Full width |
 
----
+### Rules and dividers
 
-### Badges / Tags
+| Class | Description |
+|---|---|
+| `.rule` | 1px ink horizontal rule |
+| `.rule.soft` | 1px rule-soft |
+| `.rule.thick` | 2px ink |
+| `.rule.dark` | 1px `rgba(240,237,228,0.14)` — for use on bunker surface |
+| `.vrule` | 1px ink vertical rule |
 
-- **Status (coming soon, locked):** white at 5% fill, white at 30% text, white at 10% border. Pill shape.
-- **Accent tag:** red at 10% fill, red-400 at 80% text, red at 20% border. Small rounded.
-- **Bot label:** white at 5% fill, white at 40% text, white at 10% border. Pill shape.
+### Live dot
+`.live-dot` — 8px circle, alarm red, pulsing glow animation. Add `.money` class for green variant.
 
----
-
-### Empty State
-
-Centered inside a dim card. One line of secondary text. One smaller hint line beneath. Red text link CTA at the bottom.
+### Thinking dots
+`.thinking` — three dots cycling opacity. Used to show opponent is active.
 
 ---
 
 ## Game Library
 
-### Philosophy
-
-Not a list. A library. You browse rows, each row is a different lens on the catalog. The games don't sell themselves with imagery — the name and one sharp line do the work. Thumbnails are intentionally blank.
-
-### Categories
-
-| Category | Logic |
-|---|---|
-| Classic | Base games in their purest form — one per engine |
-| Built on [Game Name] | Variants derived from a base game |
-| 3-Player | Games that support 1v1v1 format only |
-| Block Games | Games where placement or blocking is core |
-
-Categories are not mutually exclusive. A game can appear in multiple rows. More categories added as catalog grows.
+A catalog of disciplines, not a menu. The library is a schedule board — think departures, not app store.
 
 ### Layout
+Flat numbered list. Not Netflix rows. Each game row:
+- Left: number (mono faint) + game name (Barlow 700, 28px) + one-line description
+- Center: format label (mono faint)
+- Right: live count (num-mega, alarm if live) + today count + stake range + ENTER →
 
-Netflix-style rows, stacked vertically. Each row:
-
-- Left-anchored category label in eyebrow style: `CLASSIC · 3`
-- Cards scroll horizontally on overflow — no pagination
-- First card in each row is slightly wider (featured position — no other visual difference)
-- Blank thumbnail: dark fill, no text, no icon
-
-### Game Card
-
-- Thumbnail area: 16:9 ratio, dark fill — intentionally empty
-- Below thumbnail: game name (small, semibold) + one-line description (xs, white at 40%)
-- On hover: border lifts from white at 10% to white at 20%
-- Standard width: ~192px. Featured (first in row): ~256px.
+Filter tabs above list: ALL · CARD · BOARD · SPEED. Active tab has alarm underline, not fill.
 
 ---
 
 ## Writing
 
-- Brand name: **DUEL** — always ALL CAPS
+- Brand name: **DUELS** — always ALL CAPS
 - Page titles: direct, no punctuation at end (`Card Duel` not `Card Duel.`)
 - Eyebrow labels: ALL CAPS (`YOUR SEQUENCE`, `BLOCK 2`)
 - Standard button labels: Title Case (`Enter`, `Lock In`)
@@ -197,7 +200,7 @@ Netflix-style rows, stacked vertically. Each row:
 
 ### Broadcaster voice (in-game)
 
-DUEL narrates the match like a broadcaster reporting the game — not like the platform talking to the player. Third-person throughout all match narration.
+DUELS narrates the match like a broadcaster reporting the game — not like the platform talking to the player. Third-person throughout all match narration.
 
 **Rule:** Narration = third-person. Instructions = second-person.
 

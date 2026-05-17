@@ -8,7 +8,7 @@ const CARD_META: Record<CardType, { emoji: string; label: string; bg: string; bo
 
 interface CardPieceProps {
   card: CardType
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   onClick?: () => void
   disabled?: boolean
   className?: string
@@ -18,6 +18,8 @@ export function CardPiece({ card, size = 'md', onClick, disabled, className = ''
   const meta = CARD_META[card]
   const sizeClasses = size === 'sm'
     ? 'w-10 h-14 text-lg'
+    : size === 'lg'
+    ? 'w-[58px] h-20 text-2xl'
     : 'w-14 h-[72px] text-2xl'
 
   return (
@@ -46,9 +48,9 @@ export function EmptySlot({
 }: {
   index: number
   onClick?: () => void
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
 }) {
-  const sizeClasses = size === 'sm' ? 'w-10 h-14' : 'w-14 h-[72px]'
+  const sizeClasses = size === 'sm' ? 'w-10 h-14' : size === 'lg' ? 'w-[58px] h-20' : 'w-14 h-[72px]'
 
   return (
     <button
@@ -65,8 +67,8 @@ export function EmptySlot({
   )
 }
 
-export function HiddenCard({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const sizeClasses = size === 'sm' ? 'w-10 h-14' : 'w-14 h-[72px]'
+export function HiddenCard({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = size === 'sm' ? 'w-10 h-14' : size === 'lg' ? 'w-[58px] h-20' : 'w-14 h-[72px]'
   return (
     <div className={`flex items-center justify-center rounded-lg border-2 border-white/10 bg-white/5 text-white/20 text-xl ${sizeClasses}`}>
       ?

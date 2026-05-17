@@ -18,6 +18,8 @@
   --concrete-4:    #2a2926;
   --bone-on-dark:  #f0ede4;
   --bone-faint:    #8a8780;
+  --bone-ghost:    #5a5853;
+  --ink-2:         #1c1c1a;
 
   /* Brand */
   --alarm:       #ef0000;
@@ -25,6 +27,14 @@
   --money:       #1d8a3a;
   --money-soft:  rgba(29,138,58,0.10);
   --accent:      #1d4ed8;
+  --amber:       #f59e0b;
+  --amber-soft:  rgba(245,158,11,0.18);
+  --nemesis:      #8b5cf6;
+  --nemesis-soft: rgba(139,92,246,0.08);
+
+  /* Font aliases */
+  --font-body: var(--font-inter);
+  --alarm-hot: #ff1f1f;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,6 +48,87 @@ body {
 
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
 a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+/* ── Typography ── */
+.t-mega    { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; line-height: 0.85; text-transform: uppercase; }
+.t-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; line-height: 0.92; text-transform: uppercase; }
+.t-cond    { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.01em; line-height: 1; text-transform: uppercase; }
+.t-body    { font-family: var(--font-body); font-weight: 400; }
+.t-mono    { font-family: var(--font-mono); }
+.t-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.tabnums   { font-variant-numeric: tabular-nums; }
+.num-mega  { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 0.85; font-variant-numeric: tabular-nums; }
+
+/* ── Color helpers ── */
+.c-soft    { color: var(--ink-soft); }
+.c-faint   { color: var(--ink-faint); }
+.c-money   { color: var(--money); }
+.c-alarm   { color: var(--alarm); }
+.c-bone-faint { color: var(--bone-faint); }
+.c-nemesis { color: var(--nemesis); }
+
+/* ── Surfaces ── */
+.surf-bone   { background: var(--bone); color: var(--ink); }
+.surf-ink    { background: var(--ink); color: var(--bone); }
+.surf-bunker { background: var(--concrete); color: var(--bone-on-dark); }
+
+/* ── Layout ── */
+.row        { display: flex; }
+.col        { display: flex; flex-direction: column; }
+.between    { justify-content: space-between; }
+.center     { align-items: center; justify-content: center; }
+.items-center    { align-items: center; }
+.items-end       { align-items: flex-end; }
+.items-baseline  { align-items: baseline; }
+.flex-1     { flex: 1; min-width: 0; }
+.text-c     { text-align: center; }
+.text-r     { text-align: right; }
+.gap-1 { gap: 4px; }  .gap-2 { gap: 8px; }  .gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; } .gap-5 { gap: 24px; } .gap-6 { gap: 32px; } .gap-7 { gap: 48px; }
+
+/* ── Rules ── */
+.rule    { height: 1px; background: var(--ink); width: 100%; }
+.rule.soft  { background: var(--rule-soft); }
+.rule.thick { height: 2px; }
+.rule.dark  { background: rgba(240,237,228,0.14); }
+.vrule      { width: 1px; background: var(--ink); align-self: stretch; }
+.vrule.soft { background: var(--rule-soft); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: 14px;
+  padding: 12px 20px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+  border-radius: 0; line-height: 1; letter-spacing: 0.01em;
+  transition: background 0.12s, color 0.12s;
+}
+.btn:hover   { background: var(--ink); color: var(--bone); }
+.btn.lg      { padding: 18px 28px; font-size: 15px; }
+.btn.sm      { padding: 6px 12px; font-size: 12px; }
+.btn.primary { background: var(--ink); color: var(--bone); }
+.btn.primary:hover { background: var(--ink-2); }
+.btn.alarm   { background: var(--alarm); color: #fff; border-color: var(--alarm); }
+.btn.alarm:hover { background: var(--alarm-hot); border-color: var(--alarm-hot); }
+.btn.ghost   { border-color: transparent; padding-left: 0; padding-right: 0; }
+.btn.ghost:hover { background: transparent; color: var(--alarm); }
+.btn.block   { width: 100%; }
+.btn.bunker-alarm { background: var(--alarm); color: #fff; border: none; padding: 20px 24px; font-family: var(--font-display); text-transform: uppercase; font-size: 18px; letter-spacing: 0.04em; font-weight: 700; }
+
+/* ── Thinking dots ── */
+.thinking { display: inline-flex; gap: 3px; align-items: center; height: 12px; }
+.thinking span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: thinking 1.2s infinite; }
+.thinking span:nth-child(2) { animation-delay: 0.15s; }
+.thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes thinking { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+/* Cursor blink */
+.cursor { display: inline-block; width: 8px; height: 14px; background: currentColor; vertical-align: text-bottom; animation: blink 0.9s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Red flash */
+@keyframes redFlash { 0% { background: var(--alarm); } 100% { background: var(--concrete-3); } }
+.flash { animation: redFlash 0.8s ease-out; }
 
 /* Live pulse dot */
 .live-dot {

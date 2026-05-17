@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DUEL — Hi-Fi · print</title>
+<link rel="stylesheet" href="hifi/tokens.css" />
+<style>
+  html, body { margin: 0; padding: 0; background: #fff; }
+  #root { padding: 0; }
+
+  .print-page {
+    width: 1440px;
+    margin: 0 auto 32px;
+    background: #fff;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .print-page:last-child { page-break-after: auto; break-after: auto; }
+  .print-head {
+    padding: 18px 24px;
+    border-bottom: 2px solid #111;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #fff;
+  }
+  .print-head .num { color: #b00; font-weight: 700; margin-right: 12px; }
+  .print-head .sub { color: #666; margin-left: 12px; font-weight: 400; text-transform: none; letter-spacing: 0.02em; }
+
+  .print-row {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 16px 24px;
+  }
+  .print-frame {
+    border: 2px solid #111;
+    overflow: hidden;
+    background: #fff;
+    flex: 0 0 auto;
+  }
+  .print-frame .label {
+    padding: 8px 12px;
+    border-bottom: 1px solid #111;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: #f3f1ea;
+  }
+  .print-frame .canvas {
+    position: relative;
+    overflow: hidden;
+  }
+  .print-frame .canvas > .scaler {
+    transform-origin: top left;
+  }
+
+  @page { size: A3 landscape; margin: 0.5cm; }
+
+  @media print {
+    html, body {
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-page {
+      margin: 0 auto;
+      page-break-after: always;
+      break-after: page;
+    }
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="hifi/primitives.jsx"></script>
+<script type="text/babel" src="hifi/screen-landing.jsx"></script>
+<script type="text/babel" src="hifi/screen-match.jsx"></script>
+<script type="text/babel" src="hifi/screen-mid.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const PrintFrame = ({ label, width, height, scale = 1, children }) => (
+  <div className="print-frame" style={{ width: width * scale + 4 }}>
+    <div className="label">{label} · {width}×{height}</div>
+    <div className="canvas" style={{ width: width * scale, height: height * scale }}>
+      <div className="scaler" style={{ width, height, transform: `scale(${scale})` }}>
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+const PrintPage = ({ num, title, subtitle, Desktop, Mobile, dW, dH, scale = 0.62 }) => (
+  <section className="print-page">
+    <header className="print-head">
+      <span className="num">{num}</span>
+      {title}
+      {subtitle && <span className="sub">{subtitle}</span>}
+    </header>
+    <div className="print-row">
+      <PrintFrame label="Desktop · 1440" width={dW} height={dH} scale={scale}>
+        <Desktop />
+      </PrintFrame>
+      <PrintFrame label="Mobile · 390" width={390} height={844} scale={scale}>
+        <Mobile />
+      </PrintFrame>
+    </div>
+  </section>
+);
+
+const App = () => (
+  <>
+    <PrintPage num="01" title="LANDING — HI-FI"
+      subtitle="Broadcast front door · standings · fixtures · ticker"
+      Desktop={LandingDesktop} Mobile={LandingMobile}
+      dW={1440} dH={2400} scale={0.46} />
+    <PrintPage num="02" title="LIBRARY — mid-fi"
+      subtitle="Three games · live counters per row"
+      Desktop={LibraryDesktop} Mobile={LibraryMobile}
+      dW={1440} dH={900} scale={0.62} />
+    <PrintPage num="03" title="CARD DUEL — mid-fi"
+      subtitle="Stake rooms preview · numbered frames · played-round example"
+      Desktop={DetailDesktop} Mobile={DetailMobile}
+      dW={1440} dH={1100} scale={0.55} />
+    <PrintPage num="04" title="LOBBY — mid-fi"
+      subtitle="Six stake rooms · custom stake · pot math"
+      Desktop={LobbyDesktop} Mobile={LobbyMobile}
+      dW={1440} dH={1100} scale={0.55} />
+    <PrintPage num="05" title="MATCH — HI-FI"
+      subtitle="Bunker · anonymous opponent · mega timer · action feed"
+      Desktop={MatchDesktop} Mobile={MatchMobile}
+      dW={1440} dH={900} scale={0.62} />
+  </>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => setTimeout(() => window.print(), 800));
+} else {
+  setTimeout(() => window.print(), 1500);
+}
+</script>
+</body>
+</html>

@@ -6,13 +6,14 @@ export type Tier = {
   winnerGets: number
 }
 
+// 10% rake on total pot. entryFee = stakeKr × 0.1 (per player).
 export const TIERS: Tier[] = [
   { id: 'starter',  label: 'STARTER',  stakeKr: 10,  entryFee: 1,  winnerGets: 18  },
-  { id: 'standard', label: 'STANDARD', stakeKr: 25,  entryFee: 3,  winnerGets: 44  },
-  { id: 'serious',  label: 'SERIOUS',  stakeKr: 50,  entryFee: 4,  winnerGets: 92  },
-  { id: 'high',     label: 'HIGH',     stakeKr: 100, entryFee: 6,  winnerGets: 188 },
-  { id: 'elite',    label: 'ELITE',    stakeKr: 250, entryFee: 10, winnerGets: 480 },
-  { id: 'max',      label: 'MAX',      stakeKr: 500, entryFee: 15, winnerGets: 970 },
+  { id: 'standard', label: 'STANDARD', stakeKr: 25,  entryFee: 3,  winnerGets: 45  },
+  { id: 'serious',  label: 'SERIOUS',  stakeKr: 50,  entryFee: 5,  winnerGets: 90  },
+  { id: 'high',     label: 'HIGH',     stakeKr: 100, entryFee: 10, winnerGets: 180 },
+  { id: 'elite',    label: 'ELITE',    stakeKr: 250, entryFee: 25, winnerGets: 450 },
+  { id: 'max',      label: 'MAX',      stakeKr: 500, entryFee: 50, winnerGets: 900 },
 ]
 
 export const DEFAULT_TIER = TIERS[2] // SERIOUS
@@ -22,12 +23,16 @@ export function getTierById(id: string): Tier | undefined {
 }
 
 export function customTier(stakeKr: number): Tier {
-  const entryFee = Math.max(1, Math.ceil(stakeKr * 0.03))
+  const rake = Math.round(stakeKr * 2 * 0.1)
   return {
     id: 'custom',
     label: 'CUSTOM',
     stakeKr,
-    entryFee,
-    winnerGets: stakeKr * 2 - entryFee * 2,
+    entryFee: Math.round(rake / 2),
+    winnerGets: stakeKr * 2 - rake,
   }
+}
+
+export function tierFromKr(kr: number): Tier {
+  return TIERS.find(t => t.stakeKr === kr) ?? customTier(kr)
 }
