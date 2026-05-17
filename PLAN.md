@@ -62,10 +62,10 @@ Popular on Danish real-money platforms (e.g. Betano). Decide during Phase 0 whet
 
 **Gate: nothing. Runs in parallel.**
 
-The app was built from DESIGN.md (text spec) instead of the visual prototypes in `/website/`. Mismatches exist across pages. Fix this now — before adding any more features on top of a wrong foundation.
+The app was built from DESIGN.md (text spec) instead of the visual prototypes in `/Design/`. Mismatches exist across pages. Fix this now — before adding any more features on top of a wrong foundation.
 
 **Actions:**
-1. Compare every built page against its prototype in `/website/designs/`
+1. Compare every built page against its prototype in `/Design/`
 2. List every mismatch
 3. Fix — prototype is source of truth, not the text spec
 4. Update DESIGN.md to point to prototypes, not define visuals inline
@@ -147,7 +147,7 @@ Phase 1 (UI audit) ──── runs parallel ────── Phase 2 (Core t
 
 ## What's Already Done
 
-- Game specs: Card Duel, Cycle Duel, Drop Duel (launch games) + ShipDuel, HexDuel, BlottoDuel, WallDuel (post-launch pipeline)
+- Game specs: Card Duel, Cycle Duel, Island Duel (launch games) + DropDuel, ShipDuel, HexDuel, WallDuel (post-launch pipeline)
 - Legal foundation: Spillemyndighed ruling confirmed, CVR registered
 - Business model: entry fee structure, rake, tiers, all locked
 - Anti-cheat policy: enforcement tiers, legal basis, clawback — documented in `Company/compliance.md`

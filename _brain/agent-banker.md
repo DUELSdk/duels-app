@@ -1,7 +1,7 @@
 ---
 title: The Banker
 type: agent-brief
-updated: 2026-05-16
+updated: 2026-05-17
 ---
 
 # The Banker
@@ -64,9 +64,77 @@ All money is fake. localStorage only. No real provider connected.
 
 Policy drafted: `Company/aml-policy.md`. MitID handles identity verification — CPR never stored by DUELS. MangoPay handles KYC for wallets above their threshold. AML monitoring: pattern detection, €10K threshold, Hvidvaskloven compliance. Full policy in `Company/compliance.md`.
 
-### Tax obligations
+### Danish Tax & Accounting
 
-PMV structure (Silas Greve Abainza, CVR confirmed 2026-05-01). Income tax on net profit. Moms threshold: 50.000 KR annual revenue — not yet triggered. Player winnings: gevinstbeskatning only applies to gambling, not skill competitions — confirmed by legal position.
+#### PMV income tax
+
+DUELS runs as PMV (personlig virksomhed), CVR confirmed 2026-05-01. Overskud beskattes som personlig indkomst — ikke selskabsskat.
+
+- **AM-bidrag:** 8% af bruttoindtægt trækkes først
+- **Indkomstskat:** beregnes af resten. Marginalskat op til ~56% ved topskat (>~640.000 kr/år)
+- **B-skat:** kvartalsvise forskudsbetalinger til SKAT baseret på forventet overskud. Underbetaling = procenttillæg. Opdater forskudsopgørelsen hvert år.
+- **Tommelfingerregel:** sæt 40–50% af nettooverskud til side løbende
+
+#### Virksomhedsskatteordningen (VSO)
+
+Alternativ til fuld personlig beskatning. Lade overskud "opspare" i virksomheden til virksomhedsskattesats (~22%) og kun betale topskat når beløbet hæves privat. Kræver:
+- Separat erhvervskonto (Lunar Business)
+- Korrekt bogføring med klart skel privat/erhverv
+- Beslutning tages ved årsregnskab — kan vælges retroaktivt for indeværende år
+
+Relevant når overskud begynder at overstige ~300.000 kr/år. Ikke nødvendigt at beslutte nu.
+
+#### Moms
+
+| Omsætning | Status |
+|-----------|--------|
+| Under 50.000 kr/år | Momsfritaget — ingen angivelse, ingen moms på fakturaer |
+| Over 50.000 kr/år | Momsregistrering inden 8 dage fra overskridelse |
+
+- Sats: **25%** på alle serviceydelser (entry fees er servicegebyrer = momspligtige)
+- Angivelsesperiode: halvårlig for nye virksomheder, kvartalsvis efter første år
+- **Prisjustering ved momsregistrering:** entry fees enten stiger 25% (spiller betaler moms) eller nettomarginen reduceres. Beslutning skal tages aktivt — ikke noget der håndterer sig selv.
+- Moms på grænseoverskridende salg (DE/SE-expansion): særregler for digital service moms (OSS-ordningen). Relevant ved international launch.
+
+#### DAC7 — Platform Reporting (uafklaret obligation)
+
+EU direktiv 2021/514, implementeret i Danmark pr. 2023-01-01. DUELS er sandsynligvis en **platform operator** under loven og kan have indberetningspligt.
+
+**Krav:** Indberette brugere der i et kalenderår opfylder ÉN af:
+- Mere end 29 gennemførte transaktioner, ELLER
+- Mere end 2.000 EUR i samlede udbetalinger
+
+**Hvad indberettes til SKAT:** navn, adresse, TIN/CPR-nummer, transaktionsantal, samlet udbetalingsbeløb.
+
+**Deadline:** 31. januar det efterfølgende år.
+
+**Status: UAFKLARET.** Skal bekræftes med skatteadvokat eller SKAT. Hvis DAC7 gælder:
+- Supabase-schema skal gemme CPR/TIN og transaktionshistorik pr. bruger
+- Årsrapport-proces skal inkludere DAC7-udtræk
+- Brugere skal informeres i ToS
+
+#### Bogføring
+
+Bogføringsloven kræver **5 års opbevaring** af alle bilag. Digitale bilag accepteres (PDF fra MangoPay, bankudtog).
+
+Per-kamp bogføringspost:
+- Debit: MangoPay wallet (entry fee ind × 2 spillere)
+- Kredit: Omsætning (entry fee × 2)
+- Debit: Betalingsgebyr (MangoPay-fee)
+- Kredit: MangoPay wallet (udbetaling af præmie til vinder)
+
+Minimale kontogrupper: Omsætning / Betalingsgebyrer / Driftsomkostninger / Skat og AM-bidrag.
+
+Software: Google Sheets nu → Dinero når >50 kampe/dag eller VAT-grænse nær.
+
+#### Player prize taxation
+
+Konkurrencepræmier (ikke gambling) = skattepligtig **personlig indkomst** for spilleren.
+
+- Spillere selvangiver selv — DUELS har **ingen indeholdelsespligt** (trækker ikke A-skat)
+- Platform sender ikke årsopgørelse til spillere (medmindre DAC7 kræver indberetning)
+- ToS skal indeholde: "Spilleren er eneansvarlig for egne skatteforhold vedrørende præmier"
+- Gevinstbeskatning (skattefri for gambling under 100 kr) gælder **ikke** — det er konkurrenceindkomst
 
 ---
 
@@ -79,9 +147,11 @@ Read in this order when working on anything financial:
 3. `Company/finance.md` — bookkeeping, tax, unit economics
 4. `Company/aml-policy.md` — AML policy draft
 5. `Company/terms-and-conditions.md` — T&C draft (covers payment terms)
-6. `app/duel/lib/balance.ts` — mock balance state
-7. `app/duel/lib/auth.ts` — mock auth state (gates balance visibility)
-8. `app/duel/app/wallet/` — all wallet pages
+6. `app/duel/supabase/migrations/001_core_schema.sql` — real DB schema: profiles, matches, wallets, transactions
+7. `Company/bogforing-skabelon.md` — bookkeeping template spec (Google Sheets)
+8. `app/duel/lib/balance.ts` — mock balance state (replace with Supabase when MangoPay approved)
+9. `app/duel/lib/auth.ts` — mock auth state (replace with MitID/Supabase)
+10. `app/duel/app/wallet/` — all wallet pages
 
 ---
 
@@ -104,7 +174,11 @@ Read in this order when working on anything financial:
 - MobilePay review pending — fee structure committed, awaiting activation
 - Real fee tier display: show entry fee prominently before match confirmation (legal requirement)
 - Supabase schema for wallet: needs real `wallets` and `transactions` tables designed before MangoPay integration
-- Responsible gaming deposit limits — self-imposed or regulatory? Not yet specified.
+- Responsible gaming deposit limits — self-imposed or regulatory? Not yet specified
+- **DAC7 obligation:** Sandsynligvis IKKE gældende for DUELS. DAC7 kræver "relevant activity" (personlig service, salg af varer, ejendomsudlejning, transport). DUELS-spillere er konkurrenter — ingen sælger/køber-relation. Handlingspoint: send email til SKAT erhverv for skriftlig bekræftelse (lav indsats, permanent dokumentation). Hvis DUELS nogensinde tilbyder betalt coaching/tutoring mellem spillere: DAC7 gælder for den funktion.
+- **Moms ved vækst:** Hvornår rammes 50.000 kr grænsen realistisk? Hvad er prisstrategien — spiller betaler moms oveni, eller absorberes i margin?
+- **VSO beslutning:** Åbn erhvervskonto (Lunar Business) ved MangoPay-setup og evaluer VSO ved første årsregnskab
+- **Bogføringsskabelon:** Konkret Google Sheets-skabelon med per-kamp posteringer mangler stadig
 
 ---
 

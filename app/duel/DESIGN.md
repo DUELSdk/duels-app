@@ -2,7 +2,7 @@
 
 Platform name: **DUELS**. Always ALL CAPS in UI.
 
-**Visual source of truth:** `/website/designs/style-guide.html` — design system, tokens, components, voice. Read before building any page. The hifi bundle (`/website/designs/duel-hifi-bundle/`) is historical reference only — superseded by the style guide.
+**Visual source of truth:** `/Design/style-guide.html` — design system, tokens, components, voice. Read before building any page. The hifi bundle (`/Design/hifi/`) is historical reference only — superseded by the style guide.
 
 ---
 

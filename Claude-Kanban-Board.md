@@ -6,7 +6,7 @@ kanban-plugin: board
 
 ## Næste skridt
 
-- [ ] Art direction audit — sammenlign bygget UI mod prototyper i `/website/`, fix mismatch #build #design
+- [ ] Art direction audit — sammenlign bygget UI mod prototyper i `/Design/`, fix mismatch #build #design
 - [ ] **Find alternativ payment provider** — Stripe BLOKERET (skill gaming ikke tilladt). MangoPay afventer svar — nu primær kandidat. MobilePay standalone stadig pending. #business
 
 ---
@@ -31,7 +31,7 @@ kanban-plugin: board
 - [ ] **THE MARQUEE — design start: 2026-05-15** · Broadcast layer on top of the Elite Room. Front of house — not a match room. Shows what's on: challenges posted, matches live, who holds a seat. Feeds landing jumbotron when a challenge is taken. Surface: BROADCAST (bone/paper). Route: `/marquee`. Elite Room (BUNKER, 1,000kr+) is where matches happen — Marquee is the sign above the door. #design #build
 - [ ] **THE BIG ONE** — 128-player always-running tournament. Starts the moment seat 128 fills. Rules: max 2 concurrent tournaments per player · funds reserved on entry (taken when tournament fires, unlocked on cancel) · on fill: 2-min grace notification to all 128, unconfirmed → waitlist (60s each) → bye for opponent · missed player: spot lost + 1hr Giant cooldown · waitlist shown publicly ("WAITLIST: 22") · featured permanently on landing jumbotron. Build after standard tournaments stable. #product #build
 - [ ] Tournament rules to build: max 2 active per player · 30min-before hard cancel if <50% filled · soft fill with byes if 75%+ · play other games while waiting (tournament match takes priority, 2-min grace) · invite-a-friend share link from waiting room · notifications: 5 seats left, 2 seats left, 10min to start, match ready #build
-- [ ] ShipDuel — spec i `Games/ship-duel.md`. Base + Phantom fuldt spec'd. Wireframe mock: `website/designs/ship-duel.html` (in progress). Mangler: UI spec .md, Spillemyndighed-check. #game #design
+- [ ] ShipDuel — spec i `Games/ship-duel.md`. Base + Phantom fuldt spec'd. Wireframe mock: `Design/ship-duel.html` (in progress). Mangler: UI spec .md, Spillemyndighed-check. #game #design
 - [ ] **Post-match game review** — chess.com-style replay and decision analysis after match ends. Separate from in-game intel. Build after core opponent intel system is live. #product #build
 - [ ] Mystery note — "each thing has the value amount, variables is the purse size" — unclear, revisit when context returns
 - [ ] Loss credit mechanic — loser earns ~5% of purse as platform credit (non-withdrawable, entry fees only). Retention tool, legally clean. #product

@@ -6,6 +6,15 @@ Unbuilt ideas. Add here, promote to GAMES.md or DESIGN.md when decided.
 
 ## Platform Concepts
 
+### Best of 3 for All Games
+All games default to a best-of-3 match format. First player to win 2 games takes the purse. Same rules and entry fee — just a series wrapper. Increases match length and comeback potential.
+
+**Open questions:** Does rake apply once per series or per game? How does forfeit interact with a 1-game lead?
+
+**Status:** Idea — decide format math before building
+
+---
+
 ### Spectator Mode
 Players and visitors can watch live matches in real-time from a dedicated route (e.g. `/watch/[matchId]`).
 

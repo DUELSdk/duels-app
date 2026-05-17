@@ -150,7 +150,7 @@ DUEL eliminates point 3 entirely. Spillemyndigheden confirms explicitly: chess, 
 
 ## Games
 
-Three games at launch (Card Duel + CycleDuel + DropDuel). Post-launch: ReverseDuel, CodeDuel, BlottoDuel, HexDuel, WallDuel. More formats and multiplayer modes ongoing.
+Three games at launch (Card Duel + CycleDuel + Island Duel). Post-launch: ReverseDuel, CodeDuel, DropDuel, HexDuel, WallDuel. More formats and multiplayer modes ongoing.
 
 ### Card Duel
 Sealed sequential RPS. Pure psychology — zero information.
@@ -310,8 +310,8 @@ Win to stay on. Loser pays, winner banks. Challenger queues in. House rakes each
 
 ---
 
-### BlottoDuel (post-launch)
-Colonel Blotto duel format. Both players simultaneously allocate units across battlefields. Pure psychology and math — zero RNG.
+### Island Duel (launch)
+Colonel Blotto format. Both players simultaneously allocate units across battlefields. Pure psychology and math — zero RNG.
 
 **Setup:** Each player gets 10 units. 5 battlefields on the board. 3 rounds per match.
 
@@ -332,7 +332,7 @@ Colonel Blotto duel format. Both players simultaneously allocate units across ba
 **Themes & variants:**
 | Name | Theme | Units | Fields | Rounds | Notes |
 |------|-------|-------|--------|--------|-------|
-| **BlottoDuel** | Neutral / standard | 10 | 5 | 3 | Base |
+| **Island Duel** | Neutral / standard | 10 | 5 | 3 | Base |
 | **Blitz Blotto** | Neutral speed | 7 | 3 | 1 | Single round, fast |
 | **Deep Blotto** | Neutral extended | 15 | 7 | 5 | More decisions, longer match |
 | **Fog Blotto** | Neutral | 10 | 5 | 3 | Allocations hidden until all 3 rounds done — no read layer |

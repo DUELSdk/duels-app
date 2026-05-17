@@ -1,10 +1,11 @@
 ---
-game: BlottoDuel
+game: IslandDuel
 status: spec-complete
 added: 2026-05-02
+updated: 2026-05-17
 ---
 
-# BlottoDuel
+# Island Duel
 
 Both players secretly distribute 10 units across 5 battlefields simultaneously — higher allocation wins the field. Three rounds. Previous allocations always visible.
 
@@ -72,7 +73,7 @@ Not applicable. No spatial board or shared cell to claim — Crown has no mappin
 
 | Name | Theme | Setup changes | Notes |
 |------|-------|--------------|-------|
-| **BlottoDuel** | Neutral / standard | — | Base |
+| **Island Duel** | Neutral / standard | — | Base |
 | Blitz Blotto | Neutral speed | 7 units, 3 fields, 1 round | Fast single-round variant |
 | Deep Blotto | Neutral extended | 15 units, 7 fields, 5 rounds | Longer match |
 | Fog of War | Military | 10 units, 5 fields, 6 battles (3 Wars × 2) | Commit 2-battle plan per War sealed. Between Wars: after-action report shows field W/L only — no enemy unit numbers. Full reveal at match end. Deduction replaces direct read. |

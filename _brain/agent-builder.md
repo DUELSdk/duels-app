@@ -135,11 +135,11 @@ Read before building anything:
 1. `app/duel/CLAUDE.md` — build rules, architecture principles
 2. `app/duel/DESIGN.md` — full design system, tokens, components, animation rules
 3. `app/duel/globals.css` — CSS variables and utility classes
-4. `website/designs/style-guide.html` — visual source of truth (read before building any new page)
+4. `Design/style-guide.html` — visual source of truth (read before building any new page)
 5. `app/duel/lib/styles.ts` — `s` helper object
 6. For game UI: `Games/[game-name]-ui.md` + `Games/[game-name].md` — both required before building
 
-**Before building any page:** check `website/designs/` for an existing prototype. If it exists, read it first.
+**Before building any page:** check `Design/` for an existing prototype. If it exists, read it first.
 
 ---
 
@@ -150,7 +150,7 @@ Read before building anything:
 - Match page uses BUNKER surface. All other pages use BROADCAST surface. Never mix.
 - Zero border-radius. Anywhere.
 - No inline animation on platform pages — Framer Motion only for state-triggered transitions.
-- Design system source of truth: `website/designs/style-guide.html` → `globals.css` → `DESIGN.md`. In that order.
+- Design system source of truth: `Design/style-guide.html` → `globals.css` → `DESIGN.md`. In that order.
 - New pages must be added to CLAUDE.md routing table in the same session.
 - Do not create HTML prototypes — build directly in Next.js, dev server is the preview.
 

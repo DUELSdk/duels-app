@@ -14,9 +14,8 @@ All design files live in the codebase or website prototypes — not duplicated h
 |------|---------------|
 | `app/duel/DESIGN.md` | Master design doc — vision, colors, type, components, copy, animation |
 | `app/duel/app/globals.css` | Live CSS tokens and component styles |
-| `website/designs/DUEL Hi-Fi.html` | Hi-fi prototype — reference for any page build |
-| `website/lo-fi-wireframes/DUEL Wireframes.html` | Lo-fi wireframes — page structure reference |
-| `website/mid-fi/pages/` | Mid-fi HTML pages (landing, library, card-duel) |
+| `Design/hifi/DUEL Hi-Fi.html` | Hi-fi prototype — reference for any page build |
+| `Design/hifi/DUEL Wireframes.html` | Lo-fi wireframes — page structure reference |
 
 ## Directions
 

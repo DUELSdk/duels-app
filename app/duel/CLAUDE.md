@@ -7,7 +7,7 @@
 
 Platform name: **DUELS**. Skill-gaming platform. Players duel 1v1 for real money. Zero casino license required — all games are 100% skill-based under Danish law (Spilleloven).
 
-**Source of truth for any page build:** `/website/designs/[page].html` → `globals.css` tokens → `DESIGN.md`. Never build from DESIGN.md alone if a prototype file exists. Read the prototype first.
+**Source of truth for any page build:** `/Design/[page].html` → `globals.css` tokens → `DESIGN.md`. Never build from DESIGN.md alone if a prototype file exists. Read the prototype first.
 
 Solo build. Stack: Next.js + Supabase + Tailwind + TypeScript. Hosted on Vercel.
 

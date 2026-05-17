@@ -22,6 +22,8 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 |--------|----------------|
 | `/Company` | Legal, finance, compliance, marketing, operations |
 | `/Research` | Market research, roadmap, launch strategy |
+| `/Games` | Game rules and UI specs per game |
+| `/Design` | Visual design system, hi-fi mockups, brand assets, placeholder site |
 | `/Templates` | Reusable note templates. Copy before use. |
 | `/app` | Next.js app code (`duel/`) — build layer |
 | `_brain/` | Claude meta-context — read every session |
@@ -37,7 +39,7 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 | Building or changing anything in `app/duel/` | `_brain/agent-builder.md` |
 | Any public-facing copy, brand, launch, campaigns | `_brain/agent-promoter.md` |
 | Product / design | `duel_product.md` |
-| UI / visual design system | `website/designs/style-guide.html` — tokens, surfaces, components, voice. Then `design.md` for build rules. |
+| UI / visual design system | `Design/style-guide.html` — tokens, surfaces, components, voice. Then `design.md` for build rules. |
 | Design a game mechanic | `duel_product.md` Platform Design Rule section |
 | Legal question (product rules) | `duel_product.md` Legal Framework section |
 | Legal entity / CVR / aftaler | `Company/legal.md` |
@@ -63,6 +65,8 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 | AML Policy (draft) | `Company/aml-policy.md` — anti-money laundering policy for MangoPay submission |
 | Shareholding structure | `Company/shareholding-structure.md` — ownership chart for MangoPay submission |
 | MangoPay integration workflow | `Company/mangopay-integration-workflow.md` — money flow diagram for MangoPay submission |
+| Bookkeeping template (per-match, moms tracker) | `Company/bogforing-skabelon.md` — Google Sheets column spec, transaction types, bilag retention rules |
+| Supabase database schema | `app/duel/supabase/migrations/001_core_schema.sql` — profiles, matches, wallets, transactions tables |
 | Create any new note | Matching template from `/Templates` first |
 
 ---
@@ -104,7 +108,7 @@ Use `Templates/Duel-Game.md` as the base block.
 
 **Memory rule:** Never create a `memory/` folder inside the vault. Memory files belong exclusively in `~/.claude/projects/C--Users-sylva-OneDrive-Skrivebord-DUEL/memory/` and are written via the memory tool. A vault `memory/` folder will not be loaded by the memory system and is dead weight.
 
-**Design session cleanup:** After a design session is archived into `website/designs/` or a named subfolder in `website/`, delete the root-level `uploads/` source folder. The archive is the record — the source is redundant once bundled.
+**Design session cleanup:** After a design session is archived into `Design/` or a named subfolder in `Design/`, delete the root-level `uploads/` source folder. The archive is the record — the source is redundant once bundled.
 
 ---
 
@@ -112,12 +116,12 @@ Use `Templates/Duel-Game.md` as the base block.
 
 Discuss what the page needs to do, then build it directly in Next.js. The dev server is the live preview. Do not create new HTML prototypes — it doubles the work and the tokens.
 
-If an existing prototype exists in `/website/designs/` for the page being built, read it first as build reference. Existing prototypes are source of truth. New ones are not created.
+If an existing prototype exists in `/Design/` for the page being built, read it first as build reference. Existing prototypes are source of truth. New ones are not created.
 
 ### Flow
 
 1. **Discuss direction** — page purpose, layout, copy, any decisions
-2. **Check `/website/designs/`** — if a prototype exists for this page, read it before touching code
+2. **Check `/Design/`** — if a prototype exists for this page, read it before touching code
 3. **Build directly in Next.js** — Claude codes it, dev server shows it live
 4. **Iterate in the codebase** — changes go straight into the component
 

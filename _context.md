@@ -17,7 +17,7 @@ Active state for the DUEL skill-gaming platform.
 - Supabase client libraries added, env configured
 - **Spillemyndighed ruling received** 2026-04-20 — confirmed: no license required, all games = skill games (journal: 26-632347)
 - Next actions: approach MangoPay + Trustly, hire spilleretsadvokat
-- Additional games spec'd post-ruling: ShipDuel, BlottoDuel, WallDuel, HexDuel (in `Games/`)
+- Additional games spec'd post-ruling: ShipDuel, Island Duel, WallDuel, HexDuel (in `Games/`)
 
 ---
 

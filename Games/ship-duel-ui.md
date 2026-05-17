@@ -27,7 +27,7 @@ ShipDuel is not a Big Three game. It has its own identity within the platform co
 
 **Feel:** Cold. Tactical. Sparse. The grid dominates. Nothing decorates. Every cell has meaning — show that through restraint, not visual noise. This is a war room, not a game board.
 
-**Wireframe mock:** `website/designs/ship-duel.html` — read before building.
+**Wireframe mock:** `Design/ship-duel.html` — read before building.
 
 ---
 
@@ -294,5 +294,5 @@ Grid cell size: 32×32px minimum on mobile. 8×8 = 256px — fits comfortably in
 
 1. `Games/ship-duel.md` — rules, visibility, Phantom spec
 2. This file — UI states, components, animation
-3. `website/designs/ship-duel.html` — wireframe mock
+3. `Design/ship-duel.html` — wireframe mock
 4. `app/duel/DESIGN.md` — platform rules and game identity tiers

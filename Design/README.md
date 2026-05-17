@@ -1,4 +1,4 @@
-# /website/designs/
+# /Design/
 
 Prototype HTML files from Claude Design. One file per page.
 
