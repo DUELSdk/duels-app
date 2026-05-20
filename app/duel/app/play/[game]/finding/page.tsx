@@ -205,9 +205,28 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchIdParam, profile])
 
-  // If queueId is set and no instant match, subscribe to queue row for status change.
+  // Subscribe to queue row changes + poll every 2s as fallback.
+  // Realtime can silently miss updates from SECURITY DEFINER RPCs —
+  // polling ensures player 1 is never stuck on the finding screen.
   useEffect(() => {
     if (!queueId || matchIdParam) return
+    let done = false
+
+    async function checkQueue() {
+      if (done) return
+      const { data } = await supabase
+        .from('queue')
+        .select('status, match_id')
+        .eq('id', queueId)
+        .single()
+      if (data?.status === 'matched' && data.match_id && !done) {
+        done = true
+        setMatchId(data.match_id)
+        await fetchOppAndPair(data.match_id)
+      }
+    }
+
+    const interval = setInterval(checkQueue, 2000)
 
     const channel = supabase
       .channel(`queue-${queueId}`)
@@ -215,8 +234,11 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'queue', filter: `id=eq.${queueId}` },
         async (payload) => {
+          if (done) return
           const row = payload.new as { status: string; match_id: string | null }
           if (row.status === 'matched' && row.match_id) {
+            done = true
+            clearInterval(interval)
             setMatchId(row.match_id)
             await fetchOppAndPair(row.match_id)
           }
@@ -224,7 +246,11 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
       )
       .subscribe()
 
-    return () => { channel.unsubscribe() }
+    return () => {
+      done = true
+      clearInterval(interval)
+      channel.unsubscribe()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueId, matchIdParam])
 
