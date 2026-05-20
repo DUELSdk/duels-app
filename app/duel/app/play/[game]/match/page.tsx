@@ -225,6 +225,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const [revealIdx,   setRevealIdx]   = useState(-1)
   const [slotResults, setSlotResults] = useState<Array<'win'|'loss'|'tie'|'pending'>>(Array(9).fill('pending'))
   const [revealScore, setRevealScore] = useState({ me: 0, opp: 0 })
+  const [revealDone,  setRevealDone]  = useState(false)
   const revealStartedRef = useRef(false)
   const prevPhaseRef     = useRef('')
 
@@ -253,7 +254,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
 
       const { data: match } = await supabase
         .from('matches')
-        .select('player1_id, player2_id, stake_ore')
+        .select('player1_id, player2_id, stake_kr')
         .eq('id', matchId)
         .single()
       if (!match || destroyed) return
@@ -261,7 +262,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       const p1 = match.player1_id === user.id
       iAmP1Ref.current = p1
       setIAmP1(p1)
-      setStakeKr(Math.round(match.stake_ore / 100))
+      setStakeKr(match.stake_kr)
 
       const { data: profiles } = await supabase
         .from('profiles')
@@ -301,19 +302,20 @@ function CardDuelMatch({ slug }: { slug: string }) {
     return () => { destroyed = true; clearInterval(pollInterval); channel?.unsubscribe() }
   }, [matchId, router])
 
-  // ── Trigger reveal animation when phase becomes 'reveal' ─────────
+  // ── Trigger reveal animation when round_results arrive (phase may skip 'reveal') ───
   useEffect(() => {
-    if (!gs || gs.phase !== 'reveal' || revealStartedRef.current) return
+    if (!gs || !gs.round_results || revealStartedRef.current) return
     revealStartedRef.current = true
     setRevealIdx(0)
     setSlotResults(Array(9).fill('pending'))
     setRevealScore({ me: 0, opp: 0 })
+    setRevealDone(false)
     setClashPhase('facedown')
   }, [gs])
 
   // ── Walk reveal slot by slot ─────────────────────────────────────
   useEffect(() => {
-    if (!gs || gs.phase !== 'reveal' || !gs.round_results || revealIdx < 0 || revealIdx >= 9) return
+    if (!gs || !gs.round_results || revealIdx < 0 || revealIdx >= 9) return
     setClashPhase('facedown')
     const flipId = setTimeout(() => {
       const raw = gs.round_results![revealIdx]
@@ -325,8 +327,11 @@ function CardDuelMatch({ slug }: { slug: string }) {
       setClashPhase('revealed')
     }, 950)
     const advId = setTimeout(() => {
-      if (revealIdx < 8) setRevealIdx(r => r + 1)
-      // At slot 9, server transitions phase — Realtime picks it up
+      if (revealIdx < 8) {
+        setRevealIdx(r => r + 1)
+      } else {
+        setRevealDone(true)
+      }
     }, 4400)
     return () => { clearTimeout(flipId); clearTimeout(advId) }
   }, [gs, revealIdx])
@@ -348,16 +353,16 @@ function CardDuelMatch({ slug }: { slug: string }) {
     }
   }, [gs])
 
-  // ── Navigate to result when complete ────────────────────────────
+  // ── Navigate to result when complete + reveal animation done ───────
   useEffect(() => {
-    if (!gs || gs.phase !== 'complete') return
+    if (!gs || gs.phase !== 'complete' || !revealDone) return
     const myScore  = iAmP1Ref.current ? gs.p1_score : gs.p2_score
     const oppScore = iAmP1Ref.current ? gs.p2_score : gs.p1_score
     const id = setTimeout(() => {
       router.replace(`/play/${slug}/result?matchId=${matchId}&myScore=${myScore}&oppScore=${oppScore}`)
     }, 1200)
     return () => clearTimeout(id)
-  }, [gs, matchId, router, slug])
+  }, [gs, revealDone, matchId, router, slug])
 
   // ── Arrangement handlers ─────────────────────────────────────────
   function handleHandClick(idx: number) {
@@ -454,7 +459,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       <BunkerTop
         phase={
           gs.phase === 'lock'         ? 'LOCK IN' :
-          gs.phase === 'reveal'       ? `SLOT ${revealIdx + 1} / 9` :
+          revealIdx >= 0 && !revealDone ? `SLOT ${revealIdx + 1} / 9` :
           gs.phase === 'sudden_death' ? 'SUDDEN DEATH' : 'MATCH OVER'
         }
         pot={potKr}
@@ -586,7 +591,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── REVEAL JUMBOTRON ────────────────────────────────────── */}
-      {gs.phase === 'reveal' && revealMyCard && revealOppCard && (
+      {revealIdx >= 0 && !revealDone && revealMyCard && revealOppCard && (
         <>
           {/* Score header */}
           <section style={{ padding: '16px 40px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -759,7 +764,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── SUDDEN DEATH ────────────────────────────────────────── */}
-      {gs.phase === 'sudden_death' && (
+      {gs.phase === 'sudden_death' && (revealDone || !gs.round_results) && (
         <>
           <section style={{ padding: '28px 40px', textAlign: 'center', borderBottom: div }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
@@ -914,7 +919,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── COMPLETE ────────────────────────────────────────────── */}
-      {gs.phase === 'complete' && (
+      {gs.phase === 'complete' && revealDone && (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <motion.div
             animate={{ opacity: [0.4, 1, 0.4] }}

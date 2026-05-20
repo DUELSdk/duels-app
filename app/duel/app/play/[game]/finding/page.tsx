@@ -256,16 +256,18 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
 
   async function fetchOppAndPair(mid: string) {
     if (cancelledRef.current) return
-    // Fetch both players from match, find the opponent
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
     const { data: match } = await supabase
       .from('matches')
       .select('player1_id, player2_id')
       .eq('id', mid)
       .single()
 
-    if (!match || !profile) return
+    if (!match) return
 
-    const oppId = match.player1_id === profile.id ? match.player2_id : match.player1_id
+    const oppId = match.player1_id === user.id ? match.player2_id : match.player1_id
 
     const { data: oppProfile } = await supabase
       .from('profiles')
