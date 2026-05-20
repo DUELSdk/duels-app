@@ -1,24 +1,34 @@
-const AUTH_KEY = 'duel_auth'
+import { supabase } from '@/lib/supabase'
 
-export type AuthUser = {
-  username: string
-  joinedAt: number
+export async function signIn(email: string, password: string) {
+  return supabase.auth.signInWithPassword({ email, password })
 }
 
-export function getAuth(): AuthUser | null {
-  if (typeof window === 'undefined') return null
-  const v = localStorage.getItem(AUTH_KEY)
-  return v ? (JSON.parse(v) as AuthUser) : null
+export async function signUp(email: string, password: string) {
+  return supabase.auth.signUp({ email, password })
 }
 
-export function setAuth(user: AuthUser): void {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+export async function signOut() {
+  return supabase.auth.signOut()
 }
 
-export function clearAuth(): void {
-  localStorage.removeItem(AUTH_KEY)
+export async function getUser() {
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
 }
 
-export function isLoggedIn(): boolean {
-  return getAuth() !== null
+export async function getProfile() {
+  const user = await getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, handle, initials')
+    .eq('id', user.id)
+    .single()
+  return data
+}
+
+export async function hasProfile() {
+  const profile = await getProfile()
+  return profile !== null
 }

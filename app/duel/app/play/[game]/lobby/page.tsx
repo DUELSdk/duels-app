@@ -1,63 +1,86 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { use } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { s } from '@/lib/styles'
 import { getGameDetail } from '@/lib/mock-data'
+import { useBalance } from '@/hooks/useBalance'
+import { useSession } from '@/hooks/useSession'
+import { TIERS } from '@/lib/tiers'
 import { notFound } from 'next/navigation'
 
-type Room = {
-  kr: number
-  liveCount: number
-  waitSec: number
-  isHot?: boolean
-}
+type Room = { tierId: string; kr: number; isHot?: boolean }
 
 const ROOMS: Room[] = [
-  { kr: 10,  liveCount: 4,  waitSec: 12 },
-  { kr: 25,  liveCount: 6,  waitSec: 8  },
-  { kr: 50,  liveCount: 12, waitSec: 4, isHot: true },
-  { kr: 100, liveCount: 5,  waitSec: 14 },
-  { kr: 250, liveCount: 2,  waitSec: 40 },
-  { kr: 500, liveCount: 1,  waitSec: 120 },
+  { tierId: 'starter',  kr: 10  },
+  { tierId: 'standard', kr: 25  },
+  { tierId: 'serious',  kr: 50,  isHot: true },
+  { tierId: 'high',     kr: 100 },
+  { tierId: 'elite',    kr: 250 },
+  { tierId: 'max',      kr: 500 },
 ]
 
-const MOCK_BALANCE = 2450
-
-function waitLabel(sec: number) {
-  if (sec < 60) return `~${sec}s`
-  return `~${Math.round(sec / 60)}m`
-}
-
-export default function LobbyPage({ params }: { params: Promise<{ game: string }> }) {
-  const { game: slug } = use(params)
+function LobbyContent({ slug }: { slug: string }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const detail = getGameDetail(slug)
   if (!detail) notFound()
 
-  const searchParams = useSearchParams()
-  const krParam = parseInt(searchParams.get('kr') ?? '0')
+  const { balance } = useBalance()
+  const { user, loading: sessionLoading } = useSession()
 
-  const availableRooms = ROOMS.filter(r => detail.stakeRooms.some(sr => sr.kr === r.kr))
-  const defaultKr = availableRooms.find(r => r.kr === krParam)?.kr ?? availableRooms[0]?.kr ?? 10
+  const krParam      = parseInt(searchParams.get('kr') ?? '0')
+  const availRooms   = ROOMS.filter(r => detail.stakeRooms.some(sr => sr.kr === r.kr))
+  const defaultKr    = availRooms.find(r => r.kr === krParam)?.kr ?? availRooms[0]?.kr ?? 10
 
   const [selectedKr, setSelectedKr] = useState(defaultKr)
+  const [joining, setJoining]        = useState(false)
+  const [joinError, setJoinError]    = useState<string | null>(null)
 
   useEffect(() => {
     const kr = parseInt(searchParams.get('kr') ?? '0')
-    const match = availableRooms.find(r => r.kr === kr)
+    const match = availRooms.find(r => r.kr === kr)
     if (match) setSelectedKr(match.kr)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const rake = Math.round(selectedKr * 2 * 0.1)
-  const winnerGets = selectedKr * 2 - rake
-  const gameLabel = detail.name
-  const formatLabel = detail.format.split('·')[0].trim()
-  const matchHref = `/play/${slug}/finding?kr=${selectedKr}`
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!sessionLoading && !user) router.replace('/auth')
+  }, [user, sessionLoading, router])
 
+  const selectedRoom = availRooms.find(r => r.kr === selectedKr)
+  const tier = TIERS.find(t => t.stakeKr === selectedKr)
+  const winnerGets = tier?.winnerGets ?? selectedKr * 2 - Math.round(selectedKr * 2 * 0.1)
+  const entryFee   = tier?.entryFee ?? Math.round(selectedKr * 0.1)
+  const gameLabel  = detail.name
+  const hasEnough  = balance !== null && balance >= selectedKr
+
+  async function handleJoin() {
+    if (!selectedRoom || !hasEnough || joining) return
+    setJoining(true)
+    setJoinError(null)
+
+    const res = await fetch('/api/queue/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game: slug, tierId: selectedRoom.tierId, stakeKr: selectedKr }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok || data.error) {
+      setJoinError(data.error ?? 'SOMETHING WENT WRONG')
+      setJoining(false)
+      return
+    }
+
+    // Navigate to finding page with queue context
+    router.push(`/play/${slug}/finding?kr=${selectedKr}&queueId=${data.queue_id}&matchId=${data.match_id ?? ''}`)
+  }
 
   function RoomButton({ room, i }: { room: Room; i: number }) {
     const selected = selectedKr === room.kr
@@ -70,17 +93,12 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
           borderLeft: i > 0 ? '1px solid var(--ink)' : 'none',
           background: selected ? 'var(--ink)' : 'transparent',
           color: selected ? 'var(--bone)' : 'var(--ink)',
-          cursor: 'pointer',
-          position: 'relative',
+          cursor: 'pointer', position: 'relative',
           transition: 'background 0.15s',
         }}
       >
         {room.isHot && (
-          <div style={{
-            position: 'absolute', top: 8, right: 8,
-            ...s.mono, fontSize: 8, color: 'var(--alarm)',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
+          <div style={{ position: 'absolute', top: 8, right: 8, ...s.mono, fontSize: 8, color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
             HOT
           </div>
@@ -91,18 +109,7 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
           {room.kr}
         </div>
-        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 12 }}>
-          KR
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: room.liveCount > 0 ? 'var(--alarm)' : selected ? 'rgba(240,237,228,0.3)' : 'var(--ink-ghost)', display: 'inline-block' }} />
-          <span style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.6)' : 'var(--ink-faint)' }}>
-            {room.liveCount} LIVE
-          </span>
-        </div>
-        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.4)' : 'var(--ink-ghost)', marginTop: 3 }}>
-          WAIT {waitLabel(room.waitSec)}
-        </div>
+        <div style={{ ...s.mono, fontSize: 9, color: selected ? 'rgba(240,237,228,0.5)' : 'var(--ink-faint)', marginBottom: 12 }}>KR</div>
       </button>
     )
   }
@@ -110,7 +117,6 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
-
       <main style={{ padding: `28px ${s.px} 80px`, maxWidth: 1200 }}>
 
         {/* Breadcrumb */}
@@ -124,28 +130,25 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
           <div>
             <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 8 }}>
-              {gameLabel} · {formatLabel}
+              {gameLabel}
             </div>
             <h1 style={{ ...s.display(80), lineHeight: 0.85 }}>PICK A ROOM.</h1>
             <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 14, maxWidth: 460 }}>
-              Each room takes the stake on entry. Rake 10%. No decline once paired.
+              Stake is deducted on entry. No decline once paired.
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 4 }}>YOUR BALANCE</div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-              {MOCK_BALANCE.toLocaleString('da-DK')} KR
+              {balance !== null ? balance.toLocaleString('da-DK') : '—'} KR
             </div>
-            <Link href="/wallet" style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)', textDecoration: 'none', marginTop: 4, display: 'block' }}>
-              + DEPOSIT
-            </Link>
           </div>
         </div>
 
         {/* Rooms */}
         <div style={{ border: '1.5px solid var(--ink)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availableRooms.length}, 1fr)` }}>
-            {availableRooms.map((room, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availRooms.length}, 1fr)` }}>
+            {availRooms.map((room, i) => (
               <RoomButton key={room.kr} room={room} i={i} />
             ))}
           </div>
@@ -159,9 +162,9 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
           border: '1.5px solid var(--ink)',
         }}>
           <div>
-            <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.20em', fontWeight: 700, marginBottom: 4 }}>● ELITE ROOM</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--bone)', letterSpacing: '-0.02em' }}>1,000+ KR · CUSTOM</div>
-            <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.4)', marginTop: 4, letterSpacing: '0.10em' }}>POST A CHALLENGE · SET YOUR TERMS</div>
+            <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.20em', fontWeight: 700, marginBottom: 4 }}>● ELITE ROOM · 1,000 KR MINIMUM</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--bone)', letterSpacing: '-0.02em' }}>1,000+ KR · CHALLENGE BOARD</div>
+            <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.4)', marginTop: 4, letterSpacing: '0.10em' }}>NO AUTO-QUEUE · POST YOUR TERMS · SET YOUR STAKE</div>
           </div>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--alarm)', letterSpacing: '-0.01em' }}>ENTER →</span>
         </Link>
@@ -173,10 +176,10 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 32 }}>
             {[
-              { label: 'YOU PAY',      value: selectedKr,   color: 'var(--ink)' },
-              { label: 'OPP PAYS',     value: selectedKr,   color: 'var(--ink)', prefix: '+' },
-              { label: 'WINNER TAKES', value: winnerGets,   color: 'var(--alarm)', prefix: '=' },
-              { label: 'ENTRY FEE',    value: rake / 2,     color: 'var(--ink-faint)' },
+              { label: 'YOU PAY',      value: selectedKr,  color: 'var(--ink)' },
+              { label: 'OPP PAYS',     value: selectedKr,  color: 'var(--ink)', prefix: '+' },
+              { label: 'WINNER TAKES', value: winnerGets,  color: 'var(--alarm)', prefix: '=' },
+              { label: 'ENTRY FEE',    value: entryFee,    color: 'var(--ink-faint)' },
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-end', gap: i > 0 && i < 3 ? 12 : 0 }}>
                 {item.prefix && (
@@ -197,12 +200,17 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
 
         {/* CTA */}
         <div style={{ marginTop: 24 }}>
-          {selectedKr > MOCK_BALANCE ? (
+          {joinError && (
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)', textAlign: 'center', marginBottom: 12 }}>
+              {joinError}
+            </div>
+          )}
+
+          {!hasEnough ? (
             <>
               <div style={{
                 display: 'block', textAlign: 'center',
-                background: 'rgba(13,13,13,0.1)',
-                color: 'var(--ink-ghost)',
+                background: 'rgba(13,13,13,0.1)', color: 'var(--ink-ghost)',
                 padding: '22px 32px',
                 fontFamily: 'var(--font-display)', fontWeight: 700,
                 fontSize: 20, textTransform: 'uppercase', letterSpacing: '0.02em',
@@ -211,26 +219,26 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
                 FIND OPPONENT — {selectedKr} KR →
               </div>
               <div style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)', textAlign: 'center', marginTop: 10 }}>
-                INSUFFICIENT BALANCE · <Link href="/wallet/deposit" style={{ color: 'var(--alarm)' }}>DEPOSIT →</Link>
+                INSUFFICIENT BALANCE
               </div>
             </>
           ) : (
             <>
-              <Link
-                href={matchHref}
+              <button
+                onClick={handleJoin}
+                disabled={joining}
                 style={{
-                  display: 'block', textAlign: 'center',
-                  background: 'var(--alarm)',
-                  color: '#fff',
-                  border: 'none',
+                  display: 'block', width: '100%', textAlign: 'center',
+                  background: joining ? 'rgba(13,13,13,0.6)' : 'var(--alarm)',
+                  color: '#fff', border: 'none',
                   padding: '22px 32px',
                   fontFamily: 'var(--font-display)', fontWeight: 700,
                   fontSize: 20, textTransform: 'uppercase', letterSpacing: '0.02em',
-                  textDecoration: 'none',
+                  cursor: joining ? 'not-allowed' : 'pointer',
                 }}
               >
-                FIND OPPONENT — {selectedKr} KR →
-              </Link>
+                {joining ? 'JOINING QUEUE…' : `FIND OPPONENT — ${selectedKr} KR →`}
+              </button>
               <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', textAlign: 'center', marginTop: 10 }}>
                 SEARCH IS A COMMITMENT. NO DECLINE ONCE PAIRED.
               </div>
@@ -239,5 +247,14 @@ export default function LobbyPage({ params }: { params: Promise<{ game: string }
         </div>
       </main>
     </div>
+  )
+}
+
+export default function LobbyPage({ params }: { params: Promise<{ game: string }> }) {
+  const { game: slug } = use(params)
+  return (
+    <Suspense fallback={<div style={{ background: 'var(--bone)', minHeight: '100vh' }} />}>
+      <LobbyContent slug={slug} />
+    </Suspense>
   )
 }

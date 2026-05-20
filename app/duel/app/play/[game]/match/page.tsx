@@ -56,506 +56,926 @@ function BunkerTop({ phase, pot, game }: { phase: string; pot: number; game: str
 type Move = 'R' | 'P' | 'S'
 type CardPhase = 'arrange' | 'reveal' | 'sudden' | 'done'
 
+const MOVE_NAME: Record<Move, string> = { R: 'ROCK', P: 'PAPER', S: 'SCISSORS' }
+
 function cardOutcome(me: Move, opp: Move): 'win' | 'loss' | 'tie' {
   if (me === opp) return 'tie'
   if ((me === 'R' && opp === 'S') || (me === 'S' && opp === 'P') || (me === 'P' && opp === 'R')) return 'win'
   return 'loss'
 }
 
-function CDCard({ c, size = 56, sealed, win, loss, faceDown, ghost, glow }: {
-  c?: string; size?: number; sealed?: boolean; win?: boolean; loss?: boolean; faceDown?: boolean; ghost?: boolean; glow?: boolean;
+// ── CDCard — matches design handoff exactly ────────────────────
+function CDCard({
+  k, slot, size = 80,
+  faceDown, sealed, active, win, loss, tie, empty, ghost, dim,
+}: {
+  k?: Move; slot?: number; size?: number;
+  faceDown?: boolean; sealed?: boolean; active?: boolean;
+  win?: boolean; loss?: boolean; tie?: boolean;
+  empty?: boolean; ghost?: boolean; dim?: boolean;
 }) {
-  let bg = 'transparent', fg = 'var(--bone-on-dark)', border = 'rgba(240,237,228,0.24)'
-  if (sealed || faceDown) { bg = 'var(--concrete-3)'; fg = 'transparent'; border = 'rgba(240,237,228,0.14)' }
-  else if (win)   { bg = 'var(--money)'; fg = '#fff'; border = 'var(--money)' }
-  else if (loss)  { bg = 'var(--alarm)'; fg = '#fff'; border = 'var(--alarm)' }
-  else if (ghost) { bg = 'transparent'; fg = 'rgba(240,237,228,0.20)'; border = 'rgba(240,237,228,0.10)' }
+  const w = size
+  const h = Math.round(size * 1.40)
+
+  let bg = 'var(--concrete-2)'
+  let fg = 'var(--bone-on-dark)'
+  let border = 'rgba(240,237,228,0.16)'
+
+  if (faceDown || sealed) { bg = 'var(--concrete-3)'; fg = 'transparent'; border = 'rgba(240,237,228,0.10)' }
+  if (active)  { border = 'var(--alarm)'; bg = 'rgba(239,0,0,0.06)' }
+  if (win)     { border = 'var(--money)'; bg = 'rgba(29,138,58,0.10)'; fg = 'var(--bone-on-dark)' }
+  if (loss)    { border = 'var(--alarm)'; bg = 'rgba(239,0,0,0.08)'; fg = 'var(--bone-on-dark)' }
+  if (tie)     { border = 'rgba(240,237,228,0.20)'; bg = 'var(--concrete-3)' }
+  if (empty)   { border = 'rgba(240,237,228,0.10)'; bg = 'transparent'; fg = 'transparent' }
+  if (ghost)   { bg = 'transparent'; fg = 'var(--bone-ghost)'; border = 'rgba(240,237,228,0.10)' }
+
   return (
     <div style={{
-      width: size, height: size * 1.35,
+      width: w, height: h,
       border: `1.5px solid ${border}`,
       background: bg, color: fg,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: size * 0.6,
-      letterSpacing: '-0.04em', position: 'relative', flexShrink: 0,
-      boxShadow: glow ? `0 0 0 1px var(--alarm), 0 0 24px rgba(239,0,0,0.35)` : 'none',
-      transition: 'background 0.15s',
+      position: 'relative',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      opacity: dim ? 0.45 : 1,
+      flexShrink: 0,
+      transition: 'background 0.15s, border-color 0.15s',
     }}>
+      {/* slot stamp */}
+      {slot != null && !empty && (
+        <div style={{
+          position: 'absolute', top: 5, left: 6,
+          fontFamily: 'var(--font-mono)', fontSize: Math.max(8, w * 0.11),
+          color: sealed || faceDown ? 'rgba(240,237,228,0.30)'
+               : active ? 'var(--alarm)'
+               : 'var(--bone-ghost)',
+          letterSpacing: '0.10em', fontWeight: 600,
+        }}>
+          {String(slot).padStart(2, '0')}
+        </div>
+      )}
+
+      {/* wax seal X */}
       {sealed && (
         <>
-          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5 }}>
-            <line x1="0" y1="0" x2="100" y2="50" stroke="rgba(240,237,228,0.06)" strokeWidth="0.5"/>
-            <line x1="100" y1="0" x2="0" y2="50" stroke="rgba(240,237,228,0.06)" strokeWidth="0.5"/>
+          <svg viewBox="0 0 100 100" width={w * 0.48} height={w * 0.48} style={{ opacity: 0.55 }}>
+            <line x1="20" y1="20" x2="80" y2="80" stroke="var(--alarm)" strokeWidth="6" />
+            <line x1="80" y1="20" x2="20" y2="80" stroke="var(--alarm)" strokeWidth="6" />
           </svg>
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: Math.max(20, size * 0.35), height: Math.max(20, size * 0.35), borderRadius: '50%', background: 'var(--alarm)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: Math.max(9, size * 0.15), zIndex: 1 }}>✕</div>
-          <div style={{ fontFamily: 'var(--font-mono)', position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontSize: 8, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>SEALED</div>
+          <div style={{
+            position: 'absolute', bottom: 7, left: 0, right: 0, textAlign: 'center',
+            fontFamily: 'var(--font-mono)', fontSize: Math.max(8, w * 0.11),
+            color: 'rgba(240,237,228,0.4)', letterSpacing: '0.14em',
+          }}>SEALED</div>
         </>
       )}
-      {!sealed && !faceDown && c}
+
+      {/* face-down */}
+      {faceDown && !sealed && (
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: Math.max(9, w * 0.14), color: 'rgba(240,237,228,0.30)', letterSpacing: '0.18em' }}>CARD</span>
+      )}
+
+      {/* face-up */}
+      {!faceDown && !sealed && !empty && k && (
+        <>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: w * 0.78, lineHeight: 0.85, letterSpacing: '-0.04em',
+            color: ghost ? 'var(--bone-ghost)' : fg,
+          }}>{k}</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: Math.max(8, w * 0.11),
+            color: ghost ? 'var(--bone-ghost)' : 'var(--bone-faint)',
+            letterSpacing: '0.10em', marginTop: 2, fontWeight: 600,
+          }}>{MOVE_NAME[k]}</span>
+        </>
+      )}
+
+      {/* active marker */}
+      {active && (
+        <div style={{
+          position: 'absolute', top: 5, right: 6,
+          fontFamily: 'var(--font-mono)', fontSize: Math.max(8, w * 0.11),
+          color: 'var(--alarm)', fontWeight: 700,
+        }}>●</div>
+      )}
     </div>
   )
 }
+
+// ── ProgChip — slot progress strip ─────────────────────────────
+function ProgChip({ state, k, isCurrent, size = 40 }: {
+  state: 'win' | 'loss' | 'tie' | 'pending' | 'current'
+  k?: Move; isCurrent?: boolean; size?: number
+}) {
+  let bg = 'transparent', fg = 'var(--bone-ghost)', border = 'rgba(240,237,228,0.18)'
+  if (state === 'win')  { bg = 'var(--money)'; fg = '#fff'; border = 'var(--money)' }
+  if (state === 'loss') { bg = 'var(--alarm)'; fg = '#fff'; border = 'var(--alarm)' }
+  if (state === 'tie')  { bg = 'var(--concrete-3)'; fg = 'var(--bone-faint)'; border = 'rgba(240,237,228,0.20)' }
+  if (isCurrent)        { bg = 'rgba(239,0,0,0.12)'; border = 'var(--alarm)'; fg = 'var(--alarm)' }
+  return (
+    <div style={{
+      width: size, height: size,
+      background: bg, color: fg, border: `1.5px solid ${border}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: size * 0.45, letterSpacing: '-0.02em',
+      flexShrink: 0,
+    }}>
+      {k && !isCurrent ? k : isCurrent ? '●' : ''}
+    </div>
+  )
+}
+
 
 function CardDuelMatch({ slug }: { slug: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tier = parseKr(searchParams.get('kr'))
 
-  const [botSeq] = useState<Move[]>(['P', 'R', 'S', 'R', 'P', 'S', 'S', 'R', 'P'] as Move[])
-  const [mySlots, setMySlots] = useState<(Move | null)[]>(Array(9).fill(null))
-  const [selCard,  setSelCard]  = useState<Move | null>(null)
+  const botSeqRef = useRef<Move[]>(shuffleArray(['R', 'R', 'R', 'P', 'P', 'P', 'S', 'S', 'S'] as Move[]))
+  const [myHand, setMyHand] = useState<Move[]>(['R', 'R', 'R', 'P', 'P', 'P', 'S', 'S', 'S'])
+  const [mySlots, setMySlots] = useState<(Move | null)[]>(() => Array(9).fill(null))
+  const [selectedHandIdx, setSelectedHandIdx] = useState<number | null>(null)
+  const [selectedSeqIdx, setSelectedSeqIdx] = useState<number | null>(null)
+  const mySeqRef = useRef<Move[]>([])
+  const myHandRef = useRef<Move[]>(['R', 'R', 'R', 'P', 'P', 'P', 'S', 'S', 'S'])
   const mySlotsRef = useRef<(Move | null)[]>(Array(9).fill(null))
+
+  // Best-of-3
+  type GameResult = { mySeq: Move[]; oppSeq: Move[]; myWins: number; oppWins: number; winner: 'me' | 'opp' }
+  const [gameNum, setGameNum] = useState(1)
+  const [matchWins, setMatchWins] = useState({ me: 0, opp: 0 })
+  const [gameHistory, setGameHistory] = useState<GameResult[]>([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const matchWinsRef = useRef({ me: 0, opp: 0 })
+  const gameHistoryRef = useRef<GameResult[]>([])
+
   const [botCount, setBotCount] = useState(0)
   const [timeLeft, setTimeLeft] = useState(60)
   const [myLocked, setMyLocked] = useState(false)
 
   const [phase,     setPhase]     = useState<CardPhase>('arrange')
   const [revealIdx, setRevealIdx] = useState(-1)
+  const [slotResults, setSlotResults] = useState<Array<'win' | 'loss' | 'tie' | 'pending'>>(() => Array(9).fill('pending') as Array<'win' | 'loss' | 'tie' | 'pending'>)
   const [score,     setScore]     = useState({ me: 0, opp: 0 })
 
   const [sdPick, setSdPick] = useState<Move | null>(null)
   const [sdBot,  setSdBot]  = useState<Move | null>(null)
   const [sdBusy, setSdBusy] = useState(false)
-  const [sdRound,setSdRound]= useState(0)
+  const [sdRound, setSdRound] = useState(0)
+  const [sdRevealPhase, setSdRevealPhase] = useState<'picking' | 'waiting' | 'revealed'>('picking')
+  const [clashPhase, setClashPhase] = useState<'facedown' | 'revealed'>('facedown')
 
-  const myHand = (() => {
-    const h: Record<Move, number> = { R: 3, P: 3, S: 3 }
-    for (const c of mySlots) { if (c) h[c]-- }
-    return h
-  })()
-  const slotsUsed = mySlots.filter(Boolean).length
-  const allFilled = slotsUsed === 9
-
+  useEffect(() => { myHandRef.current = myHand }, [myHand])
   useEffect(() => { mySlotsRef.current = mySlots }, [mySlots])
 
+  // Bot sealing
   useEffect(() => {
     if (phase !== 'arrange' || myLocked || botCount >= 9) return
-    const id = setTimeout(() => setBotCount(c => c + 1), 2200 + Math.random() * 2800)
+    const id = setTimeout(() => setBotCount(c => c + 1), 1800 + Math.random() * 2500)
     return () => clearTimeout(id)
   }, [botCount, phase, myLocked])
 
+  // Countdown
   useEffect(() => {
     if (phase !== 'arrange' || myLocked || timeLeft <= 0) return
     const id = setTimeout(() => setTimeLeft(t => t - 1), 1000)
     return () => clearTimeout(id)
   }, [timeLeft, phase, myLocked])
 
+  // Auto-lock on timeout
   useEffect(() => {
     if (timeLeft > 0 || phase !== 'arrange' || myLocked) return
-    // auto-fill any empty slots before locking
-    const cur = mySlotsRef.current
-    const h: Record<Move, number> = { R: 3, P: 3, S: 3 }
-    for (const c of cur) { if (c) h[c as Move]-- }
-    const rem: Move[] = []
-    for (const [card, cnt] of Object.entries(h)) {
-      for (let i = 0; i < (cnt as number); i++) rem.push(card as Move)
+    const finalSlots = [...mySlotsRef.current]
+    const hand = shuffleArray([...myHandRef.current])
+    let hi = 0
+    for (let i = 0; i < 9; i++) {
+      if (finalSlots[i] === null && hi < hand.length) finalSlots[i] = hand[hi++]
     }
-    const filled = shuffleArray(rem)
-    const next = [...cur]; let ri = 0
-    for (let i = 0; i < 9; i++) { if (!next[i]) next[i] = filled[ri++] }
-    setMySlots(next)
+    mySeqRef.current = finalSlots as Move[]
     setMyLocked(true)
+    setBotCount(9)
+    setTimeout(() => { setPhase('reveal'); setRevealIdx(0) }, 800)
   }, [timeLeft, phase, myLocked])
 
-  useEffect(() => {
-    if (!myLocked || phase !== 'arrange') return
+  function handleSeal() {
+    if (myHandRef.current.length > 0) return
+    mySeqRef.current = mySlotsRef.current as Move[]
+    setMyLocked(true)
     setBotCount(9)
-    const id = setTimeout(() => { setPhase('reveal'); setRevealIdx(0) }, 800)
-    return () => clearTimeout(id)
-  }, [myLocked, phase])
+    setTimeout(() => { setPhase('reveal'); setRevealIdx(0) }, 800)
+  }
 
+  function handleHandClick(idx: number) {
+    if (myLocked || phase !== 'arrange') return
+    if (selectedSeqIdx !== null) {
+      const seqCard = mySlots[selectedSeqIdx]!
+      const handCard = myHand[idx]
+      const newSlots = [...mySlots]
+      newSlots[selectedSeqIdx] = handCard
+      const newHand = [...myHand]
+      newHand[idx] = seqCard
+      setMySlots(newSlots)
+      setMyHand(newHand)
+      setSelectedSeqIdx(null)
+      setSelectedHandIdx(null)
+    } else {
+      setSelectedHandIdx(prev => prev === idx ? null : idx)
+      setSelectedSeqIdx(null)
+    }
+  }
+
+  function handleSeqClick(idx: number) {
+    if (myLocked || phase !== 'arrange') return
+    const slotCard = mySlots[idx]
+    if (selectedHandIdx !== null) {
+      const handCard = myHand[selectedHandIdx]
+      const newSlots = [...mySlots]
+      newSlots[idx] = handCard
+      const newHand = [...myHand]
+      if (slotCard !== null) {
+        newHand[selectedHandIdx] = slotCard
+      } else {
+        newHand.splice(selectedHandIdx, 1)
+      }
+      setMySlots(newSlots)
+      setMyHand(newHand)
+      setSelectedHandIdx(null)
+      setSelectedSeqIdx(null)
+    } else if (selectedSeqIdx !== null) {
+      if (selectedSeqIdx === idx) {
+        setSelectedSeqIdx(null)
+      } else {
+        const newSlots = [...mySlots]
+        ;[newSlots[selectedSeqIdx], newSlots[idx]] = [newSlots[idx], newSlots[selectedSeqIdx]]
+        setMySlots(newSlots)
+        setSelectedSeqIdx(null)
+      }
+    } else if (slotCard !== null) {
+      setSelectedSeqIdx(idx)
+      setSelectedHandIdx(null)
+    }
+  }
+
+  function nextGame(gameWinner: 'me' | 'opp', myWins: number, oppWins: number) {
+    const result: GameResult = { mySeq: [...mySeqRef.current], oppSeq: [...botSeqRef.current], myWins, oppWins, winner: gameWinner }
+    const newHistory = [...gameHistoryRef.current, result]
+    gameHistoryRef.current = newHistory
+    setGameHistory(newHistory)
+    const newMW = { me: matchWinsRef.current.me + (gameWinner === 'me' ? 1 : 0), opp: matchWinsRef.current.opp + (gameWinner === 'opp' ? 1 : 0) }
+    matchWinsRef.current = newMW
+    setMatchWins(newMW)
+    if (newMW.me >= 2 || newMW.opp >= 2) {
+      saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: newMW.me >= 2 ? 'win' : 'loss', myScore: myWins, oppScore: oppWins, mySeq: mySeqRef.current, oppSeq: botSeqRef.current })
+      setPhase('done')
+    } else {
+      setGameNum(n => n + 1)
+      botSeqRef.current = shuffleArray(['R', 'R', 'R', 'P', 'P', 'P', 'S', 'S', 'S'] as Move[])
+      setMyHand(['R', 'R', 'R', 'P', 'P', 'P', 'S', 'S', 'S'])
+      setMySlots(Array(9).fill(null))
+      setSelectedHandIdx(null)
+      setSelectedSeqIdx(null)
+      setMyLocked(false)
+      setBotCount(0)
+      setTimeLeft(60)
+      setRevealIdx(-1)
+      setSlotResults(Array(9).fill('pending') as Array<'win' | 'loss' | 'tie' | 'pending'>)
+      setScore({ me: 0, opp: 0 })
+      setSdPick(null); setSdBot(null); setSdBusy(false); setSdRound(0)
+      setSdRevealPhase('picking')
+      setPhase('arrange')
+    }
+  }
+
+  // Reveal: facedown → flip → result → next slot
   useEffect(() => {
     if (phase !== 'reveal' || revealIdx < 0 || revealIdx >= 9) return
-    const isDecidingSlot = revealIdx === 8 && score.me === score.opp
-    const id = setTimeout(() => {
-      const slots = mySlotsRef.current
-      const myMove  = slots[revealIdx] as Move
-      const oppMove = botSeq[revealIdx]
+    setClashPhase('facedown')
+    // flip cards after suspense pause
+    const flipId = setTimeout(() => {
+      const myMove  = mySeqRef.current[revealIdx]
+      const oppMove = botSeqRef.current[revealIdx]
       const result  = cardOutcome(myMove, oppMove)
+      setSlotResults(prev => { const n = [...prev]; n[revealIdx] = result; return n })
       setScore(s => ({ me: s.me + (result === 'win' ? 1 : 0), opp: s.opp + (result === 'loss' ? 1 : 0) }))
+      setClashPhase('revealed')
+    }, 950)
+    const advId = setTimeout(() => {
       if (revealIdx === 8) {
-        let fm = 0, fo = 0
-        for (let i = 0; i < 9; i++) {
-          const r = cardOutcome(slots[i] as Move, botSeq[i])
-          if (r === 'win') fm++; else if (r === 'loss') fo++
-        }
+        const seq = mySeqRef.current
+        const fm = seq.reduce((a, m, i) => a + (cardOutcome(m, botSeqRef.current[i]) === 'win' ? 1 : 0), 0)
+        const fo = seq.reduce((a, m, i) => a + (cardOutcome(m, botSeqRef.current[i]) === 'loss' ? 1 : 0), 0)
         setTimeout(() => {
-          if (fm === fo) {
-            setPhase('sudden')
-          } else {
-            saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: fm > fo ? 'win' : 'loss', myScore: fm, oppScore: fo, mySeq: slots as Move[], oppSeq: botSeq })
-            setPhase('done')
-            setTimeout(() => router.push(`/play/${slug}/result`), 1200)
-          }
-        }, 700)
+          if (fm === fo) { setPhase('sudden') }
+          else { nextGame(fm > fo ? 'me' : 'opp', fm, fo) }
+        }, 2000)
       } else {
-        setRevealIdx(i => i + 1)
+        setRevealIdx(r => r + 1)
       }
-    }, isDecidingSlot ? 3400 : 2800)
+    }, 4400)
+    return () => { clearTimeout(flipId); clearTimeout(advId) }
+  }, [phase, revealIdx, slug, tier])
+
+  // Navigate on done
+  useEffect(() => {
+    if (phase !== 'done') return
+    const id = setTimeout(() => router.push(`/play/${slug}/result?kr=${tier.stakeKr}`), 2200)
     return () => clearTimeout(id)
-  }, [phase, revealIdx, score, botSeq, slug, tier, router])
+  }, [phase, router, slug, tier.stakeKr])
 
-  function handleHandTap(card: Move) {
-    if (myLocked || myHand[card] <= 0) return
-    setSelCard(prev => prev === card ? null : card)
-  }
-
-  function handleSlotTap(i: number) {
-    if (myLocked) return
-    const current = mySlots[i]
-    if (current !== null) {
-      const next = [...mySlots]; next[i] = null; setMySlots(next)
-      setSelCard(current); return
-    }
-    if (selCard !== null && myHand[selCard] > 0) {
-      const next = [...mySlots]; next[i] = selCard; setMySlots(next)
-      if (myHand[selCard] - 1 === 0) setSelCard(null)
-    }
-  }
-
-  function handleReset() { setMySlots(Array(9).fill(null)); setSelCard(null) }
-
-  function handleSuddenPick(card: Move) {
+  async function handleSuddenPick(pick: Move) {
     if (sdBusy || sdPick) return
-    setSdPick(card)
-    setSdBusy(true)
-    const bot = (['R', 'P', 'S'] as Move[])[Math.floor(Math.random() * 3)]
+    setSdPick(pick); setSdBusy(true)
+    setSdRevealPhase('waiting')
+    // random suspense: 3s–7s
+    const delay = 3000 + Math.random() * 4000
+    await new Promise(r => setTimeout(r, delay))
+    const bot: Move = (['R', 'P', 'S'] as Move[])[Math.floor(Math.random() * 3)]
     setSdBot(bot)
-    setTimeout(() => {
-      const result = cardOutcome(card, bot)
-      if (result === 'tie') {
-        setSdRound(r => r + 1); setSdPick(null); setSdBot(null); setSdBusy(false)
-      } else {
-        const slots = mySlotsRef.current
-        let fm = 0, fo = 0
-        for (let i = 0; i < 9; i++) { const r = cardOutcome(slots[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
-        if (result === 'win') fm++; else fo++
-        saveMatchResult({ game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee, winnerGets: tier.winnerGets, outcome: result, myScore: fm, oppScore: fo, mySeq: slots as Move[], oppSeq: botSeq })
-        setPhase('done')
-        setTimeout(() => router.push(`/play/${slug}/result`), 1200)
-      }
-    }, 900)
+    setSdRevealPhase('revealed')
+    const result = cardOutcome(pick, bot)
+    await new Promise(r => setTimeout(r, 2200))
+    if (result !== 'tie') {
+      const seq = mySeqRef.current
+      const fm = seq.reduce((a, m, i) => a + (cardOutcome(m, botSeqRef.current[i]) === 'win' ? 1 : 0), 0)
+      const fo = seq.reduce((a, m, i) => a + (cardOutcome(m, botSeqRef.current[i]) === 'loss' ? 1 : 0), 0)
+      nextGame(result === 'win' ? 'me' : 'opp', fm, fo)
+    } else {
+      setSdRevealPhase('picking')
+      setSdPick(null); setSdBot(null); setSdBusy(false); setSdRound(r => r + 1)
+    }
   }
 
-  const mins = Math.floor(timeLeft / 60)
-  const secs = timeLeft % 60
-  const timerStr = `${mins}:${secs.toString().padStart(2, '0')}`
+  const revealMyCard  = revealIdx >= 0 && revealIdx < 9 ? mySeqRef.current[revealIdx] : null
+  const revealOppCard = revealIdx >= 0 && revealIdx < 9 ? botSeqRef.current[revealIdx] : null
+  const revealResult  = revealMyCard && revealOppCard ? cardOutcome(revealMyCard, revealOppCard) : null
 
-  const phaseLabel =
-    phase === 'arrange' && !myLocked ? 'PLACING'
-    : phase === 'arrange' ? 'WAITING'
-    : phase === 'reveal'  ? `REVEAL · SLOT ${revealIdx + 1}`
-    : phase === 'sudden'  ? 'SUDDEN DEATH'
-    : 'MATCH COMPLETE'
+  const CLASH_COPY: Record<string, string> = {
+    'R-S': 'ROCK CRUSHES SCISSORS.', 'P-R': 'PAPER COVERS ROCK.', 'S-P': 'SCISSORS CUT PAPER.',
+    'S-R': 'ROCK CRUSHES SCISSORS.', 'R-P': 'PAPER COVERS ROCK.', 'P-S': 'SCISSORS CUT PAPER.',
+  }
+  const clashKey  = revealMyCard && revealOppCard ? `${revealMyCard}-${revealOppCard}` : ''
+  const clashCopy = CLASH_COPY[clashKey] || (revealMyCard && revealMyCard === revealOppCard ? `${MOVE_NAME[revealMyCard as Move]} VS ${MOVE_NAME[revealMyCard as Move]} — TIE.` : '')
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      style={{ background: 'var(--concrete)', color: 'var(--bone-on-dark)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
-    >
-      {/* Match nav */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '14px 28px', borderBottom: div, background: 'var(--concrete-2)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)', letterSpacing: '0.08em' }}>
-          CARD DUEL · <span style={{ fontVariantNumeric: 'tabular-nums' }}>STAKE {tier.stakeKr} KR</span>
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--alarm)', letterSpacing: '0.16em' }}>● {phaseLabel}</div>
-        <div style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums' }}>
-          POT {tier.winnerGets} KR
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--concrete)', color: 'var(--bone-on-dark)', overflow: 'hidden' }}>
+      <BunkerTop
+        phase={
+          phase === 'arrange' ? `GAME ${gameNum} OF 3 · LOCK` :
+          phase === 'reveal'  ? `GAME ${gameNum} · SLOT ${revealIdx + 1} / 9` :
+          phase === 'sudden'  ? `GAME ${gameNum} · SUDDEN DEATH` : 'MATCH OVER'
+        }
+        pot={tier.stakeKr * 2 - tier.entryFee * 2}
+        game="CARD DUEL"
+      />
 
-      {/* STATE A — PLACING */}
-      {phase === 'arrange' && !myLocked && (
+      {/* ── LOCK PHASE ──────────────────────────────────────────── */}
+      {phase === 'arrange' && (
         <>
-          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-ghost)' }}>opponent </span>
-              <strong style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-on-dark)' }}>LASERHAWK</strong>
-              {' '}<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>1240</span>
+          {/* Top bar: status + match score + timer */}
+          <div style={{ padding: '10px 40px', borderBottom: div, background: 'var(--concrete-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', letterSpacing: '0.16em', fontWeight: 700 }}>
+              ● {myHand.length > 0 ? `${9 - myHand.length} / 9 PLACED` : 'ALL PLACED · READY TO SEAL'}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>{botCount} / 9 locked</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: timeLeft <= 10 ? 'var(--alarm)' : 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums' }}>{timerStr}</span>
-            </div>
-          </section>
-
-          {/* THEIR row */}
-          <section style={{ padding: '14px 32px 10px', borderBottom: divS }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8 }}>THEIR PLAN · SEALED</div>
-            <div style={{ display: 'flex', gap: 5 }}>
-              {Array(9).fill(null).map((_, i) => (
-                <div key={i} style={{ flex: 1 }}>
-                  <CDCard size={52} sealed={i < botCount} ghost={i >= botCount} />
+            <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>
+                OPP · <span style={{ color: 'var(--alarm)', fontWeight: 700 }}>{botCount} SEALED</span>
+              </span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>TIMER</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36, lineHeight: 0.9, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', color: timeLeft <= 10 ? 'var(--alarm)' : 'var(--bone-on-dark)' }}>
+                  {`0:${String(timeLeft).padStart(2, '0')}`}
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
-
-          {/* Round rail */}
-          <div style={{ display: 'flex', gap: 5, padding: '7px 32px' }}>
-            {[1,2,3,4,5,6,7,8,9].map(n => (
-              <div key={n} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)' }}>{n}</div>
-            ))}
           </div>
 
-          {/* YOUR row */}
-          <section style={{ padding: '0 32px 4px', borderTop: divS }}>
-            <div style={{ display: 'flex', gap: 5 }}>
-              {mySlots.map((card, i) => (
-                <div key={i} style={{ flex: 1, cursor: 'pointer' }} onClick={() => handleSlotTap(i)}>
-                  <CDCard c={card ?? undefined} size={52} ghost={card === null} />
+          {/* Main: two halves */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+            {/* OPP HALF */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 40px 10px', background: 'var(--concrete-2)', overflow: 'hidden' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 12, textAlign: 'center' }}>
+                OPP · LASERHAWK · {botCount} / 9 SEALED · MOVES HIDDEN
+              </div>
+
+              {/* Cards or history panel */}
+              {!historyOpen ? (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flex: 1, alignItems: 'center', overflowX: 'auto' }}>
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <CDCard key={i} sealed={i < botCount} faceDown={i >= botCount} slot={i + 1} size={72} />
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginTop: 6, textAlign: 'center' }}>YOUR PLAN · LIVE</div>
-          </section>
-
-          {/* Hand separator */}
-          <div style={{ display: 'flex', alignItems: 'center', margin: '8px 32px', gap: 10 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(240,237,228,0.14)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>your hand · tap to place</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(240,237,228,0.14)' }} />
-          </div>
-
-          {/* Hand */}
-          <section style={{ padding: '0 32px', flex: 1 }}>
-            <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
-              {(['R', 'S', 'P'] as Move[]).flatMap((card) => {
-                const usedCount = 3 - myHand[card]
-                return Array(3).fill(null).map((_, j) => {
-                  const isUsed = j < usedCount
-                  const isSelected = !isUsed && selCard === card && j === usedCount
-                  return (
-                    <div key={`${card}-${j}`}
-                      style={{ flex: '0 0 auto', opacity: isUsed ? 0.25 : 1, cursor: isUsed ? 'default' : 'pointer' }}
-                      onClick={() => !isUsed && handleHandTap(card)}>
-                      <CDCard c={card} size={52} glow={isSelected} />
+              ) : (
+                <div style={{ flex: 1, overflowY: 'auto', paddingTop: 4 }}>
+                  {gameHistory.map((g, gi) => (
+                    <div key={gi} style={{ marginBottom: gi < gameHistory.length - 1 ? 14 : 0 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: g.winner === 'me' ? 'var(--money)' : 'var(--alarm)', letterSpacing: '0.14em', marginBottom: 6, fontWeight: 700 }}>
+                        GAME {gi + 1} · {g.winner === 'me' ? 'NOVASTRIKE WINS' : 'LASERHAWK WINS'} · {g.myWins}–{g.oppWins}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.10em', marginBottom: 4 }}>YOU</div>
+                      <div style={{ display: 'flex', gap: 3, marginBottom: 5, overflowX: 'auto' }}>
+                        {g.mySeq.map((k, i) => {
+                          const r = cardOutcome(k, g.oppSeq[i])
+                          return <CDCard key={i} k={k} size={36} win={r === 'win'} loss={r === 'loss'} tie={r === 'tie'} />
+                        })}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bone-ghost)', letterSpacing: '0.10em', marginBottom: 4 }}>OPP</div>
+                      <div style={{ display: 'flex', gap: 3, overflowX: 'auto' }}>
+                        {g.oppSeq.map((k, i) => {
+                          const r = cardOutcome(k, g.mySeq[i])
+                          return <CDCard key={i} k={k} size={36} win={r === 'win'} loss={r === 'loss'} tie={r === 'tie'} />
+                        })}
+                      </div>
                     </div>
-                  )
-                })
-              })}
-            </div>
-          </section>
-
-          {/* Bottom bar */}
-          <section style={{ padding: '16px 32px 28px', borderTop: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button onClick={handleReset} style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-ghost)', cursor: 'pointer', letterSpacing: '0.08em', padding: '8px 0' }}>
-              ← Reset
-            </button>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>
-              {slotsUsed} of 9 placed
-            </span>
-            <button onClick={() => allFilled && setMyLocked(true)} disabled={!allFilled}
-              style={{ padding: '14px 28px', background: allFilled ? 'var(--amber)' : 'var(--amber-soft)', color: allFilled ? '#0d0d0d' : 'rgba(245,158,11,0.4)', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: allFilled ? 'pointer' : 'not-allowed', transition: 'all 0.12s' }}>
-              Lock in
-            </button>
-          </section>
-        </>
-      )}
-
-      {/* STATE B — WAITING */}
-      {phase === 'arrange' && myLocked && (
-        <>
-          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-ghost)' }}>opponent </span>
-              <strong style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--bone-on-dark)' }}>LASERHAWK</strong>
-            </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>9 / 9 locked</span>
-          </section>
-
-          <section style={{ padding: '14px 32px 10px', borderBottom: divS }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8 }}>THEIR PLAN · SEALED</div>
-            <div style={{ display: 'flex', gap: 5 }}>
-              {Array(9).fill(null).map((_, i) => <div key={i} style={{ flex: 1 }}><CDCard size={52} sealed /></div>)}
-            </div>
-          </section>
-
-          <section style={{ padding: '10px 32px', borderTop: divS }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8, textAlign: 'center' }}>YOUR PLAN · LOCKED</div>
-            <div style={{ display: 'flex', gap: 5 }}>
-              {mySlots.map((c, i) => <div key={i} style={{ flex: 1 }}><CDCard c={c ?? undefined} size={52} sealed /></div>)}
-            </div>
-          </section>
-
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.18em' }}>● WAITING FOR OPPONENT…</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)' }}>~7s avg lock time at this stake</div>
-          </div>
-        </>
-      )}
-
-      {/* STATE C — REVEAL */}
-      {phase === 'reveal' && (
-        <>
-          <section style={{ padding: '12px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--bone-on-dark)' }}>
-              <strong>YOU</strong> {score.me} — {score.opp} LASERHAWK
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-faint)' }}>round {revealIdx + 1} / 9</div>
-          </section>
-
-          <section style={{ padding: '20px 32px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textAlign: 'center', marginBottom: 10 }}>RESOLVING…</div>
-
-            {/* THEIR row */}
-            <div style={{ display: 'flex', gap: 5 }}>
-              {botSeq.map((move, i) => {
-                const isPlayed = i < revealIdx
-                const isNext   = i === revealIdx
-                const outcome  = isPlayed ? cardOutcome(mySlots[i] as Move, move) : null
-                return (
-                  <div key={i} style={{ flex: 1 }}>
-                    <CDCard c={move} size={56} sealed={!isPlayed && !isNext} faceDown={isNext}
-                      win={isPlayed && outcome === 'loss'} loss={isPlayed && outcome === 'win'} />
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Round rail with ▼ on active slot */}
-            <div style={{ display: 'flex', gap: 5, margin: '10px 0' }}>
-              {[1,2,3,4,5,6,7,8,9].map(n => {
-                const isActive = n === revealIdx + 1
-                return (
-                  <div key={n} style={{ flex: 1, textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: isActive ? 'var(--accent)' : 'var(--bone-ghost)', fontWeight: isActive ? 700 : 400 }}>
-                      {isActive ? '▼' : n}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* YOUR row */}
-            <div style={{ display: 'flex', gap: 5 }}>
-              {mySlots.map((card, i) => {
-                const isPlayed = i < revealIdx
-                const isNext   = i === revealIdx
-                const outcome  = isPlayed ? cardOutcome(card as Move, botSeq[i]) : null
-                return (
-                  <div key={i} style={{ flex: 1 }}>
-                    <CDCard c={card ?? undefined} size={56} sealed={!isPlayed && !isNext} faceDown={isNext}
-                      win={isPlayed && outcome === 'win'} loss={isPlayed && outcome === 'loss'} glow={isNext} />
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Scoreboard */}
-            <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: div }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', textAlign: 'center', marginBottom: 8 }}>SCOREBOARD</div>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 28 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>YOU</div>
-                  <motion.div key={`me-${score.me}`} animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 0.25 }}
-                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 88, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.88 }}>
-                    {score.me}
-                  </motion.div>
+                  ))}
                 </div>
-                <div style={{ width: 2, height: 56, background: 'rgba(240,237,228,0.2)', flexShrink: 0 }} />
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>THEM</div>
-                  <motion.div key={`opp-${score.opp}`} animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 0.25 }}
-                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 88, color: 'var(--bone-faint)', fontVariantNumeric: 'tabular-nums', lineHeight: 0.88 }}>
-                    {score.opp}
-                  </motion.div>
-                </div>
+              )}
+
+              {/* History toggle — only visible game 2+ */}
+              {gameNum > 1 && (
+                <button
+                  onClick={() => setHistoryOpen(o => !o)}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'center' }}
+                >
+                  <span>{historyOpen ? '▴' : '▾'}</span>
+                  <span>{historyOpen ? 'HIDE HISTORY' : `GAME HISTORY · ${gameHistory.map(g => g.winner === 'me' ? 'W' : 'L').join('–')}`}</span>
+                </button>
+              )}
+            </div>
+
+            {/* VS divider with match score */}
+            <div style={{ flexShrink: 0, height: 48, display: 'flex', alignItems: 'center', padding: '0 40px', background: 'var(--concrete)' }}>
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>NOVASTRIKE</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: matchWins.me > matchWins.opp ? 'var(--money)' : matchWins.me === 0 && matchWins.opp === 0 ? 'var(--bone-ghost)' : 'var(--bone-on-dark)' }}>{matchWins.me}</span>
               </div>
-            </div>
-          </section>
-        </>
-      )}
-
-      {/* STATE E — SUDDEN DEATH */}
-      {phase === 'sudden' && (
-        <>
-          <section style={{ padding: '16px 32px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>
-              {score.me}–{score.opp} · ONE SLOT DECIDES
-            </span>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, fontVariantNumeric: 'tabular-nums' }}>POT {tier.winnerGets} KR</span>
-          </section>
-
-          <section style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 40px', gap: 0 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', fontWeight: 700, letterSpacing: '0.20em' }}>
-              ● TIE · SUDDEN DEATH{sdRound > 0 ? ` · ROUND ${sdRound + 1}` : ''}
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, marginTop: 6, color: 'var(--bone-on-dark)' }}>
-              ONE PICK. ONE WINNER.
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 16 }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>YOU</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, fontVariantNumeric: 'tabular-nums' }}>{score.me}</div>
+              <div style={{ width: 56, textAlign: 'center' }}>
+                <motion.span layoutId="cd-vs" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--bone-ghost)', letterSpacing: '0.22em' }}>VS</motion.span>
               </div>
-              <div style={{ width: 1, height: 48, background: 'rgba(240,237,228,0.14)' }} />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>THEM</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums' }}>{score.opp}</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: matchWins.opp > matchWins.me ? 'var(--alarm)' : matchWins.me === 0 && matchWins.opp === 0 ? 'var(--bone-ghost)' : 'var(--bone-on-dark)' }}>{matchWins.opp}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>LASERHAWK</span>
               </div>
             </div>
 
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: div, width: '100%', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 16 }}>FRESH HAND · PICK ONE</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
-                {(['R', 'P', 'S'] as Move[]).map(card => (
-                  <div key={card} style={{ textAlign: 'center' }}>
-                    <button onClick={() => handleSuddenPick(card)} disabled={sdBusy || !!sdPick}
-                      style={{ background: 'transparent', border: 'none', cursor: sdBusy || !!sdPick ? 'not-allowed' : 'pointer', padding: 0 }}>
-                      <CDCard c={card} size={96} glow={sdPick === card} win={sdPick === card && !!sdBot && cardOutcome(card, sdBot!) === 'win'} />
-                    </button>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: sdPick === card ? 'var(--alarm)' : 'var(--bone-ghost)', marginTop: 8, letterSpacing: '0.10em', fontWeight: sdPick === card ? 700 : 400 }}>
-                      {sdPick === card ? '● PICKED' : 'TAP'}
-                    </div>
+            {/* YOUR HALF */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 40px', background: 'var(--concrete-3)', overflowY: 'auto' }}>
+
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-on-dark)', letterSpacing: '0.14em', marginBottom: 12, fontWeight: 600, textAlign: 'center' }}>
+                YOU · NOVASTRIKE ·{' '}
+                {selectedHandIdx !== null ? 'CLICK A SLOT TO PLACE' :
+                 selectedSeqIdx !== null ? 'CLICK SLOT OR HAND CARD TO MOVE' :
+                 'CLICK A CARD TO SELECT'}
+              </div>
+
+              {/* Sequence slots */}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', overflowX: 'auto' }}>
+                {mySlots.map((k, i) => (
+                  <div
+                    key={i}
+                    onClick={() => handleSeqClick(i)}
+                    style={{
+                      cursor: myLocked ? 'default' : 'pointer',
+                      outline: k === null && selectedHandIdx !== null ? '1.5px solid rgba(239,0,0,0.45)' : 'none',
+                      outlineOffset: 2,
+                    }}
+                  >
+                    <CDCard
+                      k={k ?? undefined}
+                      slot={i + 1}
+                      size={72}
+                      active={selectedSeqIdx === i}
+                      empty={k === null}
+                      sealed={myLocked && k !== null}
+                    />
                   </div>
                 ))}
-                {sdBot && (
-                  <div style={{ textAlign: 'center', marginLeft: 16 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginBottom: 8 }}>BOT</div>
-                    <CDCard c={sdBot} size={96} loss />
+              </div>
+
+              {/* Hand */}
+              <div style={{ marginTop: 'auto', paddingTop: 14 }}>
+                {myHand.length > 0 ? (
+                  <>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10, textAlign: 'center' }}>
+                      HAND · {myHand.length} REMAINING
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', overflowX: 'auto' }}>
+                      {myHand.map((k, i) => (
+                        <div key={i} onClick={() => handleHandClick(i)} style={{ cursor: myLocked ? 'default' : 'pointer' }}>
+                          <CDCard k={k} size={72} active={selectedHandIdx === i} dim={selectedHandIdx !== null && selectedHandIdx !== i} />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--money)', letterSpacing: '0.14em', fontWeight: 700 }}>
+                    ● ALL 9 PLACED · READY TO SEAL
                   </div>
                 )}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', marginTop: 12, letterSpacing: '0.10em' }}>simultaneous reveal</div>
             </div>
+          </div>
 
-            {sdPick && sdBot && (
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: cardOutcome(sdPick, sdBot) === 'win' ? 'var(--money)' : cardOutcome(sdPick, sdBot) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)', marginTop: 16 }}>
-                {cardOutcome(sdPick, sdBot) === 'tie' ? 'TIE — AGAIN' : cardOutcome(sdPick, sdBot) === 'win' ? 'NOVASTRIKE WINS.' : 'BOT WINS.'}
-              </div>
-            )}
+          {/* Footer */}
+          <div style={{ padding: '14px 40px', display: 'flex', gap: 12, alignItems: 'center', borderTop: div, flexShrink: 0 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', flex: 1, letterSpacing: '0.10em' }}>NO CHANGES AFTER SUBMIT</span>
+            <button onClick={handleSeal} disabled={myLocked || myHand.length > 0} style={{
+              padding: '16px 32px', border: 'none',
+              background: myHand.length === 0 && !myLocked ? 'var(--alarm)' : 'rgba(240,237,228,0.06)',
+              color: myHand.length === 0 && !myLocked ? '#fff' : 'var(--bone-ghost)',
+              fontFamily: 'var(--font-display)', textTransform: 'uppercase', fontSize: 16, letterSpacing: '0.04em', fontWeight: 700,
+              cursor: myLocked || myHand.length > 0 ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s, color 0.2s',
+            }}>SEAL ALL 9 →</button>
+          </div>
+        </>
+      )}
+
+      {/* ── REVEAL JUMBOTRON ────────────────────────────────────── */}
+      {phase === 'reveal' && revealMyCard && revealOppCard && (
+        <>
+          {/* Score header */}
+          <section style={{ padding: '16px 40px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>YOU · NOVASTRIKE</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.85, color: 'var(--money)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{score.me}</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>● CLASH · SLOT {revealIdx + 1} / 9</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--bone-faint)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>SEQUENCES SEALED · WATCH IT PLAY</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>OPP · LASERHAWK</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.85, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{score.opp}</div>
+            </div>
           </section>
 
-          <section style={{ padding: '16px 32px 24px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', letterSpacing: '0.12em' }}>
-              TIE AGAIN → INSTANT REPLAY · NO LIMIT
+          {/* Main clash arena */}
+          <section style={{
+            flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px',
+            background: 'radial-gradient(ellipse at center, var(--concrete-2) 0%, var(--concrete) 80%)',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            {/* Colored flash on reveal */}
+            <AnimatePresence>
+              {clashPhase === 'revealed' && (
+                <motion.div
+                  key={`flash-${revealIdx}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 0.65, times: [0, 0.18, 1], ease: 'easeOut' }}
+                  style={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none',
+                    background: revealResult === 'win'
+                      ? 'radial-gradient(ellipse at center, rgba(29,138,58,0.24) 0%, transparent 68%)'
+                      : revealResult === 'loss'
+                      ? 'radial-gradient(ellipse at center, rgba(239,0,0,0.20) 0%, transparent 68%)'
+                      : 'radial-gradient(ellipse at center, rgba(240,237,228,0.10) 0%, transparent 68%)',
+                  }}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Cards row */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 48 }}>
+
+              {/* My card */}
+              <div style={{ textAlign: 'center', flex: 1, maxWidth: 320 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 16 }}>YOUR SLOT {revealIdx + 1}</div>
+                <div style={{ display: 'inline-block', perspective: '700px' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`my-${revealIdx}-${clashPhase}`}
+                      initial={clashPhase === 'facedown' ? { y: -18, opacity: 0 } : { rotateY: -90, opacity: 0 }}
+                      animate={{ y: 0, rotateY: 0, opacity: 1 }}
+                      exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                      transition={{ duration: clashPhase === 'facedown' ? 0.28 : 0.22, ease: 'easeOut' }}
+                      style={{ transformStyle: 'preserve-3d' }}
+                    >
+                      <CDCard
+                        k={clashPhase === 'revealed' ? revealMyCard : undefined}
+                        faceDown={clashPhase === 'facedown'}
+                        slot={revealIdx + 1} size={180}
+                        win={clashPhase === 'revealed' && revealResult === 'win'}
+                        loss={clashPhase === 'revealed' && revealResult === 'loss'}
+                        tie={clashPhase === 'revealed' && revealResult === 'tie'}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* VS + suspense pulse */}
+              <div style={{ textAlign: 'center', position: 'relative' }}>
+                <motion.div layoutId="cd-vs" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, lineHeight: 0.85, color: 'var(--bone-faint)', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>VS</motion.div>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', width: 200, height: 200, border: '2px solid var(--money)', borderRadius: '50%', transform: 'translate(-50%,-50%)', opacity: 0.2 }} />
+                <AnimatePresence>
+                  {clashPhase === 'facedown' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0.35, 1, 0.35] }}
+                      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                      transition={{ duration: 0.85, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{ position: 'absolute', top: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}
+                    >●●●</motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Opp card */}
+              <div style={{ textAlign: 'center', flex: 1, maxWidth: 320 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 16 }}>OPP SLOT {revealIdx + 1}</div>
+                <div style={{ display: 'inline-block', perspective: '700px' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`opp-${revealIdx}-${clashPhase}`}
+                      initial={clashPhase === 'facedown' ? { y: -18, opacity: 0 } : { rotateY: 90, opacity: 0 }}
+                      animate={{ y: 0, rotateY: 0, opacity: 1 }}
+                      exit={{ rotateY: -90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                      transition={{ duration: clashPhase === 'facedown' ? 0.28 : 0.22, ease: 'easeOut' }}
+                      style={{ transformStyle: 'preserve-3d' }}
+                    >
+                      <CDCard
+                        k={clashPhase === 'revealed' ? revealOppCard : undefined}
+                        faceDown={clashPhase === 'facedown'}
+                        slot={revealIdx + 1} size={180}
+                        win={clashPhase === 'revealed' && revealResult === 'loss'}
+                        loss={clashPhase === 'revealed' && revealResult === 'win'}
+                        tie={clashPhase === 'revealed' && revealResult === 'tie'}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+            {/* Result announcement — absolute so it never shifts the cards row */}
+            <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, textAlign: 'center' }}>
+              <AnimatePresence mode="wait">
+                {clashPhase === 'facedown' ? (
+                  <motion.div
+                    key={`suspense-${revealIdx}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                    transition={{ duration: 0.2 }}
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--bone-ghost)', letterSpacing: '0.26em', fontWeight: 600 }}
+                  >
+                    SLOT {revealIdx + 1} · RESOLVING
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={`result-${revealIdx}`}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <div style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, lineHeight: 0.9,
+                      letterSpacing: '-0.02em', textTransform: 'uppercase',
+                      color: revealResult === 'win' ? 'var(--money)' : revealResult === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)',
+                    }}>{clashCopy}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-on-dark)', letterSpacing: '0.20em', marginTop: 10, fontWeight: 600 }}>
+                      {revealResult === 'win' ? `NOVASTRIKE TAKES SLOT ${revealIdx + 1} · +1` :
+                       revealResult === 'loss' ? `LASERHAWK TAKES SLOT ${revealIdx + 1} · +1` :
+                       `SLOT ${revealIdx + 1} · TIE · NO POINTS`}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
+
+          {/* Progress strip */}
+          <section style={{ padding: '16px 40px', background: 'var(--concrete-2)', borderTop: div }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>SLOT PROGRESS · {revealIdx + 1} / 9</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', letterSpacing: '0.10em' }}>
+                {clashPhase === 'facedown' ? 'RESOLVING...' : 'NEXT IN ~1.7s'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              {slotResults.map((state, i) => (
+                <ProgChip key={i} state={i === revealIdx ? 'current' : state} k={state !== 'pending' && i < revealIdx ? mySeqRef.current[i] : undefined} isCurrent={i === revealIdx} size={44} />
+              ))}
             </div>
           </section>
         </>
       )}
 
-      {/* DONE */}
+      {/* ── SUDDEN DEATH ────────────────────────────────────────── */}
+      {phase === 'sudden' && (
+        <>
+          <section style={{ padding: '28px 40px', textAlign: 'center', borderBottom: div }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
+              ● FULL HAND USED · TIED {score.me} — {score.opp} · ONE CARD DECIDES
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 140, lineHeight: 0.82, marginTop: 6, color: 'var(--alarm)', letterSpacing: '-0.04em', textTransform: 'uppercase' }}>
+              SUDDEN<br />DEATH.
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone-faint)', marginTop: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              {sdRevealPhase === 'picking' ? 'Pick one of three. So do they. Highest beats wins.' :
+               sdRevealPhase === 'waiting' ? 'Both cards locked. Outcome unknown.' :
+               'Cards revealed.'}
+            </div>
+            {sdRound > 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', marginTop: 8, letterSpacing: '0.14em' }}>REPLAY · ROUND {sdRound + 1}</div>}
+          </section>
+
+          <section style={{ flex: 1, background: 'var(--concrete-2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 40px', position: 'relative', overflow: 'hidden' }}>
+            <AnimatePresence mode="wait">
+
+              {/* ── PICKING ── */}
+              {sdRevealPhase === 'picking' && (
+                <motion.div
+                  key="sd-picking"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10, transition: { duration: 0.15 } }}
+                  transition={{ duration: 0.22 }}
+                >
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 28, textAlign: 'center' }}>
+                    PICK ONE · OPPONENT PICKS SIMULTANEOUSLY
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 32 }}>
+                    {(['R', 'P', 'S'] as Move[]).map(k => (
+                      <div key={k} style={{ textAlign: 'center' }}>
+                        <div onClick={() => handleSuddenPick(k)} style={{ cursor: 'pointer' }}>
+                          <CDCard k={k} size={150} />
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', marginTop: 12, letterSpacing: '0.14em' }}>TAP</div>
+                      </div>
+                    ))}
+                  </div>
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{ textAlign: 'center', marginTop: 32, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', letterSpacing: '0.18em', fontWeight: 700 }}
+                  >
+                    ● LASERHAWK THINKING…
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* ── WAITING + REVEALED ── */}
+              {(sdRevealPhase === 'waiting' || sdRevealPhase === 'revealed') && sdPick && (
+                <motion.div
+                  key="sd-clash"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: '100%' }}
+                >
+                  {/* Flash overlay on reveal */}
+                  <AnimatePresence>
+                    {sdRevealPhase === 'revealed' && sdBot && (
+                      <motion.div
+                        key={`sd-flash-${sdRound}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 0.75, times: [0, 0.15, 1], ease: 'easeOut' }}
+                        style={{
+                          position: 'absolute', inset: 0, pointerEvents: 'none',
+                          background: cardOutcome(sdPick, sdBot) === 'win'
+                            ? 'radial-gradient(ellipse at center, rgba(29,138,58,0.30) 0%, transparent 62%)'
+                            : cardOutcome(sdPick, sdBot) === 'loss'
+                            ? 'radial-gradient(ellipse at center, rgba(239,0,0,0.25) 0%, transparent 62%)'
+                            : 'radial-gradient(ellipse at center, rgba(240,237,228,0.12) 0%, transparent 62%)',
+                        }}
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* VS layout */}
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 56 }}>
+
+                    {/* My card — face-up, locked */}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 14 }}>YOU · LOCKED IN</div>
+                      <CDCard
+                        k={sdPick}
+                        size={160}
+                        active={sdRevealPhase === 'waiting'}
+                        win={sdRevealPhase === 'revealed' && !!sdBot && cardOutcome(sdPick, sdBot) === 'win'}
+                        loss={sdRevealPhase === 'revealed' && !!sdBot && cardOutcome(sdPick, sdBot) === 'loss'}
+                        tie={sdRevealPhase === 'revealed' && !!sdBot && cardOutcome(sdPick, sdBot) === 'tie'}
+                      />
+                    </div>
+
+                    {/* VS separator — breathes during waiting */}
+                    <div style={{ textAlign: 'center' }}>
+                      <motion.div
+                        layoutId="cd-vs"
+                        animate={sdRevealPhase === 'waiting'
+                          ? { scale: [1, 1.08, 1], color: ['var(--alarm)', 'rgba(239,0,0,0.5)', 'var(--alarm)'] }
+                          : { scale: 1 }}
+                        transition={{ duration: 1.3, repeat: sdRevealPhase === 'waiting' ? Infinity : 0, ease: 'easeInOut' }}
+                        style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 60, lineHeight: 0.85, letterSpacing: '-0.02em', textTransform: 'uppercase', color: sdRevealPhase === 'waiting' ? 'var(--alarm)' : 'var(--bone-faint)' }}
+                      >VS</motion.div>
+                    </div>
+
+                    {/* Opp card — facedown during waiting, flips on revealed */}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 14 }}>OPP · LASERHAWK</div>
+                      <div style={{ perspective: '700px' }}>
+                        <AnimatePresence mode="wait">
+                          {sdRevealPhase === 'waiting' ? (
+                            <motion.div
+                              key={`opp-hidden-${sdRound}`}
+                              exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                            >
+                              <motion.div
+                                animate={{ boxShadow: ['0 0 0px 0px rgba(239,0,0,0)', '0 0 22px 4px rgba(239,0,0,0.28)', '0 0 0px 0px rgba(239,0,0,0)'] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                              >
+                                <CDCard faceDown size={160} />
+                              </motion.div>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key={`opp-revealed-${sdRound}`}
+                              initial={{ rotateY: -90, opacity: 0 }}
+                              animate={{ rotateY: 0, opacity: 1 }}
+                              transition={{ duration: 0.26, ease: 'easeOut' }}
+                              style={{ transformStyle: 'preserve-3d' }}
+                            >
+                              {sdBot && (
+                                <CDCard
+                                  k={sdBot}
+                                  size={160}
+                                  win={cardOutcome(sdPick, sdBot) === 'loss'}
+                                  loss={cardOutcome(sdPick, sdBot) === 'win'}
+                                  tie={cardOutcome(sdPick, sdBot) === 'tie'}
+                                />
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status text */}
+                  <div style={{ textAlign: 'center', marginTop: 36, minHeight: 64 }}>
+                    <AnimatePresence mode="wait">
+                      {sdRevealPhase === 'waiting' && (
+                        <motion.div
+                          key="sd-waiting-text"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <motion.div
+                            animate={{ opacity: [0.45, 1, 0.45] }}
+                            transition={{ duration: 1.0, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--alarm)', letterSpacing: '0.26em', fontWeight: 700 }}
+                          >● BOTH LOCKED · REVEALING</motion.div>
+                        </motion.div>
+                      )}
+                      {sdRevealPhase === 'revealed' && sdBot && (
+                        <motion.div
+                          key="sd-result-text"
+                          initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+                        >
+                          <div style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.9,
+                            letterSpacing: '-0.02em', textTransform: 'uppercase',
+                            color: cardOutcome(sdPick, sdBot) === 'win' ? 'var(--money)' : cardOutcome(sdPick, sdBot) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)',
+                          }}>
+                            {cardOutcome(sdPick, sdBot) === 'tie' ? 'TIE — AGAIN.' : cardOutcome(sdPick, sdBot) === 'win' ? 'NOVASTRIKE WINS.' : 'LASERHAWK WINS.'}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
+          </section>
+
+          <section style={{ padding: '20px 40px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>TIE AGAIN → INSTANT REPLAY · NO LIMIT</div>
+          </section>
+        </>
+      )}
+
+      {/* ── DONE ──────────────────────────────────────────────────── */}
       {phase === 'done' && (() => {
-        const slots = mySlotsRef.current
-        let fm = 0, fo = 0
-        for (let i = 0; i < 9; i++) { const r = cardOutcome(slots[i] as Move, botSeq[i]); if (r === 'win') fm++; else if (r === 'loss') fo++ }
-        const won = fm > fo
+        const won = matchWinsRef.current.me >= 2
         return (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-              style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 120, textTransform: 'uppercase', letterSpacing: '-0.03em', color: won ? 'var(--money)' : 'var(--alarm)' }}>
-                {won ? 'NOVASTRIKE WINS.' : 'BOT WINS.'}
+                {won ? 'NOVASTRIKE WINS.' : 'LASERHAWK WINS.'}
               </div>
-            </motion.div>
+            </div>
           </div>
         )
       })()}
-    </motion.div>
+    </div>
   )
 }
 

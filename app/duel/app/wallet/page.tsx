@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
-import { getBalance, getTransactions, type Txn } from '@/lib/balance'
+import { getTransactions, type Txn } from '@/lib/balance'
+import { useBalance } from '@/hooks/useBalance'
 
 type LedgerFilter = 'ALL' | 'DEPOSITS' | 'WINS' | 'LOSSES' | 'WITHDRAWALS'
 
@@ -45,12 +46,12 @@ function filterTxs(txs: Txn[], filter: LedgerFilter): Txn[] {
 }
 
 export default function Wallet() {
-  const [balance,  setBalance]  = useState<number>(2450)
+  const { balance: supaBalance } = useBalance()
+  const balance = supaBalance ?? 0
   const [txs,      setTxs]      = useState<Txn[]>([])
   const [filter,   setFilter]   = useState<LedgerFilter>('ALL')
 
   useEffect(() => {
-    setBalance(getBalance())
     setTxs(getTransactions())
   }, [])
 

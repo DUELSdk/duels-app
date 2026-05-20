@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { s } from '@/lib/styles'
-import { getBalance } from '@/lib/balance'
+import { useBalance } from '@/hooks/useBalance'
 
 type Phase = 'input' | 'confirming' | 'confirmed'
 
@@ -14,12 +14,11 @@ const MIN_WITHDRAW = 100
 
 export default function WithdrawPage() {
   const router = useRouter()
-  const [balance, setBalance]   = useState(0)
+  const { balance: supaBalance } = useBalance()
+  const balance = supaBalance ?? 0
   const [amount, setAmount]     = useState('')
   const [phase, setPhase]       = useState<Phase>('input')
   const [dots, setDots]         = useState(0)
-
-  useEffect(() => { setBalance(getBalance()) }, [])
 
   useEffect(() => {
     if (phase !== 'confirming') return

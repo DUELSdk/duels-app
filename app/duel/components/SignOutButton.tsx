@@ -1,14 +1,14 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { clearAuth } from '@/lib/auth'
+import { signOut } from '@/lib/auth'
 import { s } from '@/lib/styles'
 
 export function SignOutButton() {
   const router = useRouter()
 
-  function handleSignOut() {
-    clearAuth()
+  async function handleSignOut() {
+    await signOut()
     router.push('/auth')
   }
 
