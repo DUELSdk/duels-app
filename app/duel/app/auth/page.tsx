@@ -57,59 +57,19 @@ export default function AuthPage() {
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Stats strip */}
-      <div style={{ background: 'var(--ink)', color: 'var(--bone-on-dark)', padding: '6px 56px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
-          TODAY&apos;S BIGGEST POT <span style={{ color: 'var(--bone-on-dark)', fontWeight: 600, marginLeft: 4 }}>{stats.biggestPotAmount} KR</span>
-        </span>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)' }}>
-          {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY
-        </span>
-      </div>
-
       {/* Nav */}
-      <div style={{ borderBottom: '1px solid var(--rule-soft)', padding: '14px 56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bone)' }}>
+      <div style={{ borderBottom: '1px solid var(--rule-soft)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bone)' }}>
         <Link href="/" style={{ ...s.display(18), letterSpacing: '-0.01em', textDecoration: 'none', color: 'var(--ink)' }}>
           DUELS.
         </Link>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>TEST MODE &nbsp;·&nbsp; NO REAL MONEY</span>
+        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>TEST MODE · NO REAL MONEY</span>
       </div>
 
-      {/* Split layout */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Layout — stacked on mobile, split on desktop */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-        {/* Left */}
-        <div style={{ padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ ...s.mono, fontSize: 11, color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
-              {counts.live} MATCHES IN PROGRESS
-            </div>
-            <h1 style={{ ...s.display(100), lineHeight: 0.84, marginBottom: 40 }}>
-              {mode === 'signup' ? 'CREATE\nACCOUNT.' : 'SIGN IN.'}
-            </h1>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.4, maxWidth: 440, color: 'var(--ink-soft)' }}>
-              {mode === 'signup'
-                ? 'PICK AN EMAIL AND PASSWORD. YOU GET 5.000 KR PLAY MONEY ON YOUR FIRST LOGIN.'
-                : 'WELCOME BACK. ENTER YOUR CREDENTIALS.'}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 40, paddingTop: 40, borderTop: '1px solid var(--rule-soft)' }}>
-            {(mode === 'signup'
-              ? [{ label: '5.000 KR', sub: 'PLAY MONEY' }, { label: 'NO MITID', sub: 'TEST MODE' }, { label: 'SKILL ONLY', sub: 'NO HOUSE' }]
-              : [{ label: 'REAL LOOP', sub: 'FULL GAME' }, { label: 'NO MITID', sub: 'TEST MODE' }, { label: 'SKILL ONLY', sub: 'NO HOUSE' }]
-            ).map(b => (
-              <div key={b.label}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{b.label}</div>
-                <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginTop: 4 }}>{b.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right — form */}
-        <div style={{ background: 'var(--ink)', padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        {/* Form — full width, shown first on mobile */}
+        <div style={{ background: 'var(--ink)', padding: 'clamp(40px, 8vw, 80px) clamp(24px, 6vw, 56px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
 
           {/* Mode toggle */}
           <div style={{ display: 'flex', marginBottom: 40, borderBottom: '1px solid rgba(240,237,228,0.12)' }}>
