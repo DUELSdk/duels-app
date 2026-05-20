@@ -31,7 +31,15 @@ export default function AuthPage() {
     setError(null)
     const { error: err } = await signInAsGuest()
     if (err) { setError(err.message.toUpperCase()); setLoading(false); return }
-    router.replace('/auth/onboarding')
+    // Auto-generate handle — no picker, no moderation needed
+    const tag = Math.floor(1000 + Math.random() * 9000)
+    const handle = `GUEST${tag}`
+    const { supabase } = await import('@/lib/supabase')
+    await supabase.rpc('rpc_create_profile_and_wallet', {
+      p_handle: handle,
+      p_initials: 'GT',
+    })
+    router.replace('/')
   }
 
   async function handleSubmit(e: React.FormEvent) {
