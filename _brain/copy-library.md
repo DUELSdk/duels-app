@@ -107,7 +107,11 @@ SERIOUS     50 KR
 HIGH        100 KR
 ELITE       250 KR
 MAX         500 KR
+BIG GAME    1,000 KR    ← Elite Room activates here
+GRAND       5,000 KR    ← locked until platform maturity
 ```
+
+Elite Room lobby button only appears at BIG GAME and GRAND tiers (1,000 KR+). ELITE and MAX tiers are auto-queue only — no challenge board.
 
 ### Room meta
 ```
@@ -119,7 +123,8 @@ ENTRY [N] KR      ← what you pay above stake
 
 ### CTAs
 ```
-ENTER ROOM
+ENTER ROOM              ← all tiers
+ENTER ELITE ROOM →      ← BIG GAME / GRAND only (1,000 KR+)
 CANCEL
 ```
 
@@ -196,6 +201,21 @@ LOCKED
 WAITING FOR OPPONENT
 BOTH LOCKED — RESOLVING
 ```
+
+### Action feed (broadcaster voice — in-game event log, third person)
+```
+[Username] locks in.
+[Username] and [Username2] both locked. Resolving round [N].
+[Username] wins round [N] — leads [N]–[N].
+[Username2] wins round [N] — leads [N]–[N].
+Round [N] — draw. Still [N]–[N].
+[Username] wins the match [N]–[N].
+[Username] and [Username2] tied [N]–[N]. Sudden death.
+[Username] wins sudden death — takes the pot.
+[Username] forfeits — [Username2] takes the pot.
+```
+
+Instructions to the player stay second-person: "Lock in your sequence." "Your turn." These are UI labels, not narration.
 
 ### Round outcome (broadcaster voice — third person)
 ```

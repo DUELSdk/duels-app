@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useBalance } from '@/hooks/useBalance'
 import { useTournament } from './TournamentContext'
+import { useActiveMatch } from './ActiveMatchContext'
 import { getStatsStrip, getLiveMatchCount } from '@/lib/mock-data'
 
 interface BroadcastNavProps {
@@ -21,6 +22,7 @@ const NAV_LINKS = [
 export function BroadcastNav({ activePage, loggedOut, dark }: BroadcastNavProps) {
   const { balance } = useBalance()
   const { tournament, openDrawer } = useTournament()
+  const { activeMatch, openDrawer: openMatchDrawer } = useActiveMatch()
   const balStr = balance !== null ? balance.toLocaleString('da-DK') : null
   const isLoggedOut = loggedOut ?? balStr === null
 
@@ -94,6 +96,22 @@ export function BroadcastNav({ activePage, loggedOut, dark }: BroadcastNavProps)
           </>
         ) : (
           <>
+            {activeMatch && (
+              <button
+                onClick={openMatchDrawer}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  background: 'var(--alarm)', border: 'none',
+                  padding: '5px 10px', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: 10,
+                  color: 'white', letterSpacing: '0.10em', fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', flexShrink: 0 }} />
+                IN MATCH
+              </button>
+            )}
             {tournament && (
               <button
                 onClick={openDrawer}

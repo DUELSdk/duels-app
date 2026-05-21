@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { submitSequence } from '@/app/actions/card-duel'
 import type { CardType } from '@/types/game'
 import { CardPiece, EmptySlot } from './CardPiece'
+
+// TODO: wire to /api/card-duel/lock — old server action deleted (queried non-existent games table)
+async function submitSequence(_gameId: string, _sequence: CardType[]): Promise<void> {
+  throw new Error('SequenceBuilder not wired to real API yet — use match page inline implementation')
+}
 
 const INITIAL_HAND: CardType[] = [
   'rock', 'rock', 'rock',

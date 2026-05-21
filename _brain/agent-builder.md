@@ -154,6 +154,16 @@ Read before building anything:
 - New pages must be added to CLAUDE.md routing table in the same session.
 - Do not create HTML prototypes — build directly in Next.js, dev server is the preview.
 
+### Supabase queries
+- Before writing any `.select()` query, verify every column name against `supabase/migrations/` — PostgREST returns `{ data: null }` for unknown columns with no error. Symptom is a silent loading hang.
+- When comparing client-side string literals against DB values (round outcomes, statuses, phases), look up the exact string written by the server function in the migration SQL. DB writes `'player1'` not `'p1'`, `'complete'` not `'done'`. Never assume abbreviated forms.
+
+### Supabase Realtime + game phase transitions
+- Never gate client animation or UI on an intermediate phase (`'reveal'`, `'sudden_death'`) if the server RPC transitions through it in a single transaction. Clients may only receive the final phase. Gate on the **data produced** by the phase (e.g. `round_results` non-null), and track animation completion locally with a done-state.
+
+### Git — deploy from vault root only
+- All git operations (add, commit, push) must run from `C:\Users\sylva\OneDrive\Skrivebord\DUEL` (vault root). That is the repo connected to GitHub and Vercel. `app/duel/` has a nested `.git` — do not commit from there. Verify with `git rev-parse --show-toplevel` before any commit. Push as `git push origin master:main`.
+
 ---
 
 ## OPEN QUESTIONS

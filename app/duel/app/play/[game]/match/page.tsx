@@ -8,6 +8,7 @@ import { animate, stagger } from 'animejs'
 import { tierFromKr, DEFAULT_TIER, type Tier } from '@/lib/tiers'
 import { saveMatchResult } from '@/lib/match-state'
 import { supabase } from '@/lib/supabase'
+import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const div  = '1px solid rgba(240,237,228,0.14)'
@@ -220,7 +221,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const vw       = useWindowWidth()
   const px       = vw < 640 ? 16 : vw < 1000 ? 24 : 40
   const cardGap  = vw < 640 ? 5 : 7
-  const cardSize = Math.max(44, Math.min(100, Math.floor((vw - px * 2 - cardGap * 8) / 9)))
+  const cardSize = Math.max(44, Math.floor((vw - px * 2 - cardGap * 8) / 9))
   const chipSize = Math.max(30, Math.min(58, Math.floor(cardSize * 0.58)))
 
   // ── Supabase state ──────────────────────────────────────────────
@@ -254,13 +255,15 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const [sdRevealPhase, setSdRevealPhase] = useState<'picking'|'waiting'|'revealed'>('picking')
   const [sdResult,      setSdResult]      = useState<{my:Move;opp:Move}|null>(null)
   const prevSdCardsRef  = useRef('')
-  const sdDecidedRef    = useRef(false)
+  const [sdDecided,     setSdDecided]     = useState(false)
   const [sdClashPhase,  setSdClashPhase]  = useState<'facedown'|'revealed'>('facedown')
 
   // ── Selection state ────────────────────────────────────────────
   const [selSlot, setSelSlot] = useState<number|null>(null)
   // ── Reveal animation ─────────────────────────────────────────────
   const [clashPhase, setClashPhase] = useState<'facedown'|'revealed'>('facedown')
+
+  useNavigationGuard(gs !== null && gs.phase !== 'complete')
 
   // ── Load match + subscribe ──────────────────────────────────────
   useEffect(() => {
@@ -286,7 +289,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       setStakeKr(match.stake_kr)
 
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('id, handle')
         .in('id', [match.player1_id, match.player2_id])
       if (profiles && !destroyed) {
@@ -363,8 +366,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
   }, [revealIdx])
 
   // ── SD reveal when both cards appear ────────────────────────────
+  // No phase guard — must fire even when gs.phase flips to 'complete' in same update.
   useEffect(() => {
-    if (!gs || gs.phase !== 'sudden_death') return
+    if (!gs || (gs.phase !== 'sudden_death' && gs.phase !== 'complete')) return
     const myCard  = iAmP1Ref.current ? gs.sd_p1_card : gs.sd_p2_card
     const oppCard = iAmP1Ref.current ? gs.sd_p2_card : gs.sd_p1_card
     const key = `${myCard}-${oppCard}`
@@ -372,12 +376,14 @@ function CardDuelMatch({ slug }: { slug: string }) {
       prevSdCardsRef.current = key
       const myMove  = TO_MOVE[myCard]
       const oppMove = TO_MOVE[oppCard]
-      if (cardOutcome(myMove, oppMove) !== 'tie') sdDecidedRef.current = true
+      const decisive = cardOutcome(myMove, oppMove) !== 'tie'
+      if (decisive) setSdDecided(true)
       setSdResult({ my: myMove, opp: oppMove })
       setSdRevealPhase('revealed')
       setSdClashPhase('facedown')
     }
-    if (!myCard && !oppCard && prevSdCardsRef.current !== '') {
+    // Only reset for a new SD round — never when game is already complete
+    if (!myCard && !oppCard && prevSdCardsRef.current !== '' && gs.phase !== 'complete') {
       prevSdCardsRef.current = ''
       setSdPick(null); setSdBusy(false); setSdRevealPhase('picking'); setSdResult(null); setSdClashPhase('facedown')
     }
@@ -395,12 +401,13 @@ function CardDuelMatch({ slug }: { slug: string }) {
     if (!gs || gs.phase !== 'complete' || !revealDone) return
     const myScore  = iAmP1Ref.current ? gs.p1_score : gs.p2_score
     const oppScore = iAmP1Ref.current ? gs.p2_score : gs.p1_score
-    const delay = sdDecidedRef.current ? 3200 : 1200
+    // sdDecided in deps: if it flips true, this effect re-runs, cancels the 1.2s timer, starts 3.2s
+    const delay = sdDecided ? 3200 : 1200
     const id = setTimeout(() => {
       router.replace(`/play/${slug}/result?matchId=${matchId}&myScore=${myScore}&oppScore=${oppScore}`)
     }, delay)
     return () => clearTimeout(id)
-  }, [gs, revealDone, matchId, router, slug])
+  }, [gs, revealDone, matchId, router, slug, sdDecided])
 
   // ── Arrangement handlers ─────────────────────────────────────────
   function handleHandClick(idx: number) {
@@ -650,7 +657,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
 
           {/* Main clash arena */}
           <section style={{
-            flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+            flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
             padding: 'clamp(12px,3vw,40px)',
             background: 'radial-gradient(ellipse at center, var(--concrete-2) 0%, var(--concrete) 80%)',
             position: 'relative', overflow: 'hidden',
@@ -674,7 +681,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
               )}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(12px,4vw,48px)', width: '100%' }}>
+            {/* Cards row — fills available height */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(12px,4vw,48px)', width: '100%' }}>
               {/* My card */}
               <div style={{ textAlign: 'center', flex: 1, maxWidth: 320 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 16 }}>YOUR SLOT {revealIdx + 1}</div>
@@ -691,7 +700,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                       <CDCard
                         k={clashPhase === 'revealed' ? revealMyCard : undefined}
                         faceDown={clashPhase === 'facedown'}
-                        slot={revealIdx + 1} size={Math.min(180, Math.floor(vw * 0.18))}
+                        slot={revealIdx + 1} size={Math.floor(vw * 0.18)}
                         win={clashPhase === 'revealed' && revealResult === 'win'}
                         loss={clashPhase === 'revealed' && revealResult === 'loss'}
                         tie={clashPhase === 'revealed' && revealResult === 'tie'}
@@ -734,7 +743,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                       <CDCard
                         k={clashPhase === 'revealed' ? revealOppCard : undefined}
                         faceDown={clashPhase === 'facedown'}
-                        slot={revealIdx + 1} size={Math.min(180, Math.floor(vw * 0.18))}
+                        slot={revealIdx + 1} size={Math.floor(vw * 0.18)}
                         win={clashPhase === 'revealed' && revealResult === 'loss'}
                         loss={clashPhase === 'revealed' && revealResult === 'win'}
                         tie={clashPhase === 'revealed' && revealResult === 'tie'}
@@ -743,10 +752,11 @@ function CardDuelMatch({ slug }: { slug: string }) {
                   </AnimatePresence>
                 </div>
               </div>
+              </div>
             </div>
 
             {/* Result announcement */}
-            <div style={{ marginTop: 'clamp(10px,2.5vh,28px)', textAlign: 'center', width: '100%' }}>
+            <div style={{ flexShrink: 0, paddingTop: 'clamp(8px,1.5vh,20px)', textAlign: 'center', width: '100%' }}>
               <AnimatePresence mode="wait">
                 {clashPhase === 'facedown' ? (
                   <motion.div
@@ -804,7 +814,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── SUDDEN DEATH ────────────────────────────────────────── */}
-      {(gs.phase === 'sudden_death' || (gs.phase === 'complete' && sdDecidedRef.current)) && (revealDone || !gs.round_results) && (
+      {(gs.phase === 'sudden_death' || (gs.phase === 'complete' && sdDecided)) && (revealDone || !gs.round_results) && (
         <>
           <section style={{ padding: 'clamp(12px,2.5vw,28px) clamp(16px,4vw,40px)', textAlign: 'center', borderBottom: div, flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1.1vw,12px)', color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
@@ -1021,7 +1031,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── COMPLETE ────────────────────────────────────────────── */}
-      {gs.phase === 'complete' && revealDone && (
+      {gs.phase === 'complete' && revealDone && !sdDecided && (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <motion.div
             animate={{ opacity: [0.4, 1, 0.4] }}
@@ -1133,6 +1143,8 @@ function CycleDuelMatch({ slug }: { slug: string }) {
   const [sdBusy,    setSdBusy]    = useState(false)
   const [sdRound,   setSdRound]   = useState(0)
   const roundMovesRef = useRef<{ my: CycleMove; bot: CycleMove }[]>([])
+
+  useNavigationGuard(gamePhase !== 'done')
 
   const totalHand = Object.values(hand).reduce((a, b) => a + b, 0)
   const seqFull   = sequence.every(s => s !== null)
@@ -1250,7 +1262,7 @@ function CycleDuelMatch({ slug }: { slug: string }) {
             oppMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.bot)),
           })
           setGamePhase('done')
-          setTimeout(() => router.push(`/play/${slug}/result`), 1200)
+          setTimeout(() => router.replace(`/play/${slug}/result`), 1200)
         }
       } else {
         const nextBlock = block + 1
@@ -1283,7 +1295,7 @@ function CycleDuelMatch({ slug }: { slug: string }) {
           oppMoves: [0,1,2].map(b => roundMovesRef.current.slice(b*3, b*3+3).map(r => r.bot)),
         })
         setGamePhase('done')
-        setTimeout(() => router.push(`/play/${slug}/result`), 1200)
+        setTimeout(() => router.replace(`/play/${slug}/result`), 1200)
       }
     }, 900)
   }
@@ -1699,6 +1711,8 @@ function DropDuelMatch({ slug }: { slug: string }) {
   const [hoveredCol, setHoveredCol] = useState<number | null>(null)
   const prevBoardRef = useRef<CellState[][]>(Array(ROWS).fill(null).map(() => Array(COLS).fill(null)))
 
+  useNavigationGuard(winner === null && !isDraw)
+
   const getGhostRow = (col: number): number | null => {
     for (let r = ROWS - 1; r >= 0; r--) {
       if (board[r][col] === null) return r
@@ -1749,13 +1763,13 @@ function DropDuelMatch({ slug }: { slug: string }) {
       setWinner(w)
       const cells = findWinningCells(b)
       setWinCells(cells)
-      setTimeout(() => router.push(`/play/${slug}/result`), 2500 + cells.length * 120)
+      setTimeout(() => router.replace(`/play/${slug}/result`), 2500 + cells.length * 120)
     } else {
       setIsDraw(true)
       setTimeout(() => {
         animate('.board-cell', { opacity: [1, 0.2], duration: 800, delay: stagger(40, { from: 'last' }), easing: 'easeOutQuad' })
       }, 100)
-      setTimeout(() => router.push(`/play/${slug}/result`), 2500)
+      setTimeout(() => router.replace(`/play/${slug}/result`), 2500)
     }
     saveMatchResult({
       game: slug, tierId: tier.id, stakeKr: tier.stakeKr, entryFee: tier.entryFee,

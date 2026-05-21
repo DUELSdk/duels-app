@@ -68,10 +68,14 @@ MobilePay via Stripe is processed as a card transaction underneath. Funds land i
 - Denmark unrestricted
 - Downside: €249/month minimum, compliance review required, weeks to live
 
-**Fallback → investigate alternatives if MangoPay declines**
-- Adyen (enterprise, complex onboarding)
-- Paysafe / Skrill (gaming-focused PSP)
-- Direct bank integration via Nets/Clearhaus
+**Fallback → candidates to contact if MangoPay declines**
+
+No provider is pre-verified. Each requires their own compliance conversation. Key asset for all inquiries: Spillemyndighed ruling (journal 26-632347) — confirms DUELS is a skill competition platform, no gambling license required.
+
+1. **Nexpay** — Lithuania EMI, covers North-West Europe. Prohibits unlicensed gambling but skill platforms may qualify separately. Needs compliance conversation.
+2. **Paysafe / Skrill** — gaming-focused PSP, established in Europe. Known for licensed gambling operators — skill gaming classification needs confirmation.
+3. Adyen (enterprise, complex onboarding — last resort)
+4. Direct bank integration via Nets/Clearhaus
 
 **Stripe: blocked — skill gaming not permitted on their platform.**
 

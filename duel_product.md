@@ -67,7 +67,7 @@ Hybrid system — method depends on purse size.
 |-------|--------|-----|
 | Starter / Standard (10–25kr) | Auto-queue | Fast, frictionless, high volume |
 | Serious / High (50–100kr) | Auto-queue + optional open challenge | Player choice |
-| Elite / Max (250–500kr) | Auto-queue + optional open challenge | Still casual — no Elite Room below 1,000kr |
+| Elite / Max (250–500kr) | Auto-queue | Casual purses — challenge board not available below 1,000kr |
 | Big Game / Grand (1,000kr+) | Elite Room (challenge board only) | Players want to know who they're fighting |
 
 **The Elite Room threshold is 1,000 KR.** Below that: casual purses, auto-queue. The jump from 500 to 1,000 KR is intentional — it marks the line between casual and serious.
@@ -453,6 +453,31 @@ Different game formats can use different rules — not platform-wide, chosen per
 
 ---
 
+### Platform Design Rule — 3-Game Match Format
+
+Every match on DUELS is 3 games. No single-game matches. **Exception: Ship Duel Phantom** — 1-game format. Ships move each round so positional information from previous games doesn't carry meaningful reads. The information layer is built into the single game itself.
+
+The 3-game format is the information layer. No persistent cross-match stats needed — the match generates everything players need to adapt:
+
+- **Game 1** — blind. Both players go on instinct and theory.
+- **Game 2** — game 1 fully visible. Now it's a read.
+- **Game 3** — two data points. Now it's psychology.
+
+This replaces the need for per-player behavioral history (stored play patterns, historical tendencies). The match itself produces the information.
+
+**In-match history panel** — platform-wide UI pattern. Available in every game. Player-controlled toggle — accessible anytime, player decides when to look. Shows all previous games in the current match.
+
+What's shown per game type:
+- Card Duel: full card sequence from previous game(s)
+- Island Duel: full allocation breakdown per field per round
+- Cycle Duel: card sequence per block
+- Drop Duel: board config (blocks placed) + move sequence
+- Ship Duel: revealed shot maps + ship positions after sinking
+
+Same panel, same toggle, every game. Consistent mental model across the platform.
+
+---
+
 ### The Crown
 
 Optional mechanic — off by default. Enabled via room setting or Crown variant. One player holds the Crown at a time. Crown never transfers between different games.
@@ -501,6 +526,10 @@ Optional mechanic — off by default. Enabled via room setting or Crown variant.
 |--------|-------|
 | Swiss | Matched by record each round, no elimination until X rounds — large fields |
 | Group stage → knockout | Round robin groups feed into single elimination bracket — large events |
+
+### No-Show Rule (all formats)
+
+No grace period. If a player is not present at match start, their opponent receives an automatic free win. The absent player is eliminated from the tournament. No exceptions, no angle time.
 
 ### Prize Structures
 
@@ -785,18 +814,16 @@ Cost: ~$1–5 per verification. EU-native, covers DK, UK, DE, SE in one integrat
 
 ## Open Questions
 
-| Question | Priority | Notes |
-|----------|----------|-------|
-| Legal status of Card Duel Sealed mode (simultaneous sealed choices) | High | Needs Spillemyndighed opinion |
+None.
 
 ---
 
 ## What's Missing Before Launch
-- [ ] Vejledende udtalelse fra Spillemyndigheden on Card Duel (Sealed + Phase) and DropDuel
+- [x] Spillemyndighed opinion — original ruling received 2026-05-13 (Journal 26-632347). All newer games sent to lawyer, provisional pass.
 - [ ] Spilleretsadvokat review of all rules
 - [ ] Hvidvask compliance setup
 - [ ] Technical platform built and tested
-- [ ] Payment provider integrated
+- [ ] Payment provider integrated (MangoPay — awaiting response)
 
 ---
 
@@ -804,8 +831,8 @@ Cost: ~$1–5 per verification. EU-native, covers DK, UK, DE, SE in one integrat
 - [x] Concept defined
 - [x] Legal framework researched
 - [x] Core business model defined
-- [x] Game concepts designed (3/3 final — Card Duel, CycleDuel, DropDuel)
-- [ ] Spillemyndighed opinion obtained
+- [x] Game concepts designed (3/3 launch — Card Duel, CycleDuel, Island Duel)
+- [x] Spillemyndighed opinion obtained (provisional pass on all games)
 - [ ] Legal review complete
 - [ ] MVP built
 - [ ] Internal testing

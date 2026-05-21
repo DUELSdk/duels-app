@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Barlow_Condensed, Inter, JetBrains_Mono } from 'next/font/google'
 import { TournamentNotch } from '@/components/TournamentNotch'
 import { TournamentProvider } from '@/components/TournamentContext'
+import { ActiveMatchProvider } from '@/components/ActiveMatchContext'
+import { ActiveMatchNotch } from '@/components/ActiveMatchNotch'
 import './globals.css'
 
 const barlowCondensed = Barlow_Condensed({
@@ -47,10 +49,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }}>
           TEST MODE · PLAY MONEY ONLY · NO REAL TRANSACTIONS
         </div>
-        <TournamentProvider>
-          {children}
-          <TournamentNotch />
-        </TournamentProvider>
+        <ActiveMatchProvider>
+          <TournamentProvider>
+            {children}
+            <TournamentNotch />
+            <ActiveMatchNotch />
+          </TournamentProvider>
+        </ActiveMatchProvider>
       </body>
     </html>
   )

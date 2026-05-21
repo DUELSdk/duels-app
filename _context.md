@@ -1,7 +1,7 @@
 ---
 title: DUEL Context
 type: context
-updated: 2026-05-17
+updated: 2026-05-18
 ---
 
 # DUEL — Context
@@ -77,6 +77,11 @@ Active state for the DUEL skill-gaming platform.
 | Anti-cheat enforcement tiers | Warning → restriction (low-stake lockout + tournament ban) → ban (forfeiture + clawback) → Politiet referral. Human-assisted bot = accepted residual risk. | 2026-05-14 |
 | Legal anti-cheat basis | Cheating for financial gain = bedrageri §279 straffeloven. T&Cs must include clawback + forfeiture clauses. Full policy in `Company/compliance.md`. | 2026-05-14 |
 | Payment provider (PMV) | Stripe BLOCKED — skill gaming prize payouts not permitted. MangoPay now primary candidate (EMI, PSD2-compliant, escrow-native). Inquiry sent, awaiting approval. | 2026-05-17 |
+| Tournament no-show rule | No grace period. Not present at match start = instant free win to opponent, eliminated from tournament. Applies all formats. "Present" = server-verified in match lobby within 60s of scheduled start. Entry fees collected at registration — non-refundable. No-show player's stake contribution stays in pot. Concurrent tournament scheduling: platform must prevent double-booking at registration, not at match time. Forfeit (mid-tournament quit) = same outcome as no-show — opponent advances. | 2026-05-20 |
+| T3 game (launch tournament) | OPEN — Island Duel or DropDuel. Decision deferred: original swap made before DropDuel converted to simultaneous mechanics. Revisit with updated DropDuel spec before locking. | 2026-05-18 |
+| The Critic | New agent brief added `_brain/agent-critic.md`. Invoked before any mechanic, rule, format, or fee is locked. Runs 6 checks: contradiction, edge case, exploit, math, legal, UX. | 2026-05-18 |
+| Game variants rollout | Variants introduced via tournaments first — not as permanent lobby options at launch. Casual queue = base game only. Variant path: tournament format → Elite room option → casual lobby filter (once volume supports it). | 2026-05-20 |
+| Game unlock cadence | Card Duel only at casual launch. CycleDuel added at T2. DropDuel added at T3. Matches tournament rollout — keeps queue density high before splitting the player pool. | 2026-05-20 |
 
 ---
 

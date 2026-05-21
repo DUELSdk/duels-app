@@ -29,11 +29,11 @@ kanban-plugin: board
 - [ ] Big Game / Grand tiers + The Stage — specced in duel_product.md. Needs build: featured feed on front page, profile badge, Nemesis spectating research #build #design
 - [ ] War format — specced in duel_product.md. Post-launch. Needs: map UI, sector system, honor system, sector reward mechanic decision #design #build
 - [ ] **THE MARQUEE — design start: 2026-05-15** · Broadcast layer on top of the Elite Room. Front of house — not a match room. Shows what's on: challenges posted, matches live, who holds a seat. Feeds landing jumbotron when a challenge is taken. Surface: BROADCAST (bone/paper). Route: `/marquee`. Elite Room (BUNKER, 1,000kr+) is where matches happen — Marquee is the sign above the door. #design #build
-- [ ] **THE BIG ONE** — 128-player always-running tournament. Starts the moment seat 128 fills. Rules: max 2 concurrent tournaments per player · funds reserved on entry (taken when tournament fires, unlocked on cancel) · on fill: 2-min grace notification to all 128, unconfirmed → waitlist (60s each) → bye for opponent · missed player: spot lost + 1hr Giant cooldown · waitlist shown publicly ("WAITLIST: 22") · featured permanently on landing jumbotron. Build after standard tournaments stable. #product #build
-- [ ] Tournament rules to build: max 2 active per player · 30min-before hard cancel if <50% filled · soft fill with byes if 75%+ · play other games while waiting (tournament match takes priority, 2-min grace) · invite-a-friend share link from waiting room · notifications: 5 seats left, 2 seats left, 10min to start, match ready #build
-- [ ] ShipDuel — spec i `Games/ship-duel.md`. Base + Phantom fuldt spec'd. Wireframe mock: `Design/ship-duel.html` (in progress). Mangler: UI spec .md, Spillemyndighed-check. #game #design
+- [ ] **THE BIG ONE** — 128-player always-running tournament. Starts the moment seat 128 fills. Rules: max 2 concurrent tournaments per player · funds reserved on entry (taken when tournament fires, unlocked on cancel) · on fill: notification to all 128 · missed player: instant free win to opponent, eliminated, spot lost + 1hr Giant cooldown · waitlist shown publicly ("WAITLIST: 22") · featured permanently on landing jumbotron. Build after standard tournaments stable. #product #build
+- [ ] Tournament rules to build: max 2 active per player · 30min-before hard cancel if <50% filled · soft fill with byes if 75%+ · play other games while waiting (tournament match takes priority, no grace — not present = free win to opponent) · invite-a-friend share link from waiting room · notifications: 5 seats left, 2 seats left, 10min to start, match ready #build
+- [ ] ShipDuel — spec + UI spec both spec-complete. Wireframe mock: `Design/ship-duel.html`. Spillemyndighed: ✅ provisional pass. Remaining: build. #game #build
 - [ ] **Post-match game review** — chess.com-style replay and decision analysis after match ends. Separate from in-game intel. Build after core opponent intel system is live. #product #build
-- [ ] Mystery note — "each thing has the value amount, variables is the purse size" — unclear, revisit when context returns
+- [x] Mystery note — resolved: entry fee tiers map to purse sizes. Already live in stake tier spec.
 - [ ] Loss credit mechanic — loser earns ~5% of purse as platform credit (non-withdrawable, entry fees only). Retention tool, legally clean. #product
 - [ ] Game library filters and categories — needs a design discussion before building. What filters exist, how categories work, what metadata each game card shows. #design #build
 - [x] Finding opponent → match transition — finding page rebuilt from bundle, animated transition to matched phase in place #design #build
@@ -59,8 +59,8 @@ kanban-plugin: board
 
 ## Build
 
-- [ ] Broadcaster voice — apply third-person narration across all in-game text (results, round announcements, action feed). Rule locked in DESIGN.md. #build
-- [ ] Elite Room tier threshold — update entry point from 250kr to 1,000kr. 250–500kr tiers drop back to auto-queue. Button in lobby only appears at Big Game + Grand tiers. #build
+- [x] Broadcaster voice — apply third-person narration across all in-game text (results, round announcements, action feed). Rule locked in DESIGN.md. #build
+- [x] Elite Room tier threshold — update entry point from 250kr to 1,000kr. 250–500kr tiers drop back to auto-queue. Button in lobby only appears at Big Game + Grand tiers. #build
 
 
 ## 🔧 In Progress

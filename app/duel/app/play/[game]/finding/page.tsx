@@ -280,7 +280,7 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
   }
 
   const handleDone = useCallback(() => {
-    router.push(`/play/${game}/match?matchId=${matchId}`)
+    router.replace(`/play/${game}/match?matchId=${matchId}`)
   }, [router, game, matchId])
 
   async function handleCancel() {

@@ -38,6 +38,9 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 | Game rules, legal position, new game review, disputes | `_brain/agent-referee.md` |
 | Building or changing anything in `app/duel/` | `_brain/agent-builder.md` |
 | Any public-facing copy, brand, launch, campaigns | `_brain/agent-promoter.md` |
+| Stress-testing a mechanic, rule, format, or fee before locking | `_brain/agent-critic.md` |
+| Security, data protection, session resilience, reconnect, auth, money integrity | `_brain/agent-guardian.md` |
+| A mistake slipped through and the immediate fix is done — encode it as a rule | `_brain/agent-teacher.md` |
 | Product / design | `duel_product.md` |
 | UI / visual design system | `Design/style-guide.html` — tokens, surfaces, components, voice. Then `design.md` for build rules. |
 | Design a game mechanic | `duel_product.md` Platform Design Rule section |
@@ -55,8 +58,10 @@ DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% s
 | Launch strategy | `Research/launch-strategy_research.md` |
 | Add a new game | `duel_product.md` Games section + `Templates/Duel-Game.md` |
 | Build or change UI for a specific game | `Games/[game-name]-ui.md` — animations, components, states. Also read `Games/[game-name].md` for rules/visibility. Exists for: card-duel, cycle-duel, drop-duel, ship-duel |
+| Vault Duel game rules | `Games/vault-duel.md` — options, face schedule, bid/call/stand mechanic, deduction arc |
 | Game rules (authoritative) | `Games/[game-name].md` — master. `app/duel/GAMES.md` is a build summary derived from this. |
 | Unbuilt feature ideas (build-layer) | `app/duel/IDEAS.md` — short concepts waiting to be built. Promoted to GAMES.md or DESIGN.md when decided. |
+| Teaser page spec | `Design/teaser-page.md` — pre-launch marketing page, states (pre-reveal / revealed), pot mechanic, email capture. Build: `app/duel/app/teaser/page.tsx` |
 | Fully spec'd format research | `Research/Formats/` — deep specs with math, legal notes, variables. Not the same as IDEAS.md. |
 | Bracket tournament math (seat tiers, prize formula, time estimate) | `Research/Formats/bracket-tournament-format.md` |
 | Pre-launch testing | `app/duel/TEST.md` — full manual test checklist across all pages and features |

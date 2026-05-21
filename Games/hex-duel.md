@@ -27,6 +27,7 @@ Per-move time limit: **20 seconds**. Expires → first available cell in scan or
 | RNG | none |
 | Skill basis | spatial reasoning / connection strategy / opponent-reading |
 | Tiebreaker | dead-zone split — see Scoring |
+| Spillemyndighed | ✅ Provisional pass — sent to lawyer. Simultaneous incomplete-information mechanic flagged alongside ShipDuel review: no RNG, all placements are player choices. |
 
 **First-player advantage eliminated:** Standard Hex is mathematically proven to be a first-player win under perfect play (strategy-stealing argument, Nash 1948). HexDuel's simultaneous rule eliminates this entirely — there is no first player. Both commit blind every turn. This is a structural fairness improvement over original Hex and strengthens the skill-only legal position.
 
@@ -78,15 +79,13 @@ Contesting intentionally is a valid strategy — sacrifice your move to permanen
 
 ## Training Gate
 
-HexDuel requires training completion before real-money rooms unlock. The Big Three (Card Duel, CycleDuel, DropDuel) are pick-up-and-play. HexDuel's connection strategy is not immediately obvious — training protects players and demonstrates platform due diligence.
+HexDuel uses a soft gate — players are prompted to complete the guided tutorial before entering real-money rooms, but can skip. The Big Three (Card Duel, CycleDuel, DropDuel) are pick-up-and-play. HexDuel's connection strategy is not immediately obvious — training protects players who want it and demonstrates platform due diligence.
 
-**Requirement:** 5 games vs training bot, at least 1 win. One-time per account.
+**Format: guided tutorial, not a bot match.** Interactive walkthrough — shows the board, explains edge connections, walks through an example chain, presents a few positions and asks the player to choose the right move. Player thinks for themselves; the guide confirms or corrects. No adversarial match. No win/loss anxiety.
 
-**Training bot:** Shallow MCTS. Pursues its own chain with light blocking. No deep opponent-reading. Beatable by a player who understands basic connection paths. Not trivial — a player who places randomly will not win.
+**Soft gate flow:** Before entering a real-money room for the first time, player sees a prompt: "HexDuel has a learning curve. Complete the guide first? [Take the guide] [Skip]". Either path continues to the room. One-time prompt per account.
 
-**Why 1 win required:** Proves basic understanding. A player who completes 5 games without winning once has not grasped connection strategy — the win requirement is a skill gate, not just a patience gate.
-
-**Platform note:** Training gate is a responsible gaming argument — the platform verified the player understands the game before real money is on the line. Document in `Company/compliance.md`.
+**Platform note:** Soft training gate is still a responsible gaming argument — platform offered the player a chance to understand the game. Document in `Company/compliance.md`.
 
 ---
 
@@ -102,8 +101,7 @@ Standard Hex bots use MCTS (Monte Carlo Tree Search) with virtual connection heu
 
 | Bot tier | Behaviour | Used for |
 |----------|-----------|---------|
-| Training bot | Shallow MCTS (~depth 3), pursues own chain + light blocking, no dead-zone strategy | Training gate |
-| Ranked bot | Deeper MCTS, virtual connections, dead-zone aware | Optional practice post-training |
+| Ranked bot | Deeper MCTS, virtual connections, dead-zone aware | Optional practice (no training bot — replaced by guided tutorial) |
 
 Key Hex concepts for bot implementation:
 - **Virtual connections** — two cells are virtually connected if they can be joined regardless of opponent's single move
@@ -140,5 +138,5 @@ For simultaneous play, the bot must predict likely opponent cells rather than re
 |----------|----------|
 | Per-move time limit confirmed at 20s — revisit post-launch if matches feel rushed | Low |
 | Dead-zone split detection — server must evaluate chain-possibility after each dead zone. Define algorithm at build time. | Medium |
-| Training bot win rate target — calibrate so ~60% of players who complete 5 games win at least once | Medium |
-| Legal confirmation — Spillemyndighed has confirmed skill games, but simultaneous incomplete-information mechanic (early game shots with no board info) worth flagging alongside ShipDuel review | Medium |
+| ~~Training bot win rate target~~ | ✅ Replaced by guided tutorial — no bot, no win/loss metric |
+| ~~Legal confirmation — simultaneous incomplete-information mechanic~~ | ✅ Sent to lawyer alongside ShipDuel review — provisional pass |

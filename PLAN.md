@@ -47,14 +47,31 @@ Lawyer review happens during the compliance review wait (Step 3) — costs nothi
 Core of the business model: escrow, rake deduction, payout. Their compliance review is the hardest gate in the entire plan.
 - Submit with all docs from Steps 1 + 2
 - Confirm pre-auth support for tournament funds reservation before Phase 2 build starts
+- Approval may come with conditions (stake caps, KYC tier requirements) — review any conditions before proceeding to Phase 2
+
+**Fallback if MangoPay rejects:** No provider is pre-verified — every EMI runs their own compliance review. If MangoPay rejects, immediately contact the candidates in `Company/payment-provider-research.md` (Nexpay, Paysafe/Skrill) with the Spillemyndighed ruling (journal 26-632347) as the key document proving DUELS is a skill competition platform, not gambling. Do not assume any named provider will accept — treat each as a new compliance conversation.
 
 **0B — Trustly**
 Deposits and withdrawals. Also has an onboarding process — start parallel with MangoPay submission.
 - Submit onboarding application
 - Confirm integration path with MangoPay (Trustly feeds MangoPay wallet)
+- If Trustly integration with MangoPay is not supported: Trustly connects directly to platform bank account as bridge
 
-**0C — MobilePay (investigate)**
-Popular on Danish real-money platforms (e.g. Betano). Decide during Phase 0 whether to add as a deposit option alongside Trustly. No onboarding until decided.
+**0C — MobilePay**
+Order submitted 2026-05-16, pending approval. MangoPay does not support MobilePay natively — MobilePay runs as a separate deposit channel.
+- If MobilePay approved: wire as deposit option at launch (Danish users expect it — conversion risk without it)
+- If MobilePay rejected: launch with Trustly only, add MobilePay in first post-launch update
+
+**0D — idura / MitID**
+Not a Phase 0 blocker. Sandbox account already active — all MitID dev work in Phase 2 runs against it for free.
+
+Production flip when ready to go live:
+- Enroll Silas in MitID Erhverv as company signatory (Danish gov, likely free)
+- Submit production via idura dashboard — Nets processes in ~15–20 minutes
+- Custom domain: 15 business days — submit this ~2 weeks before planned go-live
+- Cost: €67/month (Small plan, 1,000 logins) + €0.037 per MitID login
+
+No action needed in Phase 0.
 
 ---
 
@@ -81,19 +98,21 @@ The app was built from DESIGN.md (text spec) instead of the visual prototypes in
 The app is currently all mock — no real auth, no real payments, no real-time matchmaking. This is the full build. Three pillars in order:
 
 **2A — Auth**
-- MitID integration
-- One account per CPR enforced
+- MitID integration via idura. Sandbox already active — build against it. Docs: https://docs.idura.app/
+- Production go-live steps (do ~2 weeks before launch): enroll Silas in MitID Erhverv as company signatory → submit production via idura dashboard → request custom domain (15 business days). Cost: €67/month + €0.037 per login.
+- One account per CPR enforced — DK launch only. CPR auth does not work for EU expansion (DE/SE). Flag for post-launch: EU auth path must be defined before Germany/Sweden rollout (eIDAS or alternative)
 - Session tracking server-side (GDPR, anti-cheat requirement)
 
 **2B — Payments**
 - MangoPay: escrow, rake deduction, payout (onboarding done in Phase 0)
 - Trustly: deposits and withdrawals (onboarding done in Phase 0)
-- MobilePay: add if decided during Phase 0 investigation
+- MobilePay: add if approved during Phase 0
 
 **2C — Matchmaking + Game Engine**
 - Real-time matchmaking (auto-queue + challenge system)
 - Server-side game state rendering (anti-cheat requirement)
 - Input fingerprinting + statistical flagging wired in
+- Build Card Duel to launch-ready first. CycleDuel and DropDuel built in Phase 2 but not required at launch — they follow tournament unlock cadence (T2, T3)
 
 **Done when:** A real player can register, deposit, enter a match, play, and receive winnings.
 
@@ -113,7 +132,14 @@ Lawyer reviews and signs off on T&Cs + AML policy drafted during Phase 0. Must c
 - Fix everything that fails
 - Limited closed beta in Copenhagen — real players, real money, small scale
 
-**Done when:** T&Cs signed off by lawyer. TEST.md passes. Beta complete with no critical issues.
+**Beta definition:**
+- Participants: 20–50 invited players (friends, network, Copenhagen contacts)
+- Stake cap during beta: 50 KR max per match (Serious tier ceiling)
+- Duration: minimum 2 weeks of active play
+- Exit criteria: no payment failures, no game state corruption, no unresolved disputes, payout flow confirmed end-to-end
+- If a critical issue surfaces: fix and extend beta. Do not launch over an unresolved payout or auth bug.
+
+**Done when:** T&Cs signed off by lawyer. TEST.md passes. Beta exit criteria met.
 
 ---
 
@@ -132,7 +158,8 @@ Lawyer reviews and signs off on T&Cs + AML policy drafted during Phase 0. Must c
 ## Dependency Map
 
 ```
-Phase 0 (MangoPay) ─────────────────────────────────┐
+Phase 0A (MangoPay) ────────────────────────────────┐
+Phase 0D (idura/MitID) ─────────────────────────────┤
                                                       ▼
 Phase 1 (UI audit) ──── runs parallel ────── Phase 2 (Core tech)
                                                       │
@@ -143,13 +170,27 @@ Phase 1 (UI audit) ──── runs parallel ────── Phase 2 (Core t
                                               Phase 4 (Launch CPH)
 ```
 
+Phase 2 gates on MangoPay approval. idura sandbox is already active — MitID dev work starts immediately in Phase 2 with no prior approval needed.
+
 ---
 
 ## What's Already Done
 
-- Game specs: Card Duel, Cycle Duel, Island Duel (launch games) + DropDuel, ShipDuel, HexDuel, WallDuel (post-launch pipeline)
+- Game specs: Card Duel, CycleDuel, DropDuel (all three built to launch-ready spec) + ShipDuel, HexDuel, VaultDuel (post-launch pipeline)
 - Legal foundation: Spillemyndighed ruling confirmed, CVR registered
 - Business model: entry fee structure, rake, tiers, all locked
 - Anti-cheat policy: enforcement tiers, legal basis, clawback — documented in `Company/compliance.md`
 - Marketing: OOH tagline locked, social strategy decided, entry fee brand term locked ("entry")
 - Design system: BROADCAST + BUNKER surfaces, typography, color — locked in DESIGN.md
+
+## Game Unlock Cadence (locked decision)
+
+Three games are spec-complete. They do not all ship at once — staggered to keep queue density high:
+
+| Gate | Game added |
+|------|-----------|
+| Casual launch | Card Duel only |
+| T2 tournament | CycleDuel unlocks |
+| T3 tournament | DropDuel unlocks |
+
+"Three games at launch" in older docs refers to being spec-complete, not simultaneously live. The unlock cadence is the authoritative sequence.

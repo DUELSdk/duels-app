@@ -1,6 +1,6 @@
 ---
 game: ShipDuel
-status: draft
+status: spec-complete
 added: 2026-05-13
 ---
 
@@ -24,6 +24,7 @@ Both players place a fleet simultaneously, then fire simultaneously each round �
 | RNG | none — all placements and shots are player choices |
 | Skill basis | spatial reasoning / deduction / opponent-reading |
 | Tiebreaker | damage dealt — see Scoring |
+| Spillemyndighed | ✅ Provisional pass — sent to lawyer. Incomplete-information framing confirmed: no RNG, all choices are player decisions. |
 
 **Note on incomplete information:** Early-game shots are made with no information — this is incomplete information, not RNG. No random number generator is involved. Spillemyndighed precedent confirms skill-based games under incomplete information do not require a license.
 
@@ -40,7 +41,7 @@ Both players place a fleet simultaneously, then fire simultaneously each round �
 
 Total: 10 cells covered on an 8×8 grid (64 cells).
 
-Ships placed horizontally or vertically. No diagonal. Ships may not overlap or touch (orthogonally adjacent).
+Ships placed horizontally or vertically. No diagonal. Ships may not overlap. Adjacent placement allowed — ships may touch orthogonally.
 
 ---
 
@@ -95,8 +96,8 @@ Both players shoot the same cell in the same round: both learn the result (hit o
 
 | Name | Theme | Setup changes | Notes |
 |------|-------|--------------|-------|
-| **ShipDuel** | Naval / standard | — | Base — static fleet |
-| **ShipDuel: Phantom** | Naval | See full spec below | Advanced — mobile fleet |
+| **ShipDuel** | Naval / standard | — | Base — static fleet. 3-game match format. |
+| **ShipDuel: Phantom** | Naval | See full spec below | Advanced — mobile fleet. 1-game format — ships move so cross-game positional reads don't apply. |
 | Submarine Wars | Cold War | All ships length 1–2, 6×6 grid | Faster, closer quarters |
 | Fleet Command | Military | 10×10 grid, 6 ships | Extended classic |
 
@@ -119,14 +120,16 @@ Each ship has HP equal to its length. A hit deducts 1 HP regardless of the ship'
 
 ### Movement Rules
 
-After shots resolve each round, each player may optionally move **one ship** one cell orthogonally (up, down, left, right). Movement is sealed and simultaneous — neither player sees the other's movement.
+After shots resolve each round, each player may optionally move **one ship** one cell orthogonally (up, down, left, right). Movement is sealed and simultaneous — neither player sees the other's movement. Staying is always a valid choice.
 
 **Movement constraints:**
 - Cannot move outside the grid
 - Cannot overlap another of your own ships
 - **Can** move into previously-shot cells — no cell is permanently eliminated
-- Cannot rotate — ships keep their orientation
-- Moving is optional. Staying is a valid choice.
+- Cannot rotate — ships keep their orientation (locked)
+
+**Consecutive move cooldown:**
+Moving the same ship 3 rounds in a row triggers a 2-round cooldown — that ship cannot move for the next 2 rounds. Switching to a different ship resets the consecutive counter for the first ship. Cooldown is not visible to the opponent — they must deduce it from behavior.
 
 ### Phantom Visibility
 
@@ -176,8 +179,8 @@ The core tension:
 
 | Question | Priority |
 |----------|----------|
-| Legal status — confirm incomplete-information mechanic with Spillemyndighed | High |
-| Phantom: ship rotation on move — allow or not? Currently disallowed. | Medium |
-| Phantom: move timer — how long to decide movement after shots resolve? | Medium |
-| Auto-placement logic for expired fleet placement timer | Low |
-| Ship touching rule — adjacent allowed or not? | Low |
+| ~~Legal status — confirm incomplete-information mechanic with Spillemyndighed~~ | ✅ Sent to lawyer — provisional pass |
+| ~~Phantom: ship rotation on move~~ | ✅ No rotation — orientation locked |
+| ~~Phantom: move timer~~ | ✅ 10 seconds |
+| Auto-placement logic for expired fleet placement timer | Low — decide at build time |
+| ~~Ship touching rule~~ | ✅ Adjacent placement allowed |

@@ -1,7 +1,7 @@
 ---
 game: ShipDuel
 type: ui-spec
-status: draft
+status: spec-complete
 added: 2026-05-14
 ---
 
@@ -210,7 +210,7 @@ HP bars: accent blue fill for full/healthy, alarm red fill when < 50%, bone-ghos
 
 After reveal, before next round: movement phase.
 
-**Duration:** 15 seconds (open question — see `ship-duel.md`)
+**Duration:** 10 seconds. Timer expires → ship stays (no move = valid default).
 
 **Center status column changes to:**
 ```

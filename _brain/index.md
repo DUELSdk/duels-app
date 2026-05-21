@@ -22,6 +22,8 @@ These are the primary files for any significant task. Each is a self-contained b
 | `agent-referee.md` | The Referee | Game rules, legal position, Spillemyndigheden, anti-cheat, fair play, new game review | Rules questions, legal review, dispute logic, new games |
 | `agent-builder.md` | The Builder | App architecture, Next.js stack, design system, components, game logic, auth, real-time | Building or changing anything in `app/duel/` |
 | `agent-promoter.md` | The Promoter | Brand voice, copy, channel strategy, launch sequencing, onboarding text | Any public-facing copy, campaign planning, brand decisions |
+| `agent-critic.md` | The Critic | Stress-testing ideas before they're locked — contradictions, edge cases, exploits, math, legal risk, UX problems | Before any mechanic, rule, format, or fee is finalized |
+| `agent-teacher.md` | The Teacher | Post-mistake system updates — encodes lessons into the right files so mistakes don't repeat | After any mistake is caught and the immediate fix is applied |
 
 ### Role briefs — lightweight domain references
 

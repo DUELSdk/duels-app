@@ -1,5 +1,17 @@
-// Placeholder data — replace each function with a real Supabase query when ready.
+// Mock data — replace each function with the corresponding Supabase RPC when ready.
 // Shape of each type is the contract. Data source changes, components stay the same.
+//
+// Replacement map (see supabase/migrations/003_stats_rpcs.sql):
+//   getStatsStrip()        → supabase.rpc('rpc_get_stats_strip')
+//   getLiveMatchCount()    → supabase.rpc('rpc_get_live_counts')   + Realtime on game_state
+//   getLeaderboard()       → supabase.rpc('rpc_get_leaderboard', { p_period: 'today'|'week'|'all_time' })
+//   getBoard()             → supabase.rpc('rpc_get_board')
+//   getCurrentUser()       → supabase.rpc('rpc_get_user_stats')
+//   getRivals()            → supabase.rpc('rpc_get_rivals')
+//   getH2HRecord()         → supabase.rpc('rpc_get_rivals') — filter by handle client-side
+//   getTicker()            → supabase.rpc('rpc_get_ticker')
+//   getGames() live counts → supabase.rpc('rpc_get_game_live_counts')
+//   getTournamentDetail()  → tournaments table query (future migration)
 
 // ── Match record (contract for Supabase matches table) ───────────────────────
 // Production: every settled match writes one record. Aggregation (win rates,

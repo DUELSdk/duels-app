@@ -16,14 +16,14 @@ Solve cold start with a launch tournament series. Growing prize pool is both the
 
 ## Teaser Page
 
-Live before platform launches. Single CTA: **MitID signup only** — no "jeg er med" button, no email list.
+Live before platform launches. Single CTA: **email capture** — not MitID.
 
-- Counter shows real registered accounts — every number is a real person who can play
-- Sends a signal: DUEL is serious from day one
-- Goes live only once MitID auth flow is built (required anyway)
+- MitID signup requires the full auth flow to be built and registered with idura — too late for pre-launch. Email has no dependency, ships immediately.
+- Counter shows email signups — every number is an interested person. Converts to real account at T1 registration.
 - Counter doubles as social proof and TikTok/Instagram content — "X spillere klar"
+- Launch tournament announced to everyone on the list when T1 date is set.
 
-Launch tournament announced to everyone on the list when T1 date is set.
+> Previous spec said "MitID only" — superseded 2026-05-20. Email capture is the pre-launch mechanic. MitID is the match/tournament gate.
 
 ---
 
@@ -35,7 +35,7 @@ Not one event — a series of 3 tournaments over the first 4–6 weeks.
 
 - **T1** — Opening event. Biggest prize pool, most marketing behind it. The launch moment. **Game: Card Duel.**
 - **T2** — 2 weeks later. Catches players who missed T1. Keeps density up. **Game: CycleDuel.**
-- **T3** — 4–6 weeks in. Platform has casual players now. Tournament re-activates them. **Game: DropDuel.**
+- **T3** — 4–6 weeks in. Platform has casual players now. Tournament re-activates them. **Game: TBD — Island Duel or DropDuel.** Decision open: Island Duel (Colonel Blotto, more abstract) vs DropDuel (simultaneous Connect Four, more visually familiar). DropDuel mechanics were upgraded to fully simultaneous after the original swap was made — revisit before locking.
 
 Between tournaments: casual duels fill naturally — players are already on the platform and familiar with it.
 
@@ -46,12 +46,13 @@ Between tournaments: casual duels fill naturally — players are already on the 
 - Platform seeds a **goal-based floor** — scales with entries, reduces risk if turnout is low
 - 50kr entry fee — Serious tier
 - 15% tournament rake: 7.50kr to house, 42.50kr into pot per player
+- **Entry fee collected at registration — non-refundable.** Stake goes into escrow immediately. This is what makes the live pot counter work and what protects the floor math against no-shows.
 - **Pot displayed live and growing** — "Current prize pool: 1,350kr" updates in real time as entries come in
 - Every new signup makes the number bigger → ad improves itself
 
 #### Goal-Based Floor Tiers
 
-Minimum 10 players to run — guarantees platform never operates at a loss.
+Minimum 16 players to run — smallest bracket where platform is guaranteed to profit under the current floor structure. 8-seat brackets are valid format but require their own floor calibration before use.
 
 | Entries | Platform seeds | Public goal message |
 |---------|---------------|---------------------|
@@ -66,16 +67,14 @@ Floor tiers are displayed publicly — players see exactly what the next milesto
 
 Floor stops being triggered once entries × 42.50kr exceeds the floor. Tiers 3 and 4 floor is never triggered — pure rake from first player.
 
-| Players | Profit |
-|---------|--------|
-| 10 | 0kr (break-even) |
-| 12 | 90kr |
-| 19 | 142kr |
-| 20 | 0kr (break-even) |
-| 24 | 180kr |
-| 49 | 367kr |
-| 50 | 375kr |
-| 100 | 750kr |
+| Players | Pot from entries | Floor triggered? | Platform seeds | Rake | Net |
+|---------|-----------------|-----------------|----------------|------|-----|
+| 8 | 340kr | Yes (500kr floor) | 160kr | 60kr | **−100kr** |
+| 16 | 680kr | No | 0kr | 120kr | **+120kr** |
+| 32 | 1,360kr | No | 0kr | 240kr | **+240kr** |
+| 64 | 2,720kr | No | 0kr | 480kr | **+480kr** |
+
+8-seat bracket loses money under the current 500kr floor — the floor was designed around 10-player minimums. **Minimum viable T1 bracket = 16 seats.** 8-seat format can be used for higher entry-fee tiers where rake covers any seeding (separate calibration needed).
 
 Margin is a flat 15% once floor isn't triggered.
 
@@ -89,15 +88,11 @@ Referral link per player. Each signup through your link adds to the pot. Invitin
 
 ### Bracket Scaling
 
-Bracket auto-generates at registration close based on actual player count.
+Seat count is always a fixed power of 2 (8, 16, 32, 64). No partial brackets — no byes, no rounding. See `Research/Formats/bracket-tournament-format.md` for formulas and tier table.
 
-| Players | Format |
-|---------|--------|
-| 8–15 | Single elimination |
-| 16–63 | Double elimination |
-| 64+ | Group stage → knockout |
+Tournament closes when seats fill or at registration deadline, whichever comes first. If deadline passes with fewer than the seat minimum sold: tournament cancelled, full refund to all registered players.
 
-No minimum entry threshold — platform guarantees the floor regardless of entries.
+Minimum viable tournament: 16 seats (4 rounds, ~21 min, +120kr profit). Launch T1 target: 64 seats.
 
 ---
 
@@ -187,6 +182,8 @@ TikTok + Instagram. Low cost, runs alongside the tournament series.
 ---
 
 ## DUEL Bar
+
+> **Distant future concept only — not on the roadmap. No action needed.**
 
 Fysisk/pop-up venue koncept. Start som pop-up nogle måneder, evaluer før permanent lokale.
 

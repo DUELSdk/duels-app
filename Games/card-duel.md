@@ -24,6 +24,7 @@ Each player holds 3× Rock, 3× Scissors, 3× Paper. Both arrange all 9 into a s
 | RNG | none — outcome fully deterministic once locked |
 | Skill basis | psychology / sequencing / opponent-reading across games |
 | Tiebreaker | defined — see Scoring |
+| Spillemyndighed | ✅ Provisional pass — sent to lawyer. Sealed sequence + Best-of-3 format confirmed: no RNG, fully deterministic once locked. |
 
 ---
 
@@ -104,6 +105,4 @@ Cycle diagram (R beats S, S beats P, P beats R) always visible on screen.
 
 ## Open Questions
 
-| Question | Priority |
-|----------|----------|
-| Legal status — sealed sequence + Best-of-3 format needs Spillemyndighed opinion | High |
+None.

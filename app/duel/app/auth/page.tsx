@@ -199,7 +199,7 @@ export default function AuthPage() {
               PLAY AS GUEST — NO ACCOUNT
             </button>
             <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.3)', textAlign: 'center', marginTop: 8 }}>
-              TEST MODE · 5.000 KR PLAY MONEY · SESSION ONLY
+              TEST MODE · 5.000 KR PLAY MONEY · NO ACCOUNT RECOVERY
             </div>
           </div>
         </div>
