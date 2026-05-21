@@ -137,7 +137,7 @@ function PairedScreen({ game, kr, me, opp, onDone }: {
   const oppName = useScramble(opp, { delay: 700, duration: 600 })
 
   useEffect(() => {
-    const t = setTimeout(() => setExiting(true), 3500)
+    const t = setTimeout(() => setExiting(true), 4500)
     return () => clearTimeout(t)
   }, [])
 

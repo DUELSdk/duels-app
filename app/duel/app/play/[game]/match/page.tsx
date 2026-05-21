@@ -220,8 +220,8 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const vw       = useWindowWidth()
   const px       = vw < 640 ? 16 : vw < 1000 ? 24 : 40
   const cardGap  = vw < 640 ? 5 : 7
-  const cardSize = Math.max(44, Math.min(72, Math.floor((vw - px * 2 - cardGap * 8) / 9)))
-  const chipSize = Math.max(30, Math.min(44, Math.floor(cardSize * 0.60)))
+  const cardSize = Math.max(44, Math.min(100, Math.floor((vw - px * 2 - cardGap * 8) / 9)))
+  const chipSize = Math.max(30, Math.min(58, Math.floor(cardSize * 0.58)))
 
   // ── Supabase state ──────────────────────────────────────────────
   const [iAmP1,     setIAmP1]     = useState(false)
@@ -255,6 +255,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const [sdResult,      setSdResult]      = useState<{my:Move;opp:Move}|null>(null)
   const prevSdCardsRef  = useRef('')
   const sdDecidedRef    = useRef(false)
+  const [sdClashPhase,  setSdClashPhase]  = useState<'facedown'|'revealed'>('facedown')
 
   // ── Selection state ────────────────────────────────────────────
   const [selSlot, setSelSlot] = useState<number|null>(null)
@@ -372,14 +373,22 @@ function CardDuelMatch({ slug }: { slug: string }) {
       const myMove  = TO_MOVE[myCard]
       const oppMove = TO_MOVE[oppCard]
       if (cardOutcome(myMove, oppMove) !== 'tie') sdDecidedRef.current = true
-      setSdRevealPhase('revealed')
       setSdResult({ my: myMove, opp: oppMove })
+      setSdRevealPhase('revealed')
+      setSdClashPhase('facedown')
     }
     if (!myCard && !oppCard && prevSdCardsRef.current !== '') {
       prevSdCardsRef.current = ''
-      setSdPick(null); setSdBusy(false); setSdRevealPhase('picking'); setSdResult(null)
+      setSdPick(null); setSdBusy(false); setSdRevealPhase('picking'); setSdResult(null); setSdClashPhase('facedown')
     }
   }, [gs])
+
+  // ── SD clash flip: facedown → revealed after 900ms ─────────────────
+  useEffect(() => {
+    if (sdRevealPhase !== 'revealed' || sdClashPhase !== 'facedown') return
+    const id = setTimeout(() => setSdClashPhase('revealed'), 900)
+    return () => clearTimeout(id)
+  }, [sdRevealPhase, sdClashPhase])
 
   // ── Navigate to result when complete + reveal animation done ───────
   useEffect(() => {
@@ -841,8 +850,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
               {/* ── WAITING + REVEALED ── */}
               {(sdRevealPhase === 'waiting' || sdRevealPhase === 'revealed') && sdPick && (
                 <motion.div key="sd-clash" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} style={{ width: '100%' }}>
+                  {/* Flash overlay on flip */}
                   <AnimatePresence>
-                    {sdRevealPhase === 'revealed' && sdResult && (
+                    {sdRevealPhase === 'revealed' && sdClashPhase === 'revealed' && sdResult && (
                       <motion.div
                         key={`sd-flash-${gs.sd_round}`}
                         initial={{ opacity: 0 }}
@@ -861,31 +871,54 @@ function CardDuelMatch({ slug }: { slug: string }) {
                   </AnimatePresence>
 
                   {(() => {
-                    const sdCardSize = Math.max(80, Math.min(160, Math.floor(vw * 0.14)))
-                    const sdOutcome  = sdResult ? cardOutcome(sdResult.my, sdResult.opp) : null
+                    const sdCardSize = Math.max(80, Math.min(180, Math.floor(vw * 0.15)))
+                    const sdOutcome  = sdResult && sdClashPhase === 'revealed' ? cardOutcome(sdResult.my, sdResult.opp) : null
                     const sdDecisive = sdOutcome !== null && sdOutcome !== 'tie'
+                    const isResolving = sdRevealPhase === 'revealed' && sdClashPhase === 'facedown'
                     return (
                       <>
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(16px,5vw,56px)' }}>
                           {/* My card */}
                           <div style={{ textAlign: 'center' }}>
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10 }}>YOU · {myHandle}</div>
-                            <CDCard
-                              k={sdPick} size={sdCardSize}
-                              active={sdRevealPhase === 'waiting'}
-                              win={sdRevealPhase === 'revealed' && sdOutcome === 'win'}
-                              loss={sdRevealPhase === 'revealed' && sdOutcome === 'loss'}
-                              tie={sdRevealPhase === 'revealed' && sdOutcome === 'tie'}
-                            />
+                            <div style={{ perspective: '700px' }}>
+                              <AnimatePresence mode="wait">
+                                {sdRevealPhase === 'waiting' ? (
+                                  <motion.div key={`my-waiting-${gs.sd_round}`}
+                                    initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }}
+                                    exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                                    transition={{ duration: 0.22, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}
+                                  >
+                                    <CDCard k={sdPick} size={sdCardSize} active />
+                                  </motion.div>
+                                ) : sdClashPhase === 'facedown' ? (
+                                  <motion.div key={`my-facedown-${gs.sd_round}`}
+                                    initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }}
+                                    exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                                    transition={{ duration: 0.22, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}
+                                  >
+                                    <CDCard faceDown size={sdCardSize} />
+                                  </motion.div>
+                                ) : (
+                                  <motion.div key={`my-revealed-${gs.sd_round}`}
+                                    initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }}
+                                    transition={{ duration: 0.24, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}
+                                  >
+                                    <CDCard k={sdPick} size={sdCardSize}
+                                      win={sdOutcome === 'win'} loss={sdOutcome === 'loss'} tie={sdOutcome === 'tie'} />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
                           </div>
 
                           {/* VS */}
                           <div style={{ textAlign: 'center', flexShrink: 0 }}>
                             <motion.div
-                              animate={sdRevealPhase === 'waiting' ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-                              transition={{ duration: 1.3, repeat: sdRevealPhase === 'waiting' ? Infinity : 0, ease: 'easeInOut' }}
-                              style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px,5vw,56px)', lineHeight: 0.85, letterSpacing: '-0.02em', textTransform: 'uppercase', color: sdRevealPhase === 'waiting' ? 'var(--alarm)' : sdDecisive ? (sdOutcome === 'win' ? 'var(--money)' : 'var(--alarm)') : 'var(--bone-faint)' }}
-                            >VS</motion.div>
+                              animate={isResolving ? { opacity: [0.4, 1, 0.4] } : sdRevealPhase === 'waiting' ? { scale: [1, 1.08, 1] } : { scale: 1, opacity: 1 }}
+                              transition={{ duration: isResolving ? 0.7 : 1.3, repeat: (isResolving || sdRevealPhase === 'waiting') ? Infinity : 0, ease: 'easeInOut' }}
+                              style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px,5vw,56px)', lineHeight: 0.85, letterSpacing: '-0.02em', textTransform: 'uppercase', color: isResolving ? 'var(--alarm)' : sdRevealPhase === 'waiting' ? 'var(--alarm)' : sdDecisive ? (sdOutcome === 'win' ? 'var(--money)' : 'var(--alarm)') : 'var(--bone-faint)' }}
+                            >{isResolving ? '●●●' : 'VS'}</motion.div>
                           </div>
 
                           {/* Opp card */}
@@ -893,24 +926,27 @@ function CardDuelMatch({ slug }: { slug: string }) {
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10 }}>OPP · {oppHandle}</div>
                             <div style={{ perspective: '700px' }}>
                               <AnimatePresence mode="wait">
-                                {sdRevealPhase === 'waiting' ? (
-                                  <motion.div key={`opp-hidden-${gs.sd_round}`} exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}>
+                                {(sdRevealPhase === 'waiting' || sdClashPhase === 'facedown') ? (
+                                  <motion.div key={`opp-hidden-${gs.sd_round}-${sdRevealPhase}`}
+                                    exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}
+                                  >
                                     <motion.div
-                                      animate={{ boxShadow: ['0 0 0px 0px rgba(239,0,0,0)', '0 0 22px 4px rgba(239,0,0,0.28)', '0 0 0px 0px rgba(239,0,0,0)'] }}
-                                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                      animate={sdRevealPhase === 'waiting'
+                                        ? { boxShadow: ['0 0 0px 0px rgba(239,0,0,0)', '0 0 22px 4px rgba(239,0,0,0.28)', '0 0 0px 0px rgba(239,0,0,0)'] }
+                                        : { boxShadow: '0 0 0px 0px rgba(239,0,0,0)' }}
+                                      transition={{ duration: 1.5, repeat: sdRevealPhase === 'waiting' ? Infinity : 0, ease: 'easeInOut' }}
                                     >
                                       <CDCard faceDown size={sdCardSize} />
                                     </motion.div>
                                   </motion.div>
                                 ) : (
-                                  <motion.div key={`opp-revealed-${gs.sd_round}`} initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }} transition={{ duration: 0.26, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}>
+                                  <motion.div key={`opp-revealed-${gs.sd_round}`}
+                                    initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }}
+                                    transition={{ duration: 0.26, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}
+                                  >
                                     {sdResult && (
-                                      <CDCard
-                                        k={sdResult.opp} size={sdCardSize}
-                                        win={sdOutcome === 'loss'}
-                                        loss={sdOutcome === 'win'}
-                                        tie={sdOutcome === 'tie'}
-                                      />
+                                      <CDCard k={sdResult.opp} size={sdCardSize}
+                                        win={sdOutcome === 'loss'} loss={sdOutcome === 'win'} tie={sdOutcome === 'tie'} />
                                     )}
                                   </motion.div>
                                 )}
@@ -919,7 +955,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                           </div>
                         </div>
 
-                        {/* Result text */}
+                        {/* Status / result text */}
                         <div style={{ textAlign: 'center', marginTop: 'clamp(12px,2.5vh,28px)' }}>
                           <AnimatePresence mode="wait">
                             {sdRevealPhase === 'waiting' && (
@@ -931,7 +967,16 @@ function CardDuelMatch({ slug }: { slug: string }) {
                                 >● BOTH LOCKED · REVEALING</motion.div>
                               </motion.div>
                             )}
-                            {sdRevealPhase === 'revealed' && sdResult && (
+                            {isResolving && (
+                              <motion.div key="sd-resolving-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.2 }}>
+                                <motion.div
+                                  animate={{ opacity: [0.4, 1, 0.4] }}
+                                  transition={{ duration: 0.65, repeat: Infinity, ease: 'easeInOut' }}
+                                  style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(10px,1.1vw,13px)', color: 'var(--bone-ghost)', letterSpacing: '0.26em', fontWeight: 600 }}
+                                >SUDDEN DEATH · RESOLVING</motion.div>
+                              </motion.div>
+                            )}
+                            {sdRevealPhase === 'revealed' && sdClashPhase === 'revealed' && sdResult && (
                               <motion.div key="sd-result-text" initial={{ opacity: 0, y: 14, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
                                 {sdDecisive && (
                                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1vw,11px)', color: 'var(--bone-ghost)', letterSpacing: '0.22em', marginBottom: 6 }}>
