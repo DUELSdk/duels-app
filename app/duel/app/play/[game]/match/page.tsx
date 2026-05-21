@@ -321,7 +321,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       const raw = gs.round_results![revealIdx]
       const result: 'win'|'loss'|'tie' =
         raw === 'tie' ? 'tie' :
-        (raw === 'p1' && iAmP1Ref.current) || (raw === 'p2' && !iAmP1Ref.current) ? 'win' : 'loss'
+        (raw === 'player1' && iAmP1Ref.current) || (raw === 'player2' && !iAmP1Ref.current) ? 'win' : 'loss'
       setSlotResults(prev => { const n = [...prev]; n[revealIdx] = result; return n })
       setRevealScore(s => ({ me: s.me + (result === 'win' ? 1 : 0), opp: s.opp + (result === 'loss' ? 1 : 0) }))
       setClashPhase('revealed')

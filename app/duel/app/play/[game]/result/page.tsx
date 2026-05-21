@@ -281,9 +281,9 @@ function BroadcastFinal({
   )
 }
 import { s } from '@/lib/styles'
-import { loadMatchResult, markBalanceApplied, type MatchResult } from '@/lib/match-state'
-import { adjustBalance, addTransaction } from '@/lib/balance'
+import { type MatchResult } from '@/lib/match-state'
 import { getH2HRecord, getStatsStrip, getLiveMatchCount, getBoard } from '@/lib/mock-data'
+import { supabase } from '@/lib/supabase'
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -331,11 +331,11 @@ function BunkerBar({ slug, kr, matchId, label, color = 'var(--alarm)' }: { slug:
 }
 
 /* ── WIN RESULT ─────────────────────────────────────────────────────── */
-function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
+function WinResult({ result, slug, myHandle, oppHandle }: { result: MatchResult; slug: string; myHandle: string; oppHandle: string }) {
   const delta   = netDelta(result)
   const rake    = result.stakeKr * 2 - result.winnerGets
-  const newBal  = 2490 // mock
-  const h2h     = getH2HRecord(result.opponent ?? 'BOT')
+  const newBal  = 2490 // mock — replace with real wallet fetch post-launch
+  const h2h     = getH2HRecord(oppHandle)
   const stats   = getStatsStrip()
   const counts  = getLiveMatchCount()
   const board   = getBoard()
@@ -383,7 +383,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
           <div>
             <div style={{ ...mono, fontSize: 9, color: 'var(--nemesis)', marginBottom: h2h.revengeActive ? 14 : 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--nemesis)', display: 'inline-block' }} />
-              NEMESIS · {result.opponent}{h2h.revengeActive ? ' · REVENGE CLEARED' : ''}
+              NEMESIS · {oppHandle}{h2h.revengeActive ? ' · REVENGE CLEARED' : ''}
             </div>
             {h2h.revengeActive ? (
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, letterSpacing: '-0.02em', lineHeight: 0.88 }}>
@@ -516,7 +516,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
               JUST IN · YOUR ENTRY
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--bone-on-dark)', textTransform: 'uppercase' }}>
-              NOVASTRIKE VS BOT · CARD · {result.stakeKr} ROOM
+              {myHandle} VS {oppHandle} · CARD · {result.stakeKr} ROOM
             </div>
             <div style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)', marginTop: 4 }}>
               {result.myScore}–{result.oppScore} · sudden death · 22 minutes ago
@@ -576,10 +576,10 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
 }
 
 /* ── LOSS RESULT ─────────────────────────────────────────────────────── */
-function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
+function LossResult({ result, slug, myHandle, oppHandle }: { result: MatchResult; slug: string; myHandle: string; oppHandle: string }) {
   const delta  = netDelta(result)
-  const newBal = 2400 // mock
-  const h2h    = getH2HRecord(result.opponent ?? 'BOT')
+  const newBal = 2400 // mock — replace with real wallet fetch post-launch
+  const h2h    = getH2HRecord(oppHandle)
 
   return (
     <div style={{ background: 'var(--concrete)', color: 'var(--bone-on-dark)', minHeight: '100vh', paddingTop: 36 }}>
@@ -601,7 +601,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
 
             <div style={{ marginTop: 24 }}>
               <div style={{ ...mono, fontSize: 12, color: 'var(--bone-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: 8 }}>
-                NOVASTRIKE LT BOT
+                {myHandle} LT {oppHandle}
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, color: 'rgba(255,255,255,0.4)', fontVariantNumeric: 'tabular-nums' }}>
@@ -632,7 +632,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
                   REVENGE UNLOCKED.
                 </div>
                 <div style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 8, lineHeight: 1.7 }}>
-                  3 STRAIGHT LOSSES · BEAT {result.opponent} NEXT FOR BONUS TICKETS
+                  3 STRAIGHT LOSSES · BEAT {oppHandle} NEXT FOR BONUS TICKETS
                 </div>
               </div>
             )}
@@ -640,7 +640,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
               <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, paddingTop: 14, borderTop: '1px solid rgba(139,92,246,0.2)' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--nemesis)', display: 'inline-block', flexShrink: 0 }} />
                 <span style={{ ...mono, fontSize: 9, color: 'var(--nemesis)' }}>
-                  LOST {Math.abs(h2h.currentStreak) + 1} IN A ROW · VS {result.opponent} · REVENGE ACTIVE
+                  LOST {Math.abs(h2h.currentStreak) + 1} IN A ROW · VS {oppHandle} · REVENGE ACTIVE
                 </span>
               </div>
             )}
@@ -888,28 +888,69 @@ const MOCK_RESULTS: Record<string, MatchResult> = {
 /* ── PAGE ROUTER ─────────────────────────────────────────────────────── */
 export default function ResultPage({ params }: { params: Promise<{ game: string }> }) {
   const { game: slug } = use(params)
-  const searchParams = useSearchParams()
-  const preview = searchParams.get('preview')
-  const [result, setResult] = useState<MatchResult | null>(preview ? MOCK_RESULTS[preview] ?? null : null)
+  const searchParams   = useSearchParams()
+  const preview        = searchParams.get('preview')
+  const matchIdParam   = searchParams.get('matchId')
+  const myScoreParam   = parseInt(searchParams.get('myScore') ?? '0')
+  const oppScoreParam  = parseInt(searchParams.get('oppScore') ?? '0')
+
+  const [result,    setResult]    = useState<MatchResult | null>(preview ? MOCK_RESULTS[preview] ?? null : null)
+  const [myHandle,  setMyHandle]  = useState('YOU')
+  const [oppHandle, setOppHandle] = useState('OPP')
+  const [loading,   setLoading]   = useState(!preview)
   const [showFinal, setShowFinal] = useState(true)
 
   useEffect(() => {
     if (preview) return
-    const r = loadMatchResult()
-    if (!r) return
-    setResult(r)
-    if (!r.balanceApplied) {
-      const delta = netDelta(r)
-      adjustBalance(delta)
-      const desc = r.outcome === 'win'
-        ? `Win · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-        : r.outcome === 'loss'
-        ? `Loss · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-        : `Forfeit · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-      addTransaction(desc, delta)
-      markBalanceApplied()
+    if (!matchIdParam) { setLoading(false); return }
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+
+      const { data: match } = await supabase
+        .from('matches')
+        .select('winner_id, player1_id, player2_id, stake_kr, purse_ore, entry_fee_ore')
+        .eq('id', matchIdParam)
+        .single()
+
+      if (!match) { setLoading(false); return }
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, handle')
+        .in('id', [match.player1_id, match.player2_id])
+
+      const me  = profiles?.find((p: { id: string; handle: string }) => p.id === user.id)
+      const opp = profiles?.find((p: { id: string; handle: string }) => p.id !== user.id)
+      const mh  = me?.handle  ?? 'YOU'
+      const oh  = opp?.handle ?? 'OPP'
+      setMyHandle(mh)
+      setOppHandle(oh)
+
+      const outcome: 'win' | 'loss' = match.winner_id === user.id ? 'win' : 'loss'
+      const winnerGets = Math.round(match.purse_ore / 100)
+      setResult({
+        game:       slug,
+        tierId:     'custom',
+        stakeKr:    match.stake_kr,
+        entryFee:   Math.round(match.entry_fee_ore / 100),
+        winnerGets,
+        outcome,
+        myScore:    myScoreParam,
+        oppScore:   oppScoreParam,
+        opponent:   oh,
+        balanceApplied: true,
+      })
+      setLoading(false)
     }
-  }, [slug, preview])
+    load()
+  }, [matchIdParam, slug, preview, myScoreParam, oppScoreParam])
+
+  if (loading) return (
+    <div style={{ background: '#0a0a0a', color: 'var(--bone-on-dark)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.22em' }}>LOADING RESULT…</div>
+    </div>
+  )
 
   if (!result) {
     return (
@@ -924,8 +965,6 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
     )
   }
 
-  const myHandle  = 'NOVASTRIKE'
-  const oppHandle = result.opponent ?? 'BOT'
   const showBroadcast = showFinal && (result.outcome === 'win' || result.outcome === 'loss')
 
   return (
@@ -940,8 +979,8 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
           onDone={() => setShowFinal(false)}
         />
       )}
-      {result.outcome === 'win'  && <WinResult    result={result} slug={slug} />}
-      {result.outcome === 'loss' && <LossResult   result={result} slug={slug} />}
+      {result.outcome === 'win'  && <WinResult    result={result} slug={slug} myHandle={myHandle} oppHandle={oppHandle} />}
+      {result.outcome === 'loss' && <LossResult   result={result} slug={slug} myHandle={myHandle} oppHandle={oppHandle} />}
       {result.outcome === 'draw' && <ForfeitResult result={result} slug={slug} />}
     </>
   )
