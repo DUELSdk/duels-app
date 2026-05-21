@@ -19,9 +19,11 @@ export async function POST(request: Request) {
   if (!tier) return NextResponse.json({ error: 'INVALID_TIER' }, { status: 400 })
 
   const { data, error } = await supabase.rpc('rpc_join_queue', {
-    p_game:     game,
-    p_tier_id:  tierId,
-    p_stake_kr: stakeKr,
+    p_game:           game,
+    p_tier_id:        tierId,
+    p_stake_kr:       stakeKr,
+    p_entry_fee_ore:  tier.entryFee * 100,
+    p_purse_ore:      tier.winnerGets * 100,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
