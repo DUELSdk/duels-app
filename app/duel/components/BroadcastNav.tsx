@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { useBalance } from '@/hooks/useBalance'
 import { useTournament } from './TournamentContext'
 import { useActiveMatch } from './ActiveMatchContext'
-import { getStatsStrip, getLiveMatchCount } from '@/lib/mock-data'
+import { supabase } from '@/lib/supabase'
 
 interface BroadcastNavProps {
   activePage?: 'live' | 'games' | 'tournaments' | 'standings'
@@ -159,10 +160,35 @@ export function BroadcastNav({ activePage, loggedOut, dark }: BroadcastNavProps)
   )
 }
 
-/* ── Stadium Strip — always on, ink background ── */
+/* ── Stadium Strip ── */
+type StripData = {
+  biggestPotWho: string
+  biggestPotKr: string
+  settledToday: number
+  totalPaidKr: string
+}
+
 export function StadiumStrip() {
-  const stats  = getStatsStrip()
-  const counts = getLiveMatchCount()
+  const [strip, setStrip] = useState<StripData | null>(null)
+
+  useEffect(() => {
+    supabase.rpc('rpc_get_stats_strip').then(({ data }) => {
+      if (!data) return
+      const d = data as { biggest_pot_who: string; biggest_pot_ore: number; settled_today: number; total_paid_ore: number }
+      setStrip({
+        biggestPotWho: d.biggest_pot_who ?? '—',
+        biggestPotKr:  ((d.biggest_pot_ore  ?? 0) / 100).toLocaleString('da-DK'),
+        settledToday:   d.settled_today ?? 0,
+        totalPaidKr:   ((d.total_paid_ore  ?? 0) / 100).toLocaleString('da-DK'),
+      })
+    })
+  }, [])
+
+  const potKr   = strip?.biggestPotKr ?? '—'
+  const potWho  = strip?.biggestPotWho ?? '—'
+  const settled = strip?.settledToday ?? 0
+  const paidKr  = strip?.totalPaidKr ?? '—'
+
   return (
     <div style={{
       background: 'var(--ink)', color: 'var(--bone)',
@@ -172,36 +198,52 @@ export function StadiumStrip() {
     }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span className="live-dot money" />
-        <span style={{ opacity: 0.8 }}>TODAY'S BIGGEST POT</span>
-        <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{stats.biggestPotAmount} KR</span>
+        <span style={{ opacity: 0.8 }}>TODAY&apos;S BIGGEST POT</span>
+        <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{potKr} KR</span>
         <span style={{ opacity: 0.5 }}>—</span>
-        <span style={{ opacity: 0.8 }}>{stats.biggestPotWho}</span>
+        <span style={{ opacity: 0.8 }}>{potWho}</span>
       </span>
       <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ opacity: 0.5 }}>{counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY</span>
+        <span style={{ opacity: 0.5 }}>{settled.toLocaleString('da-DK')} SETTLED TODAY</span>
         <span style={{ opacity: 0.5 }}>·</span>
-        <span style={{ opacity: 0.5 }}>{stats.totalPaidToday} KR PAID</span>
+        <span style={{ opacity: 0.5 }}>{paidKr} KR PAID</span>
       </span>
     </div>
   )
 }
 
-const TICKER_FEED = [
+type TickerItem = { game: string; text: string; money?: boolean; alarm?: boolean; soft?: boolean }
+
+const FALLBACK_TICKER: TickerItem[] = [
   { game: 'CARD',  text: 'k_8821 takes 90 KR',          money: true },
   { game: 'DROP',  text: 'sandman locks 4 of 9',         soft: true },
-  { game: 'CARD',  text: 'NEW SEARCH — 250 KR ROOM',     plain: true },
+  { game: 'CARD',  text: 'NEW SEARCH — 250 KR ROOM',     },
   { game: 'CYCLE', text: 'reef vs piloto · sudden death', alarm: true },
   { game: 'CARD',  text: 'siren takes 90 KR',            money: true },
   { game: 'DROP',  text: 'mads_kbh forfeits',            soft: true },
   { game: 'CARD',  text: 'NovaStrike on 4-streak',       alarm: true },
   { game: 'CYCLE', text: 'ghost_n locks slot 7',         soft: true },
   { game: 'CARD',  text: 'anon#3 takes 180 KR',          money: true },
-  { game: 'CARD',  text: 'iso_9001 vs jeppe_92 · live',  plain: true },
+  { game: 'CARD',  text: 'iso_9001 vs jeppe_92 · live',  },
 ]
 
 /* ── Live Ticker — CSS scroll, no React state ── */
 export function LiveTicker({ dark }: { dark?: boolean }) {
-  const items = [...TICKER_FEED, ...TICKER_FEED]
+  const [items, setItems] = useState<TickerItem[]>(FALLBACK_TICKER)
+
+  useEffect(() => {
+    supabase.rpc('rpc_get_ticker').then(({ data }) => {
+      if (data && Array.isArray(data) && data.length > 0) {
+        setItems((data as { game: string; text: string }[]).map(d => ({
+          game: d.game,
+          text: d.text,
+          money: true,
+        })))
+      }
+    })
+  }, [])
+
+  const doubled = [...items, ...items]
   return (
     <div style={{
       overflow: 'hidden',
@@ -210,7 +252,7 @@ export function LiveTicker({ dark }: { dark?: boolean }) {
       padding: '10px 0',
     }}>
       <div style={{ display: 'flex', width: 'max-content', animation: 'tickerScroll 60s linear infinite' }}>
-        {items.map((item, i) => (
+        {doubled.map((item, i) => (
           <span key={i} style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
             padding: '0 24px',

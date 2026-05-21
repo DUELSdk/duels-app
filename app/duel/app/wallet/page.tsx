@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
-import { getTransactions, type Txn } from '@/lib/balance'
 import { useBalance } from '@/hooks/useBalance'
+import { supabase } from '@/lib/supabase'
 
+type Txn = { id: string; ts: number; desc: string; amount: number }
 type LedgerFilter = 'ALL' | 'DEPOSITS' | 'WINS' | 'LOSSES' | 'WITHDRAWALS'
 
 function txType(amount: number, desc: string): string {
@@ -48,19 +49,50 @@ function filterTxs(txs: Txn[], filter: LedgerFilter): Txn[] {
 export default function Wallet() {
   const { balance: supaBalance } = useBalance()
   const balance = supaBalance ?? 0
-  const [txs,      setTxs]      = useState<Txn[]>([])
-  const [filter,   setFilter]   = useState<LedgerFilter>('ALL')
+  const [txs,    setTxs]    = useState<Txn[]>([])
+  const [filter, setFilter] = useState<LedgerFilter>('ALL')
+  const [handle, setHandle] = useState<string | null>(null)
 
   useEffect(() => {
-    setTxs(getTransactions())
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Load handle
+      const { data: profile } = await supabase
+        .from('public_profiles')
+        .select('handle')
+        .eq('id', user.id)
+        .single()
+      if (profile) setHandle(profile.handle)
+
+      // Load transactions
+      const { data: rows } = await supabase
+        .from('transactions')
+        .select('id, amount_ore, description, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'settled')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (rows) {
+        setTxs(rows.map(row => ({
+          id:     row.id,
+          ts:     new Date(row.created_at).getTime(),
+          desc:   row.description ?? '',
+          amount: row.amount_ore / 100,
+        })))
+      }
+    }
+    load()
   }, [])
 
-  const todayTs     = new Date().setHours(0, 0, 0, 0)
-  const todayTxs    = txs.filter(t => t.ts >= todayTs)
-  const netToday    = todayTxs.reduce((n, t) => n + t.amount, 0)
-  const held        = 50
+  const todayTs      = new Date().setHours(0, 0, 0, 0)
+  const todayTxs     = txs.filter(t => t.ts >= todayTs)
+  const netToday     = todayTxs.reduce((n, t) => n + t.amount, 0)
+  const held         = 50
   const withdrawable = Math.max(0, balance - held)
-  const visible     = filterTxs(txs, filter)
+  const visible      = filterTxs(txs, filter)
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
@@ -70,7 +102,7 @@ export default function Wallet() {
       <section style={{ padding: `40px ${s.px} 16px` }}>
         <div style={{ borderBottom: '3px double var(--ink)', paddingBottom: 16 }}>
           <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.18em', color: 'var(--ink-faint)' }}>
-            WALLET · NOVASTRIKE
+            WALLET{handle ? ` · ${handle.toUpperCase()}` : ''}
           </div>
           <h1 style={{ ...s.display(88), lineHeight: 0.9, marginTop: 6 }}>BALANCE.</h1>
         </div>

@@ -1,15 +1,47 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { SignOutButton } from '@/components/SignOutButton'
 import { s } from '@/lib/styles'
-import { getCurrentUser, getRivals } from '@/lib/mock-data'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
-const MOCK_WINS   = 142
-const MOCK_LOSSES = 89
-const MOCK_TIES   = 16
-const MOCK_NET    = '+4.260'
-const MOCK_STREAK = 7
+type GameStat = { game: string; played: number; won: number }
+type RecentMatch = {
+  id: string
+  game: string
+  opponent: string
+  result: 'WIN' | 'LOSS' | 'SPLIT'
+  net_ore: number
+  stake_kr: number
+  settled_at: string
+}
+type RivalEntry = {
+  handle: string
+  played: number
+  wins: number
+  losses: number
+  current_streak: number
+  revenge_active: boolean
+}
+
+function timeAgo(ts: string): string {
+  const diffMs  = Date.now() - new Date(ts).getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  if (diffMin < 60)  return `${diffMin} MIN`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr  < 24)  return `${diffHr} HR`
+  return 'YESTERDAY'
+}
+
+function fmtGameLabel(slug: string): string {
+  const map: Record<string, string> = {
+    'card-duel':  'CARD',
+    'cycle-duel': 'CYCLE',
+    'drop-duel':  'DROP',
+  }
+  return map[slug] ?? slug.toUpperCase()
+}
 
 const ACHIEVEMENTS = [
   { label: 'FIRST BLOOD',  sub: 'first win'            },
@@ -18,14 +50,58 @@ const ACHIEVEMENTS = [
   { label: 'ROOM CLIMBER', sub: '500 KR room cleared'  },
 ]
 
-export default function ProfilePage() {
-  const user   = getCurrentUser()
-  const rivals = getRivals().sort((a, b) => {
-    if (a.revengeActive && !b.revengeActive) return -1
-    if (!a.revengeActive && b.revengeActive) return 1
+export default async function ProfilePage() {
+  const supabaseServer = await createSupabaseServerClient()
+
+  const [statsRes, rivalsRes] = await Promise.all([
+    supabaseServer.rpc('rpc_get_user_stats'),
+    supabaseServer.rpc('rpc_get_rivals'),
+  ])
+
+  const rawStats = statsRes.data as any
+  if (!rawStats || rawStats.error === 'NOT_AUTHENTICATED') {
+    redirect('/auth')
+  }
+
+  const user = rawStats as {
+    handle: string
+    initials: string
+    member_since: string
+    balance_ore: number
+    rank: number
+    wins: number
+    losses: number
+    net_ore: number
+    game_stats: GameStat[]
+    recent_matches: RecentMatch[]
+  }
+
+  const rivals: RivalEntry[] = (rivalsRes.data as RivalEntry[] | null) ?? []
+
+  // Compute ties from game_stats
+  const totalPlayed = user.game_stats.reduce((sum, g) => sum + g.played, 0)
+  const ties = totalPlayed - user.wins - user.losses
+
+  // Format net KR
+  const netKr = (user.net_ore >= 0 ? '+' : '−') + Math.round(Math.abs(user.net_ore) / 100).toLocaleString('da-DK')
+
+  // Recent matches adapted
+  const recentMatches = user.recent_matches.map(m => ({
+    id:        m.id,
+    ago:       timeAgo(m.settled_at),
+    game:      fmtGameLabel(m.game),
+    opponent:  m.opponent,
+    result:    m.result,
+    earnedKr:  Math.round(m.net_ore / 100),
+  }))
+
+  // Sort rivals, find active
+  const sortedRivals = [...rivals].sort((a, b) => {
+    if (a.revenge_active && !b.revenge_active) return -1
+    if (!a.revenge_active && b.revenge_active) return 1
     return b.played - a.played
   })
-  const activeRival = rivals.find(r => r.revengeActive) ?? null
+  const activeRival = sortedRivals.find(r => r.revenge_active) ?? null
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -35,18 +111,17 @@ export default function ProfilePage() {
       <section style={{ padding: `40px ${s.px} 24px` }}>
         <div style={{ borderBottom: '3px double var(--ink)', paddingBottom: 16 }}>
           <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.18em', color: 'var(--ink-faint)' }}>
-            MEMBER SINCE {user.memberSince} · {MOCK_WINS + MOCK_LOSSES + MOCK_TIES} MATCHES · LV1 PLAYER
+            MEMBER SINCE {user.member_since.toUpperCase()} · {totalPlayed} MATCHES · RANK #{user.rank}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
-            <h1 style={{ ...s.display(132), lineHeight: 0.85 }}>NOVASTRIKE.</h1>
+            <h1 style={{ ...s.display(132), lineHeight: 0.85 }}>{user.handle.toUpperCase()}.</h1>
             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)' }}>ELO · CARD DUEL</div>
+                <div style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)' }}>ALL-TIME RANK</div>
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56,
                   letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-                }}>1.842</div>
-                <div style={{ ...s.mono, fontSize: 10, fontWeight: 700, color: 'var(--money)', letterSpacing: '0.12em' }}>↑ 24 LAST 7D</div>
+                }}>#{user.rank}</div>
               </div>
               <SignOutButton />
             </div>
@@ -57,16 +132,15 @@ export default function ProfilePage() {
       {/* ── Stats strip ── */}
       <section style={{ padding: `12px ${s.px} 24px` }}>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
           borderTop: '1px solid var(--rule-soft)',
           borderBottom: '1px solid var(--rule-soft)',
         }}>
           {[
-            ['WINS',    String(MOCK_WINS),   'var(--money)'],
-            ['LOSSES',  String(MOCK_LOSSES), 'var(--alarm)'],
-            ['TIES',    String(MOCK_TIES),   'var(--ink)'],
-            ['NET KR',  MOCK_NET,            'var(--money)'],
-            ['STREAK',  String(MOCK_STREAK), 'var(--alarm)'],
+            ['WINS',    String(user.wins),   'var(--money)'],
+            ['LOSSES',  String(user.losses), 'var(--alarm)'],
+            ['TIES',    String(Math.max(0, ties)),   'var(--ink)'],
+            ['NET KR',  netKr,               user.net_ore >= 0 ? 'var(--money)' : 'var(--alarm)'],
           ].map(([label, value, color], i, a) => (
             <div key={label} style={{
               padding: '20px 24px',
@@ -92,10 +166,12 @@ export default function ProfilePage() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
               <h2 style={{ ...s.display(44) }}>LAST TEN.</h2>
-              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>TODAY · RECENT</span>
+              <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>RECENT</span>
             </div>
             <div style={s.rule} />
-            {user.recentMatches.slice(0, 10).map((m, i) => {
+            {recentMatches.length === 0 ? (
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-ghost)', padding: '20px 0' }}>NO MATCHES YET</div>
+            ) : recentMatches.slice(0, 10).map((m) => {
               const isWin  = m.result === 'WIN'
               const isLoss = m.result === 'LOSS'
               const color  = isWin ? 'var(--money)' : isLoss ? 'var(--alarm)' : 'var(--ink-faint)'
@@ -106,14 +182,14 @@ export default function ProfilePage() {
                   padding: '13px 0', borderBottom: '1px solid var(--rule-soft)',
                 }}>
                   <span style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)', fontVariantNumeric: 'tabular-nums' }}>{m.ago}</span>
-                  <span style={{ ...s.mono, fontSize: 10, letterSpacing: '0.10em' }}>{m.game.split(' ')[0]}</span>
+                  <span style={{ ...s.mono, fontSize: 10, letterSpacing: '0.10em' }}>{m.game}</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>VS {m.opponent}</span>
                   <span style={{ ...s.mono, fontSize: 11, fontWeight: 700, color }}>{m.result[0]}</span>
                   <span style={{
                     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16,
                     textAlign: 'right', fontVariantNumeric: 'tabular-nums', color,
                   }}>
-                    {isWin ? '+' : isLoss ? '−' : '±'}{Math.abs(m.earnedKr)}
+                    {isWin ? '+' : isLoss ? '−' : '±'}{Math.abs(m.earnedKr).toLocaleString('da-DK')}
                   </span>
                 </div>
               )
@@ -124,7 +200,9 @@ export default function ProfilePage() {
           <div>
             <h2 style={{ ...s.display(36), marginBottom: 12 }}>BY GAME.</h2>
             <div style={s.rule} />
-            {user.gameStats.map((g, i, a) => {
+            {user.game_stats.length === 0 ? (
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-ghost)', padding: '16px 0' }}>NO GAMES YET</div>
+            ) : user.game_stats.map((g, i, a) => {
               const pct = g.played > 0 ? Math.round(g.won / g.played * 100) : 0
               return (
                 <div key={g.game} style={{
@@ -132,7 +210,7 @@ export default function ProfilePage() {
                   borderBottom: i < a.length - 1 ? '1px solid var(--rule-soft)' : 'none',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, textTransform: 'uppercase' }}>{g.game}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, textTransform: 'uppercase' }}>{fmtGameLabel(g.game)}</span>
                     <span style={{
                       fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
                       fontVariantNumeric: 'tabular-nums',
@@ -153,7 +231,7 @@ export default function ProfilePage() {
               ACHIEVEMENTS
             </div>
             <div style={s.rule} />
-            {ACHIEVEMENTS.map((a, i) => (
+            {ACHIEVEMENTS.map((a) => (
               <div key={a.label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                 padding: '11px 0', borderBottom: '1px solid var(--rule-soft)',
@@ -177,13 +255,13 @@ export default function ProfilePage() {
           }}>
             <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
-              REVENGE ACTIVE · LOST {Math.abs(activeRival.currentStreak)} IN A ROW
+              REVENGE ACTIVE · LOST {Math.abs(activeRival.current_streak)} IN A ROW
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-ghost)', marginBottom: 12 }}>YOUR NEMESIS</div>
                 <div style={{ ...s.display(80), color: 'var(--bone-on-dark)', lineHeight: 0.88 }}>
-                  {activeRival.handle}.
+                  {activeRival.handle.toUpperCase()}.
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>

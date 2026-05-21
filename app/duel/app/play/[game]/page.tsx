@@ -1,17 +1,18 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav } from '@/components/BroadcastNav'
+import { BroadcastNav, StadiumStrip, LiveTicker } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
 import { getGameDetail } from '@/lib/mock-data'
 
 const ROOMS_WIN: Record<number, number> = {
-  10: 18, 25: 44, 50: 92, 100: 188, 250: 480, 500: 970,
+  10: 18, 25: 45, 50: 90, 100: 180, 250: 450, 500: 900,
 }
 
 /* ── Shared sticky rooms panel ── */
 function RoomsPanel({ slug, stakeRooms }: { slug: string; stakeRooms: { kr: number; liveCount: number }[] }) {
-  const standard = stakeRooms.filter(r => r.kr <= 500)
+  const standard   = stakeRooms.filter(r => r.kr <= 100)
+  const highRoller = stakeRooms.filter(r => r.kr >= 250)
 
   function RoomRow({ room, bone }: { room: { kr: number; liveCount: number }; bone?: boolean }) {
     const win = ROOMS_WIN[room.kr] ?? room.kr * 2 - Math.round(room.kr * 2 * 0.1)
@@ -51,21 +52,23 @@ function RoomsPanel({ slug, stakeRooms }: { slug: string; stakeRooms: { kr: numb
           <RoomRow key={room.kr} room={room} bone={i === Math.floor(standard.length / 2)} />
         ))}
 
-        <Link href={`/play/${slug}/elite`} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 16px',
-          background: 'var(--ink)',
-          textDecoration: 'none',
-          borderTop: '1px solid rgba(240,237,228,0.08)',
-        }}>
-          <div>
-            <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.18em', fontWeight: 700, marginBottom: 4 }}>● ELITE ROOM</div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: 'var(--bone)', letterSpacing: '-0.02em' }}>
-              1,000+ KR · CUSTOM
-            </span>
-          </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--alarm)', letterSpacing: '-0.01em' }}>ENTER →</span>
-        </Link>
+        {highRoller.length > 0 && (
+          <Link href={`/play/${slug}/elite`} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px 16px',
+            background: 'var(--ink)',
+            textDecoration: 'none',
+            borderTop: '1px solid rgba(240,237,228,0.08)',
+          }}>
+            <div>
+              <div style={{ ...s.mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.18em', fontWeight: 700, marginBottom: 4 }}>● ELITE ROOM</div>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: 'var(--bone)', letterSpacing: '-0.02em' }}>
+                500+ KR · CUSTOM
+              </span>
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--alarm)', letterSpacing: '-0.01em' }}>ENTER →</span>
+          </Link>
+        )}
       </div>
 
       <Link href={`/play/${slug}/lobby`} style={{
@@ -326,6 +329,8 @@ export default async function GameDetailPage({ params }: { params: Promise<{ gam
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
+      <StadiumStrip />
+      <LiveTicker />
 
       <section style={{ padding: `32px ${s.px}` }}>
         <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.10em', color: 'var(--ink-faint)' }}>

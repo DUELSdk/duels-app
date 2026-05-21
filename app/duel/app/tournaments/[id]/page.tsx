@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BroadcastNav } from '@/components/BroadcastNav'
+import { BroadcastNav, StadiumStrip } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
 import { getTournamentDetail, type TournamentDetail } from '@/lib/mock-data'
@@ -152,6 +152,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <BroadcastNav activePage="tournaments" />
+      <StadiumStrip />
 
       {/* Breadcrumb + ID strip */}
       <div style={{
@@ -169,7 +170,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
       </div>
 
       {/* HEADER */}
-      <section style={{ padding: `56px ${s.px} 32px` }}>
+      <section style={{ padding: `40px ${s.px} 32px` }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 64, alignItems: 'start' }}>
 
           {/* Left */}
@@ -262,24 +263,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               </div>
             ))}
 
-            {t.status === 'LIVE' ? (
-              <div style={{
-                display: 'block', textAlign: 'center',
-                background: 'rgba(239,0,0,0.15)',
-                border: '1px solid rgba(239,0,0,0.4)',
-                color: 'var(--alarm)',
-                padding: '20px',
-                fontFamily: 'var(--font-display)', fontWeight: 700,
-                fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.04em',
-                marginTop: 24,
-              }}>
-                ● MATCH IN PROGRESS
-              </div>
-            ) : t.status !== 'DONE' && (
+            {t.status !== 'DONE' && (
               <>
                 <Link href={`/tournaments/${t.id}/enter`} style={{
                   display: 'block', textAlign: 'center',
-                  background: seatsLeft === 0 ? 'rgba(239,0,0,0.4)' : 'var(--alarm)',
+                  background: t.status === 'LIVE' || seatsLeft === 0 ? 'rgba(239,0,0,0.4)' : 'var(--alarm)',
                   color: '#fff',
                   padding: '20px',
                   fontFamily: 'var(--font-display)', fontWeight: 700,
@@ -287,7 +275,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                   textDecoration: 'none', marginTop: 24,
                   pointerEvents: seatsLeft === 0 ? 'none' : 'auto',
                 }}>
-                  {seatsLeft === 0 ? 'FULLY SEATED' : `TAKE A SEAT — ${t.fee} KR →`}
+                  {seatsLeft === 0 ? 'FULLY SEATED' : t.status === 'LIVE' ? 'WATCH LIVE →' : `TAKE A SEAT — ${t.fee} KR →`}
                 </Link>
                 <div style={{
                   fontFamily: 'var(--font-mono)', fontSize: 9, textAlign: 'center',

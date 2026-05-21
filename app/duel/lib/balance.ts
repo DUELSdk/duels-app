@@ -1,24 +1,43 @@
-import { supabase } from '@/lib/supabase'
+const BAL_KEY = 'duel_balance'
+const TXN_KEY = 'duel_txns'
+const STARTING_BALANCE = 500
 
-// Returns balance in KR (converted from øre stored in DB).
-// Returns null if not logged in or wallet not found.
-export async function getBalance(): Promise<number | null> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase
-    .from('wallets')
-    .select('balance_ore')
-    .eq('user_id', user.id)
-    .single()
-  return data ? data.balance_ore / 100 : null
+export function getBalance(): number {
+  if (typeof window === 'undefined') return STARTING_BALANCE
+  const v = localStorage.getItem(BAL_KEY)
+  if (v === null) {
+    localStorage.setItem(BAL_KEY, String(STARTING_BALANCE))
+    return STARTING_BALANCE
+  }
+  return Math.max(0, parseFloat(v) || 0)
 }
 
-// ── Stubs for wallet UI pages (no real money on test site) ───────────────────
-// These pages (deposit, withdraw) show UI only — actual balance changes
-// happen server-side via Supabase RPCs. Remove stubs when wiring real payments.
+export function setBalance(n: number): void {
+  localStorage.setItem(BAL_KEY, Math.max(0, n).toFixed(0))
+}
 
-export type Txn = { id: string; ts: number; desc: string; amount: number }
+export function adjustBalance(delta: number): number {
+  const next = getBalance() + delta
+  setBalance(next)
+  return next
+}
 
-export function getTransactions(): Txn[] { return [] }
-export function adjustBalance(_delta: number): number { return 0 }
-export function addTransaction(_desc: string, _amount: number): void {}
+export type Txn = {
+  id: string
+  ts: number
+  desc: string
+  amount: number
+}
+
+export function getTransactions(): Txn[] {
+  if (typeof window === 'undefined') return []
+  const v = localStorage.getItem(TXN_KEY)
+  return v ? JSON.parse(v) : []
+}
+
+export function addTransaction(desc: string, amount: number): void {
+  const txns = getTransactions()
+  const id = Math.random().toString(36).slice(2, 10).toUpperCase()
+  txns.unshift({ id, ts: Date.now(), desc, amount })
+  localStorage.setItem(TXN_KEY, JSON.stringify(txns.slice(0, 100)))
+}

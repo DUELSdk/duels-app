@@ -3,7 +3,8 @@ import { BroadcastNav } from '@/components/BroadcastNav'
 import { HowItPlays } from '@/components/HowItPlays'
 import { Footer } from '@/components/Footer'
 import { Jumbotron } from '@/components/Jumbotron'
-import { getNews, getGames, getLiveMatchCount, getStatsStrip, getBoard, type NewsItem, type GameRow } from '@/lib/mock-data'
+import { getNews } from '@/lib/mock-data'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 const px = '56px'
 
@@ -24,15 +25,22 @@ function display(size: number): React.CSSProperties {
   }
 }
 
+function fmtKr(ore: number) {
+  return Math.round(ore / 100).toLocaleString('da-DK')
+}
+
+function fmtRank(n: number) {
+  return String(n).padStart(2, '0')
+}
+
 /* ── HERO ── */
-function Hero() {
-  const counts = getLiveMatchCount()
+function Hero({ live, settled }: { live: number; settled: number }) {
   return (
     <section style={{ padding: `64px ${px} 40px`, display: 'grid', gridTemplateColumns: '1fr 380px', gap: 48, alignItems: 'end' }}>
       <div>
         <div style={{ ...mono, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="live-dot" />
-          {counts.live} MATCHES IN PROGRESS · {counts.queued} IN QUEUE · {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY
+          {live} MATCHES IN PROGRESS · {settled.toLocaleString('da-DK')} SETTLED TODAY
         </div>
         <h1 style={{ ...display(240), lineHeight: 0.85, marginTop: 24 }}>DUELS.</h1>
         <p style={{ fontSize: 22, lineHeight: 1.35, marginTop: 24, maxWidth: 560 }}>
@@ -67,11 +75,14 @@ function Hero() {
   )
 }
 
-/* ── JUMBOTRON — see components/Jumbotron.tsx ── */
-
 /* ── TODAY'S BOARD ── */
-function TodaysBoard() {
-  const board = getBoard()
+type BoardEntry = { rank: string; who: string; what: string; value: string }
+
+function TodaysBoard({ pots, streaks, days }: {
+  pots: BoardEntry[]
+  streaks: BoardEntry[]
+  days: BoardEntry[]
+}) {
   return (
     <section style={{ padding: `40px ${px}`, background: 'var(--bone-2)', borderTop: '1px solid var(--ink)', borderBottom: '1px solid var(--ink)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
@@ -79,22 +90,24 @@ function TodaysBoard() {
         <span style={{ ...mono, fontSize: 11, color: 'var(--ink-faint)' }}>SETTLED 00:00–NOW · UPDATES LIVE</span>
       </div>
       <div style={{ display: 'flex', gap: 48, alignItems: 'stretch' }}>
-        <BoardColumn label="BIGGEST POTS"    rows={board.biggestPots.map(e     => [e.rank, e.who, e.what, e.value])} />
+        <BoardColumn label="BIGGEST POTS"    rows={pots}    />
         <div style={{ width: 1, background: 'var(--rule-soft)', alignSelf: 'stretch' }} />
-        <BoardColumn label="LONGEST STREAK"  rows={board.longestStreaks.map(e  => [e.rank, e.who, e.what, e.value])} />
+        <BoardColumn label="LONGEST STREAK"  rows={streaks} />
         <div style={{ width: 1, background: 'var(--rule-soft)', alignSelf: 'stretch' }} />
-        <BoardColumn label="BIGGEST DAY (KR)" rows={board.biggestDays.map(e   => [e.rank, e.who, e.what, e.value])} />
+        <BoardColumn label="BIGGEST DAY (KR)" rows={days}   />
       </div>
     </section>
   )
 }
 
-function BoardColumn({ label, rows }: { label: string; rows: string[][] }) {
+function BoardColumn({ label, rows }: { label: string; rows: BoardEntry[] }) {
   return (
     <div style={{ flex: 1 }}>
       <div style={{ ...mono, fontSize: 10, color: 'var(--ink-soft)', marginBottom: 6, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
       <div style={{ height: 2, background: 'var(--alarm)' }} />
-      {rows.map(([rank, who, what, num], i) => (
+      {rows.length === 0 ? (
+        <div style={{ ...mono, fontSize: 10, color: 'var(--ink-ghost)', padding: '20px 0' }}>NO DATA YET</div>
+      ) : rows.map(({ rank, who, what, value }, i) => (
         <div key={rank} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
           padding: i === 0 ? '20px 0' : '14px 0',
@@ -107,15 +120,14 @@ function BoardColumn({ label, rows }: { label: string; rows: string[][] }) {
               <div style={{ ...mono, fontSize: 10, color: 'var(--ink-faint)', marginTop: 2 }}>{what}</div>
             </div>
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: i === 0 ? 40 : 28, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{num}</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: i === 0 ? 40 : 28, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{value}</span>
         </div>
       ))}
     </div>
   )
 }
 
-/* ── FROM THE FLOOR ── */
-
+/* ── FROM THE FLOOR — stays mock (no news table) ── */
 const FIXTURES = [
   { time: '20:00', label: "TONIGHT'S MARQUEE",  room: '500 KR ROOM', game: 'CARD DUEL',  status: 'OPEN' },
   { time: '20:30', label: 'WEEKLY OPEN',         room: '50 KR ROOM',  game: 'CYCLEDUEL',  status: 'OPEN' },
@@ -189,7 +201,13 @@ function FromTheFloor() {
 }
 
 /* ── 3 DISCIPLINES ── */
-function Disciplines({ games }: { games: GameRow[] }) {
+const GAME_DEFS = [
+  { slug: 'card-duel',  name: 'Card Duel',  desc: 'Sequential mind games. Lock your sequence, read your opponent.',  roomRange: '10–500 KR' },
+  { slug: 'cycle-duel', name: 'CycleDuel',  desc: '5-type cycle. One peek per block. Pure deduction.',              roomRange: '10–500 KR' },
+  { slug: 'drop-duel',  name: 'DropDuel',   desc: 'Modified Connect Four. One blind block each — then play.',        roomRange: '10–500 KR' },
+]
+
+function Disciplines({ liveCounts }: { liveCounts: Record<string, number> }) {
   return (
     <section style={{ padding: `0 ${px} 56px` }}>
       <div style={{ height: 2, background: 'var(--alarm)' }} />
@@ -198,11 +216,11 @@ function Disciplines({ games }: { games: GameRow[] }) {
         <span style={{ ...mono, fontSize: 11, color: 'var(--ink-faint)' }}>MORE COMING</span>
       </div>
       <div style={{ display: 'flex', gap: 16 }}>
-        {games.map((g, i) => (
+        {GAME_DEFS.map((g, i) => (
           <div key={g.slug} style={{ flex: 1, border: '1.5px solid var(--ink)', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span style={{ ...mono, fontSize: 11, color: 'var(--ink-faint)' }}>0{i + 1}</span>
-              <span style={{ ...mono, fontSize: 11, color: 'var(--money)' }}>● {g.liveCount} LIVE</span>
+              <span style={{ ...mono, fontSize: 11, color: 'var(--money)' }}>● {liveCounts[g.slug] ?? 0} LIVE</span>
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 36, textTransform: 'uppercase', letterSpacing: '-0.01em', marginTop: 16 }}>{g.name}</div>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.45 }}>{g.desc}</p>
@@ -218,20 +236,63 @@ function Disciplines({ games }: { games: GameRow[] }) {
 }
 
 /* ── PAGE ── */
-export default function Home() {
-  const games = getGames()
+export default async function Home() {
+  const supabaseServer = await createSupabaseServerClient()
+
+  const [countsRes, boardRes, gameCountsRes] = await Promise.all([
+    supabaseServer.rpc('rpc_get_live_counts'),
+    supabaseServer.rpc('rpc_get_board'),
+    supabaseServer.rpc('rpc_get_game_live_counts'),
+  ])
+
+  const counts = countsRes.data as { live: number; settled_today: number } | null
+  const board  = boardRes.data  as {
+    biggest_pots:    Array<{ rank: number; who: string; what: string; value_ore: number }>
+    longest_streaks: Array<{ rank: number; handle: string; streak: number }>
+    biggest_days:    Array<{ rank: number; handle: string; match_count: number; wins: number; losses: number; net_ore: number }>
+  } | null
+
+  const gameCounts = gameCountsRes.data as Array<{ game: string; live_count: number; today_count: number }> | null
+
+  // Adapt board data to BoardEntry shape
+  const potRows: BoardEntry[] = (board?.biggest_pots ?? []).map(r => ({
+    rank:  fmtRank(r.rank),
+    who:   r.who,
+    what:  r.what.replace('CARD-DUEL', 'CARD DUEL').replace('CYCLE-DUEL', 'CYCLEDUEL').replace('DROP-DUEL', 'DROPDUEL'),
+    value: fmtKr(r.value_ore),
+  }))
+
+  const streakRows: BoardEntry[] = (board?.longest_streaks ?? []).map(r => ({
+    rank:  fmtRank(r.rank),
+    who:   r.handle,
+    what:  'WIN STREAK',
+    value: String(r.streak),
+  }))
+
+  const dayRows: BoardEntry[] = (board?.biggest_days ?? []).map(r => ({
+    rank:  fmtRank(r.rank),
+    who:   r.handle,
+    what:  `${r.wins}W · ${r.losses}L`,
+    value: (r.net_ore >= 0 ? '+' : '') + fmtKr(Math.abs(r.net_ore)) + (r.net_ore < 0 ? '' : ''),
+  }))
+
+  // Live counts per game slug
+  const liveByGame: Record<string, number> = {}
+  for (const g of gameCounts ?? []) {
+    liveByGame[g.game] = g.live_count
+  }
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)' }}>
       <BroadcastNav activePage="live" />
-      <Hero />
+      <Hero live={counts?.live ?? 0} settled={counts?.settled_today ?? 0} />
       <Jumbotron px={px} />
-      <TodaysBoard />
+      <TodaysBoard pots={potRows} streaks={streakRows} days={dayRows} />
       <FromTheFloor />
       <section style={{ padding: `56px ${px}` }}>
         <HowItPlays />
       </section>
-      <Disciplines games={games} />
+      <Disciplines liveCounts={liveByGame} />
       <Footer />
     </div>
   )

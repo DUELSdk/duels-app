@@ -1,12 +1,7 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { BroadcastNav } from '@/components/BroadcastNav'
+import { BroadcastNav, StadiumStrip, LiveTicker } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
-
-type FilterKey = 'ALL' | 'CARD' | 'CYCLE' | 'DROP' | 'INVITE'
 
 type TourneyStatus = 'LIVE' | 'OPEN' | 'INVITE' | 'LOCKED'
 
@@ -197,27 +192,10 @@ function TourneyRow({ t }: { t: Tourney }) {
 }
 
 export default function Tournaments() {
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('ALL')
-
-  function applyFilter(t: Tourney): boolean {
-    if (activeFilter === 'ALL')    return true
-    if (activeFilter === 'CARD')   return t.game.includes('CARD')
-    if (activeFilter === 'CYCLE')  return t.game.includes('CYCLE')
-    if (activeFilter === 'DROP')   return t.game.includes('DROP')
-    if (activeFilter === 'INVITE') return t.status === 'INVITE'
-    return true
-  }
-
-  const filtered  = TOURNEYS.filter(applyFilter)
-  const tonight   = filtered.filter(t => t.day === 'TONIGHT')
-  const tomorrow  = filtered.filter(t => t.day === 'TOMORROW')
-  const week      = filtered.filter(t => t.day === 'SAT')
-  const marquee   = TOURNEYS.find(t => t.marquee && t.day === 'TONIGHT') ?? TOURNEYS.find(t => t.marquee)
-
-  const mSealed   = marquee ? parseInt(marquee.seats.split('/')[0]) : 0
-  const mTotal    = marquee ? parseInt(marquee.seats.split('/')[1]) : 1
-  const mDisplay  = Math.min(mTotal, 20)
-  const mFilled   = Math.round((mSealed / mTotal) * mDisplay)
+  const tonight  = TOURNEYS.filter(t => t.day === 'TONIGHT')
+  const tomorrow = TOURNEYS.filter(t => t.day === 'TOMORROW')
+  const week     = TOURNEYS.filter(t => t.day === 'SAT')
+  const marquee  = TOURNEYS.find(t => t.marquee && t.day === 'TONIGHT') ?? TOURNEYS.find(t => t.marquee)
 
   const liveCount = TOURNEYS.filter(t => t.status === 'LIVE').length
   const openCount = TOURNEYS.filter(t => t.status === 'OPEN').length
@@ -226,6 +204,7 @@ export default function Tournaments() {
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="tournaments" />
+      <StadiumStrip />
 
       {/* HERO */}
       <section style={{ padding: `56px ${s.px} 24px` }}>
@@ -256,22 +235,21 @@ export default function Tournaments() {
         display: 'flex', gap: 0,
         borderTop: '1px solid var(--ink)',
         borderBottom: '1px solid var(--ink)',
-        padding: `12px ${s.px}`,
+        padding: `0 ${s.px}`,
       }}>
-        {([
-          { k: 'ALL'    as FilterKey, n: TOURNEYS.length },
-          { k: 'CARD'   as FilterKey, n: TOURNEYS.filter(t => t.game.includes('CARD')).length   },
-          { k: 'CYCLE'  as FilterKey, n: TOURNEYS.filter(t => t.game.includes('CYCLE')).length  },
-          { k: 'DROP'   as FilterKey, n: TOURNEYS.filter(t => t.game.includes('DROP')).length   },
-          { k: 'INVITE' as FilterKey, n: TOURNEYS.filter(t => t.status === 'INVITE').length     },
-        ]).map((f, i) => (
-          <div key={f.k} onClick={() => setActiveFilter(f.k)} style={{
+        {[
+          { k: 'ALL',    n: TOURNEYS.length, on: true },
+          { k: 'CARD',   n: TOURNEYS.filter(t => t.game.includes('CARD')).length    },
+          { k: 'CYCLE',  n: TOURNEYS.filter(t => t.game.includes('CYCLE')).length   },
+          { k: 'DROP',   n: TOURNEYS.filter(t => t.game.includes('DROP')).length    },
+          { k: 'INVITE', n: TOURNEYS.filter(t => t.status === 'INVITE').length      },
+        ].map((f, i) => (
+          <div key={f.k} style={{
             padding: '14px 24px',
             borderRight: i < 4 ? '1px solid var(--rule-soft)' : 'none',
-            background: activeFilter === f.k ? 'var(--ink)' : 'transparent',
-            color: activeFilter === f.k ? 'var(--bone)' : 'var(--ink)',
+            background: f.on ? 'var(--ink)' : 'transparent',
+            color: f.on ? 'var(--bone)' : 'var(--ink)',
             display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer',
-            userSelect: 'none',
           }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em' }}>
               {f.k}
@@ -287,6 +265,8 @@ export default function Tournaments() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600 }}>SOONEST ↓</span>
         </div>
       </div>
+
+      <LiveTicker />
 
       {/* ★ MARQUEE */}
       {marquee && (
@@ -326,24 +306,23 @@ export default function Tournaments() {
               }}>
                 The marquee fight. {marquee.fee} KR entry, {marquee.fmt.toLowerCase()}, last one standing takes {fmtKr(marquee.pool)} KR after rake.
               </p>
-              {/* Sealed seats strip — filled = taken, outline = open */}
+              {/* Sealed seats strip */}
               <div style={{
                 display: 'flex', gap: 4, marginTop: 28, paddingTop: 24,
                 borderTop: '1px solid var(--rule-soft)', alignItems: 'center',
                 flexWrap: 'wrap' as const,
               }}>
-                {Array.from({ length: mDisplay }).map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                   <div key={i} style={{
-                    width: 20, height: 20,
-                    background: i < mFilled ? 'var(--ink)' : 'transparent',
-                    border: '1.5px solid var(--ink)',
+                    width: 28, height: 28,
+                    background: 'var(--ink)', border: '1px solid var(--ink)',
                   }} />
                 ))}
                 <span style={{
                   fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)',
                   marginLeft: 8,
                 }}>
-                  {mSealed} / {mTotal} SEATED
+                  + {marquee.seats.split('/')[0]} SEALED
                 </span>
               </div>
             </div>
@@ -405,7 +384,7 @@ export default function Tournaments() {
 
       {/* TONIGHT */}
       {tonight.length > 0 && (
-        <section style={{ padding: `32px ${s.px}` }}>
+        <section style={{ padding: `24px ${s.px}` }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12,
           }}>
@@ -421,7 +400,7 @@ export default function Tournaments() {
 
       {/* TOMORROW */}
       {tomorrow.length > 0 && (
-        <section style={{ padding: `32px ${s.px}` }}>
+        <section style={{ padding: `24px ${s.px}` }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12,
           }}>
@@ -437,7 +416,7 @@ export default function Tournaments() {
 
       {/* THIS WEEK */}
       {week.length > 0 && (
-        <section style={{ padding: `32px ${s.px}` }}>
+        <section style={{ padding: `24px ${s.px}` }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12,
           }}>

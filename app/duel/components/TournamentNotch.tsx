@@ -1,46 +1,74 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useTournament } from './TournamentContext'
+
+// Mock — replace with real session data when auth/Supabase wired up
+const MOCK_ACTIVE = {
+  id: 't1',
+  label: "TONIGHT'S MARQUEE",
+  game: 'CARD DUEL',
+  time: '20:00',
+  entryKr: 250,
+  seats: 16,
+  filled: 14,
+  purseKr: 3600,
+  prizeFirst: 2520,
+}
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   letterSpacing: '0.08em',
 }
 
-function SeatGrid({ seats, filled }: { seats: number; filled: number }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginTop: 20 }}>
-      {Array.from({ length: seats }).map((_, i) => (
-        <div key={i} style={{
-          width: 16, height: 16,
-          background: i < filled ? 'var(--bone)' : 'transparent',
-          border: '1px solid rgba(240,237,228,0.3)',
-        }} />
-      ))}
-    </div>
-  )
-}
-
 export function TournamentNotch() {
-  const { tournament, drawerOpen, closeDrawer } = useTournament()
-  const [dots, setDots] = useState(0)
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const [dots,        setDots]        = useState(0)
 
+  // Animate waiting dots
   useEffect(() => {
     const iv = setInterval(() => setDots(d => (d + 1) % 4), 700)
     return () => clearInterval(iv)
   }, [])
 
-  if (!tournament) return null
+  // ESC closes drawer
+  const onKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') { setDrawerOpen(false); setPopoverOpen(false) }
+  }, [])
+  useEffect(() => {
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onKey])
 
-  const seatsLeft = tournament.seats - tournament.filled
+  const seatsLeft = MOCK_ACTIVE.seats - MOCK_ACTIVE.filled
+
+  function openDrawer() {
+    setPopoverOpen(false)
+    setDrawerOpen(true)
+  }
+
+  // Seat grid
+  function SeatGrid() {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginTop: 20 }}>
+        {Array.from({ length: MOCK_ACTIVE.seats }).map((_, i) => (
+          <div key={i} style={{
+            width: 16, height: 16,
+            background: i < MOCK_ACTIVE.filled ? 'var(--bone)' : 'transparent',
+            border: '1px solid rgba(240,237,228,0.3)',
+          }} />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <>
+      {/* ── Overlay behind drawer ── */}
       {drawerOpen && (
         <div
-          onClick={closeDrawer}
+          onClick={() => setDrawerOpen(false)}
           style={{
             position: 'fixed', inset: 0,
             background: 'rgba(13,13,13,0.5)',
@@ -50,6 +78,7 @@ export function TournamentNotch() {
         />
       )}
 
+      {/* ── Drawer ── */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: 440,
@@ -61,6 +90,7 @@ export function TournamentNotch() {
         display: 'flex', flexDirection: 'column',
         overflowY: 'auto',
       }}>
+        {/* Drawer header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 24px', borderBottom: '1px solid rgba(13,13,13,0.18)',
@@ -71,22 +101,24 @@ export function TournamentNotch() {
             IN TOURNAMENT
           </div>
           <button
-            onClick={closeDrawer}
+            onClick={() => setDrawerOpen(false)}
             style={{ ...mono, fontSize: 16, color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}
           >×</button>
         </div>
 
+        {/* Drawer body */}
         <div style={{ padding: '32px 24px', flex: 1 }}>
           <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 8 }}>
-            {tournament.game} · {tournament.time}
+            {MOCK_ACTIVE.game} · {MOCK_ACTIVE.time}
           </div>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36,
             textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, marginBottom: 28,
           }}>
-            {tournament.label}.
+            {MOCK_ACTIVE.label}.
           </h2>
 
+          {/* Seat counter */}
           <div style={{ border: '1.5px solid var(--ink)', padding: '28px 24px', textAlign: 'center', marginBottom: 16 }}>
             <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 12, letterSpacing: '0.12em' }}>
               WAITING FOR BRACKET TO FILL
@@ -98,19 +130,21 @@ export function TournamentNotch() {
               {seatsLeft}
             </div>
             <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 6 }}>
-              SEAT{seatsLeft !== 1 ? 'S' : ''} LEFT OF {tournament.seats}
+              SEAT{seatsLeft !== 1 ? 'S' : ''} LEFT OF {MOCK_ACTIVE.seats}
             </div>
-            <SeatGrid seats={tournament.seats} filled={tournament.filled} />
+            <SeatGrid />
           </div>
 
+          {/* Status */}
           <div style={{ ...mono, fontSize: 10, color: 'var(--ink-soft)', textAlign: 'center', marginBottom: 24 }}>
             WAITING FOR PLAYERS{'.' .repeat(dots)}
           </div>
 
+          {/* Stats */}
           <div style={{ display: 'flex', gap: 0, border: '1.5px solid var(--ink)', marginBottom: 24 }}>
             {[
-              { label: 'ENTRY PAID',  value: `${tournament.entryKr} KR` },
-              { label: '1ST PLACE',   value: `${tournament.prizeFirst.toLocaleString('da-DK')} KR`, color: 'var(--money)' },
+              { label: 'ENTRY PAID',  value: `${MOCK_ACTIVE.entryKr} KR` },
+              { label: '1ST PLACE',   value: `${MOCK_ACTIVE.prizeFirst.toLocaleString('da-DK')} KR`, color: 'var(--money)' },
             ].map((item, i) => (
               <div key={item.label} style={{
                 flex: 1, padding: '16px 16px', textAlign: 'center',
@@ -127,8 +161,9 @@ export function TournamentNotch() {
             ))}
           </div>
 
+          {/* Full page link */}
           <Link
-            href={`/tournaments/${tournament.id}/waiting`}
+            href={`/tournaments/${MOCK_ACTIVE.id}/waiting`}
             style={{
               display: 'block', textAlign: 'center',
               border: '1.5px solid var(--ink)', padding: '14px 20px',
@@ -140,6 +175,94 @@ export function TournamentNotch() {
           </Link>
         </div>
       </div>
+
+      {/* ── Popover ── */}
+      {popoverOpen && !drawerOpen && (
+        <div style={{
+          position: 'fixed', bottom: 80, right: 20,
+          width: 280,
+          background: 'var(--bone)', border: '1.5px solid var(--ink)',
+          zIndex: 48,
+          boxShadow: '0 8px 32px rgba(13,13,13,0.18)',
+        }}>
+          {/* Tournament info */}
+          <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(13,13,13,0.18)' }}>
+            <div style={{ ...mono, fontSize: 9, color: 'var(--alarm)', letterSpacing: '0.16em', fontWeight: 700, marginBottom: 6 }}>
+              ● IN TOURNAMENT
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+              textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.1,
+            }}>
+              {MOCK_ACTIVE.label}
+            </div>
+            <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 4 }}>
+              {MOCK_ACTIVE.game} · {MOCK_ACTIVE.time}
+            </div>
+          </div>
+
+          {/* Seat count */}
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(13,13,13,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 4 }}>SEATS LEFT</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                {seatsLeft} <span style={{ fontSize: 14, color: 'var(--ink-faint)' }}>/ {MOCK_ACTIVE.seats}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, width: 80, justifyContent: 'flex-end' }}>
+              {Array.from({ length: MOCK_ACTIVE.seats }).map((_, i) => (
+                <div key={i} style={{
+                  width: 10, height: 10,
+                  background: i < MOCK_ACTIVE.filled ? 'var(--ink)' : 'transparent',
+                  border: '1px solid rgba(13,13,13,0.3)',
+                }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Open button */}
+          <button
+            onClick={openDrawer}
+            style={{
+              display: 'block', width: '100%', textAlign: 'center',
+              background: 'var(--ink)', color: 'var(--bone)',
+              padding: '14px 18px', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
+              textTransform: 'uppercase', letterSpacing: '0.02em',
+            }}
+          >
+            OPEN FULL →
+          </button>
+        </div>
+      )}
+
+      {/* ── Persistent pill ── */}
+      <button
+        onClick={() => {
+          if (drawerOpen) { setDrawerOpen(false); return }
+          setPopoverOpen(p => !p)
+        }}
+        style={{
+          position: 'fixed', bottom: 20, right: 20,
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--ink)', color: 'var(--bone)',
+          border: '1.5px solid var(--ink)',
+          padding: '10px 16px',
+          cursor: 'pointer', zIndex: 48,
+          transition: 'opacity 0.15s',
+        }}
+      >
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block', flexShrink: 0 }} />
+        <span style={{ ...mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>
+          {MOCK_ACTIVE.label.length > 14 ? MOCK_ACTIVE.label.slice(0, 14) + '…' : MOCK_ACTIVE.label}
+        </span>
+        <span style={{ ...mono, fontSize: 10, color: 'rgba(240,237,228,0.5)', fontVariantNumeric: 'tabular-nums' }}>
+          {MOCK_ACTIVE.filled}/{MOCK_ACTIVE.seats}
+        </span>
+        <span style={{ ...mono, fontSize: 10, color: 'rgba(240,237,228,0.4)', marginLeft: 2 }}>
+          {popoverOpen || drawerOpen ? '↓' : '↑'}
+        </span>
+      </button>
     </>
   )
 }

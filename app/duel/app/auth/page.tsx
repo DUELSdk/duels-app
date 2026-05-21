@@ -5,15 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { s } from '@/lib/styles'
 import { signIn, signUp, hasProfile, signInAsGuest } from '@/lib/auth'
-import { getStatsStrip, getLiveMatchCount } from '@/lib/mock-data'
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 }
 
 export default function AuthPage() {
-  const stats  = getStatsStrip()
-  const counts = getLiveMatchCount()
   const router = useRouter()
 
   const [mode, setMode]       = useState<'signin' | 'signup'>('signup')

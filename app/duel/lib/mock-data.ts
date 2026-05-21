@@ -1,17 +1,5 @@
-// Mock data — replace each function with the corresponding Supabase RPC when ready.
+// Placeholder data — replace each function with a real Supabase query when ready.
 // Shape of each type is the contract. Data source changes, components stay the same.
-//
-// Replacement map (see supabase/migrations/003_stats_rpcs.sql):
-//   getStatsStrip()        → supabase.rpc('rpc_get_stats_strip')
-//   getLiveMatchCount()    → supabase.rpc('rpc_get_live_counts')   + Realtime on game_state
-//   getLeaderboard()       → supabase.rpc('rpc_get_leaderboard', { p_period: 'today'|'week'|'all_time' })
-//   getBoard()             → supabase.rpc('rpc_get_board')
-//   getCurrentUser()       → supabase.rpc('rpc_get_user_stats')
-//   getRivals()            → supabase.rpc('rpc_get_rivals')
-//   getH2HRecord()         → supabase.rpc('rpc_get_rivals') — filter by handle client-side
-//   getTicker()            → supabase.rpc('rpc_get_ticker')
-//   getGames() live counts → supabase.rpc('rpc_get_game_live_counts')
-//   getTournamentDetail()  → tournaments table query (future migration)
 
 // ── Match record (contract for Supabase matches table) ───────────────────────
 // Production: every settled match writes one record. Aggregation (win rates,
@@ -285,13 +273,11 @@ export type TickerItem = {
 // ── Mock implementations ──────────────────────────────────────────────────────
 
 export function getStatsStrip(): StatsStrip {
-  // Production: SELECT biggest_pot_who, biggest_pot_kr, settled_today, total_paid_kr
-  // FROM platform_stats WHERE date = today LIMIT 1
   return {
-    biggestPotWho:    'k_8821 vs grimreef',
-    biggestPotAmount: '5.420',
-    settledToday:     1247,
-    totalPaidToday:   '96.430',
+    biggestPotWho: '—',
+    biggestPotAmount: '—',
+    settledToday: 0,
+    totalPaidToday: '0',
   }
 }
 
@@ -312,29 +298,10 @@ export function getLiveMatch(): LiveMatch {
 }
 
 export function getBoard(): Board {
-  // Production: query matches table, group/sort server-side, return top 5 per category
   return {
-    biggestPots: [
-      { rank: '01', who: 'k_8821 vs grimreef',   what: 'CARD · 250 ROOM',   value: '5.420' },
-      { rank: '02', who: 'sandman vs reef',       what: 'CYCLE · 500 ROOM',  value: '4.500' },
-      { rank: '03', who: 'NovaStrike vs anon#9',  what: 'CARD · 250 ROOM',   value: '4.500' },
-      { rank: '04', who: 'mads_kbh vs viper99',   what: 'DROP · 100 ROOM',   value: '1.800' },
-      { rank: '05', who: 'siren vs iso_9001',      what: 'CARD · 50 ROOM',    value: '900'   },
-    ],
-    longestStreaks: [
-      { rank: '01', who: 'NovaStrike', what: 'CARD · ACTIVE',        value: '7' },
-      { rank: '02', who: 'k_8821',     what: 'CARD · BROKEN 12:18',  value: '6' },
-      { rank: '03', who: 'sandman',    what: 'CYCLE · ACTIVE',        value: '5' },
-      { rank: '04', who: 'piloto',     what: 'CYCLE · BROKEN 11:42', value: '4' },
-      { rank: '05', who: 'reef',       what: 'CYCLE · ACTIVE',        value: '3' },
-    ],
-    biggestDays: [
-      { rank: '01', who: 'k_8821',     what: '11 MATCHES · 9W 2L', value: '8.420' },
-      { rank: '02', who: 'NovaStrike', what: '8 MATCHES · 7W 1L',  value: '6.250' },
-      { rank: '03', who: 'grimreef',   what: '6 MATCHES · 5W 1L',  value: '4.100' },
-      { rank: '04', who: 'reef',       what: '5 MATCHES · 4W 1L',  value: '3.100' },
-      { rank: '05', who: 'sandman',    what: '7 MATCHES · 4W 3L',  value: '2.450' },
-    ],
+    biggestPots:    [],
+    longestStreaks: [],
+    biggestDays:    [],
   }
 }
 
@@ -372,7 +339,6 @@ export function getTicker(): TickerItem[] {
 }
 
 export function getLiveMatchCount() {
-  // Production: SELECT count(*) FROM matches WHERE status = 'live' / 'queued' / settled today
   return { live: 47, queued: 12, settledToday: 1247 }
 }
 
