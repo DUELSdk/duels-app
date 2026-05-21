@@ -1,13 +1,13 @@
 import Link from 'next/link'
-import { BroadcastNav, StadiumStrip, LiveTicker } from '@/components/BroadcastNav'
+import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
 import {
   getLibraryCategories,
   getLibraryThemes,
-  getLiveMatchCount,
   type LibraryGame,
 } from '@/lib/mock-data'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 function GameRow({ game }: { game: LibraryGame }) {
   const isLive = game.liveCount > 0
@@ -67,18 +67,19 @@ function GameRow({ game }: { game: LibraryGame }) {
   )
 }
 
-export default function Library() {
+export default async function Library() {
   const categories = getLibraryCategories()
   const themes     = getLibraryThemes()
-  const counts     = getLiveMatchCount()
+
+  const supabaseServer = await createSupabaseServerClient()
+  const { data: countsData } = await supabaseServer.rpc('rpc_get_live_counts')
+  const counts = countsData as { live: number; settled_today: number } | null
 
   const totalGames = categories.reduce((n, c) => n + c.games.length, 0)
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav activePage="games" />
-      <StadiumStrip />
-      <LiveTicker />
 
       {/* Header */}
       <section style={{ padding: `56px ${s.px} 32px` }}>
@@ -91,7 +92,7 @@ export default function Library() {
         </p>
         <div style={{ ...s.mono, fontSize: 12, marginTop: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="live-dot" />
-          {counts.live} MATCHES IN PROGRESS · {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY
+          {counts?.live ?? 0} MATCHES IN PROGRESS · {(counts?.settled_today ?? 0).toLocaleString('da-DK')} SETTLED TODAY
         </div>
       </section>
 

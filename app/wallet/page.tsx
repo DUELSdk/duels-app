@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { BroadcastNav } from '@/components/BroadcastNav'
 import { Footer } from '@/components/Footer'
 import { s } from '@/lib/styles'
-import { getBalance, getTransactions, type Txn } from '@/lib/balance'
+import { useBalance } from '@/hooks/useBalance'
+import { supabase } from '@/lib/supabase'
 
+type Txn = { id: string; ts: number; desc: string; amount: number }
 type LedgerFilter = 'ALL' | 'DEPOSITS' | 'WINS' | 'LOSSES' | 'WITHDRAWALS'
 
 function txType(amount: number, desc: string): string {
@@ -17,8 +19,9 @@ function txType(amount: number, desc: string): string {
 }
 
 function txColor(t: string): string {
-  if (t === 'WIN' || t === 'DEPOSIT') return 'var(--money)'
-  if (t === 'LOSS')                   return 'var(--alarm)'
+  if (t === 'WIN')     return 'var(--money)'
+  if (t === 'LOSS')    return 'var(--alarm)'
+  if (t === 'DEPOSIT') return 'var(--ink)'
   return 'var(--ink-faint)'
 }
 
@@ -27,11 +30,11 @@ function formatDate(ts: number): string {
   const now = new Date()
   const h = d.getHours().toString().padStart(2, '0')
   const m = d.getMinutes().toString().padStart(2, '0')
-  if (d.toDateString() === now.toDateString()) return `TODAY ${h}:${m}`
+  if (d.toDateString() === now.toDateString()) return `${h}:${m} TODAY`
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return `YESTERDAY ${h}:${m}`
-  return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')} ${h}:${m}`
+  if (d.toDateString() === yesterday.toDateString()) return 'YESTERDAY'
+  return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`
 }
 
 function filterTxs(txs: Txn[], filter: LedgerFilter): Txn[] {
@@ -44,115 +47,158 @@ function filterTxs(txs: Txn[], filter: LedgerFilter): Txn[] {
 }
 
 export default function Wallet() {
-  const [balance, setBalance] = useState<number>(2450)
-  const [txs, setTxs] = useState<Txn[]>([])
+  const { balance: supaBalance } = useBalance()
+  const balance = supaBalance ?? 0
+  const [txs,    setTxs]    = useState<Txn[]>([])
   const [filter, setFilter] = useState<LedgerFilter>('ALL')
+  const [handle, setHandle] = useState<string | null>(null)
 
   useEffect(() => {
-    setBalance(getBalance())
-    setTxs(getTransactions())
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Load handle
+      const { data: profile } = await supabase
+        .from('public_profiles')
+        .select('handle')
+        .eq('id', user.id)
+        .single()
+      if (profile) setHandle(profile.handle)
+
+      // Load transactions
+      const { data: rows } = await supabase
+        .from('transactions')
+        .select('id, amount_ore, description, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'settled')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (rows) {
+        setTxs(rows.map(row => ({
+          id:     row.id,
+          ts:     new Date(row.created_at).getTime(),
+          desc:   row.description ?? '',
+          amount: row.amount_ore / 100,
+        })))
+      }
+    }
+    load()
   }, [])
 
-  const todayTs = new Date().setHours(0, 0, 0, 0)
-  const todayTxs   = txs.filter(t => t.ts >= todayTs)
-  const winsToday  = todayTxs.filter(t => t.amount > 0 && !t.desc.toLowerCase().includes('deposit')).reduce((n, t) => n + t.amount, 0)
-  const lossesToday = todayTxs.filter(t => t.amount < 0 && !t.desc.toLowerCase().includes('withdraw')).reduce((n, t) => n + t.amount, 0)
-
-  const visible = filterTxs(txs, filter)
+  const todayTs      = new Date().setHours(0, 0, 0, 0)
+  const todayTxs     = txs.filter(t => t.ts >= todayTs)
+  const netToday     = todayTxs.reduce((n, t) => n + t.amount, 0)
+  const held         = 50
+  const withdrawable = Math.max(0, balance - held)
+  const visible      = filterTxs(txs, filter)
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
       <BroadcastNav />
 
-      {/* Header */}
-      <section style={{ padding: `40px ${s.px} 32px` }}>
-        <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginBottom: 4 }}>WALLET</div>
-        <h1 style={{ ...s.display(96), lineHeight: 0.85 }}>BALANCE.</h1>
+      {/* ── Header ── */}
+      <section style={{ padding: `40px ${s.px} 16px` }}>
+        <div style={{ borderBottom: '3px double var(--ink)', paddingBottom: 16 }}>
+          <div style={{ ...s.mono, fontSize: 11, letterSpacing: '0.18em', color: 'var(--ink-faint)' }}>
+            WALLET{handle ? ` · ${handle.toUpperCase()}` : ''}
+          </div>
+          <h1 style={{ ...s.display(88), lineHeight: 0.9, marginTop: 6 }}>BALANCE.</h1>
+        </div>
       </section>
 
-      {/* Black balance card */}
-      <section style={{ padding: `0 ${s.px} 32px` }}>
-        <div style={{ background: 'var(--ink)', color: 'var(--bone-on-dark)', padding: '40px 48px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'center' }}>
-            <div>
-              <div style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', marginBottom: 16 }}>AVAILABLE TO PLAY</div>
-              <div style={{
-                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 80,
-                letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums',
-              }}>
-                {balance.toLocaleString('da-DK')} <span style={{ fontSize: 32, color: 'var(--bone-faint)' }}>KR</span>
-              </div>
-              <div style={{ display: 'flex', gap: 40, marginTop: 24 }}>
-                {[
-                  { label: 'WON TODAY',  value: winsToday > 0 ? `+${winsToday}` : '0',      color: 'var(--money)' },
-                  { label: 'LOST TODAY', value: lossesToday < 0 ? `${lossesToday}` : '0',    color: 'var(--alarm)' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)', marginBottom: 4 }}>{item.label}</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, letterSpacing: '-0.02em', color: item.color, fontVariantNumeric: 'tabular-nums' }}>
-                      {item.value} <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--bone-faint)' }}>KR</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* ── Balance card + actions ── */}
+      <section style={{ padding: `16px ${s.px} 32px` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32, alignItems: 'stretch' }}>
+
+          {/* Left — balance */}
+          <div style={{ background: 'var(--ink)', color: 'var(--bone-on-dark)', padding: '36px 40px' }}>
+            <div style={{ ...s.mono, fontSize: 11, color: 'rgba(240,237,228,0.6)', letterSpacing: '0.18em' }}>
+              AVAILABLE TO PLAY
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 200 }}>
-              <Link href="/wallet" style={{
-                display: 'block', textAlign: 'center',
-                background: 'var(--bone)', color: 'var(--ink)',
-                padding: '16px 24px',
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
-                textTransform: 'uppercase', letterSpacing: '-0.01em',
-                textDecoration: 'none',
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 8 }}>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 160,
+                letterSpacing: '-0.04em', lineHeight: 0.85, fontVariantNumeric: 'tabular-nums',
               }}>
-                + DEPOSIT →
-              </Link>
-              <Link href="/wallet" style={{
-                display: 'block', textAlign: 'center',
-                border: '1px solid rgba(240,237,228,0.2)',
-                padding: '14px 24px',
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
-                textTransform: 'uppercase', letterSpacing: '-0.01em',
-                background: 'transparent', color: 'var(--bone-faint)',
-                textDecoration: 'none',
-              }}>
-                WITHDRAW
-              </Link>
-              <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)', textAlign: 'center' }}>
-                VIA TRUSTLY · MitID REQUIRED
-              </div>
+                {balance.toLocaleString('da-DK')}
+              </span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, color: 'var(--bone-faint)' }}>KR</span>
+            </div>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              marginTop: 28, paddingTop: 16,
+              borderTop: '1px solid rgba(240,237,228,0.18)',
+            }}>
+              {[
+                { label: 'HELD IN ACTIVE MATCHES', value: held.toLocaleString('da-DK'),         color: 'var(--bone-on-dark)' },
+                { label: 'WITHDRAWABLE NOW',        value: withdrawable.toLocaleString('da-DK'), color: 'var(--bone-on-dark)' },
+                { label: 'NET TODAY',               value: (netToday >= 0 ? '+ ' : '− ') + Math.abs(netToday).toLocaleString('da-DK'), color: netToday >= 0 ? 'var(--money)' : 'var(--alarm)' },
+              ].map(stat => (
+                <div key={stat.label}>
+                  <div style={{ ...s.mono, fontSize: 10, color: 'rgba(240,237,228,0.6)', marginBottom: 2 }}>{stat.label}</div>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24,
+                    letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: stat.color, marginTop: 2,
+                  }}>
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Link href="/wallet/deposit" style={{
+              display: 'block', textAlign: 'center',
+              background: 'var(--ink)', color: 'var(--bone)',
+              padding: '20px',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+              textDecoration: 'none',
+            }}>
+              DEPOSIT — MITID
+            </Link>
+            <Link href="/wallet/withdraw" style={{
+              display: 'block', textAlign: 'center',
+              border: '1.5px solid var(--ink)',
+              padding: '20px',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+              background: 'transparent', color: 'var(--ink)',
+              textDecoration: 'none',
+            }}>
+              WITHDRAW
+            </Link>
+            <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', textAlign: 'center', marginTop: 4 }}>
+              INSTANT IN · 1–2 DAYS OUT · NO FEES
             </div>
           </div>
         </div>
       </section>
 
-      {/* Ledger */}
+      {/* ── Ledger ── */}
       <section style={{ padding: `0 ${s.px} 56px` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-          <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>LEDGER</div>
-        </div>
-
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1.5px solid var(--ink)', marginBottom: 0 }}>
-          {(['ALL', 'DEPOSITS', 'WINS', 'LOSSES', 'WITHDRAWALS'] as LedgerFilter[]).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                ...s.mono, fontSize: 10, fontWeight: 700,
-                padding: '10px 16px',
-                border: 'none',
-                borderBottom: filter === f ? '2px solid var(--alarm)' : '2px solid transparent',
-                marginBottom: -2,
-                background: 'transparent',
-                color: filter === f ? 'var(--ink)' : 'var(--ink-faint)',
+          <h2 style={{ ...s.display(44) }}>LEDGER.</h2>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['ALL', 'WINS', 'LOSSES', 'DEPOSITS', 'WITHDRAWALS'] as LedgerFilter[]).map(f => (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                ...s.mono, fontSize: 10,
+                padding: '5px 10px',
+                border: '1px solid var(--ink)',
+                background: filter === f ? 'var(--ink)' : 'transparent',
+                color: filter === f ? 'var(--bone)' : 'var(--ink-faint)',
                 cursor: 'pointer',
-              }}
-            >
-              {f}
-            </button>
-          ))}
+              }}>
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
+        <div style={s.rule} />
 
         {visible.length === 0 ? (
           <div style={{ padding: '48px 0' }}>
@@ -164,20 +210,26 @@ export default function Wallet() {
           const color = txColor(type)
           return (
             <div key={tx.id} style={{
-              display: 'grid', gridTemplateColumns: '160px 64px 1fr auto auto',
-              alignItems: 'center', gap: 24,
-              padding: '16px 0', borderBottom: '1px solid var(--rule-soft)',
+              display: 'grid', gridTemplateColumns: '160px 100px 1fr 120px',
+              alignItems: 'baseline', gap: 16,
+              padding: '14px 0', borderBottom: '1px solid var(--rule-soft)',
             }}>
-              <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)' }}>{formatDate(tx.ts)}</span>
-              <span style={{ ...s.mono, fontSize: 10, fontWeight: 700, color }}>{type}</span>
-              <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{tx.desc}</div>
+              <span style={{ ...s.mono, fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.10em', fontVariantNumeric: 'tabular-nums' }}>
+                {formatDate(tx.ts)}
+              </span>
+              <span style={{ ...s.mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color }}>
+                {type}
+              </span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16 }}>
+                {tx.desc}
+              </span>
               <span style={{
                 fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20,
-                color, fontVariantNumeric: 'tabular-nums',
+                textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                color: tx.amount > 0 ? 'var(--money)' : tx.amount < 0 ? 'var(--alarm)' : 'var(--ink-faint)',
               }}>
-                {tx.amount > 0 ? '+' : ''}{tx.amount}
+                {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('da-DK')}
               </span>
-              <span style={{ ...s.mono, fontSize: 9, color: 'var(--ink-faint)' }}>KR</span>
             </div>
           )
         })}

@@ -4,145 +4,208 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { s } from '@/lib/styles'
+import { signIn, signUp, hasProfile, signInAsGuest } from '@/lib/auth'
 
-const STATS_STRIP_STYLE: React.CSSProperties = {
-  background: 'var(--ink)',
-  color: 'var(--bone-on-dark)',
-  padding: '6px 40px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-}
-
-const MINIMAL_NAV_STYLE: React.CSSProperties = {
-  borderBottom: '1px solid var(--rule-soft)',
-  padding: '14px 40px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  background: 'var(--bone)',
+function validateEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 }
 
 export default function AuthPage() {
-  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  function handleMitID() {
-    if (loading) return
+  const [mode, setMode]       = useState<'signin' | 'signup'>('signup')
+  const [email, setEmail]     = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError]     = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const emailOk    = validateEmail(email)
+  const passwordOk = password.length >= 8
+  const canSubmit  = emailOk && passwordOk && !loading
+
+  async function handleGuest() {
     setLoading(true)
-    setTimeout(() => router.push('/'), 2200)
+    setError(null)
+    const { error: err } = await signInAsGuest()
+    if (err) { setError(err.message.toUpperCase()); setLoading(false); return }
+    // Auto-generate handle — no picker, no moderation needed
+    const tag = Math.floor(1000 + Math.random() * 9000)
+    const handle = `GUEST${tag}`
+    const { supabase } = await import('@/lib/supabase')
+    await supabase.rpc('rpc_create_profile_and_wallet', {
+      p_handle: handle,
+      p_initials: 'GT',
+    })
+    router.replace('/')
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit) return
+    setLoading(true)
+    setError(null)
+
+    if (mode === 'signup') {
+      const { error: err } = await signUp(email, password)
+      if (err) { setError(err.message.toUpperCase()); setLoading(false); return }
+      // After signup: if email confirmation disabled in Supabase → session exists → check profile
+      const hasPro = await hasProfile()
+      router.replace(hasPro ? '/' : '/auth/onboarding')
+    } else {
+      const { error: err } = await signIn(email, password)
+      if (err) { setError(err.message.toUpperCase()); setLoading(false); return }
+      const hasPro = await hasProfile()
+      router.replace(hasPro ? '/' : '/auth/onboarding')
+    }
   }
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Stats strip */}
-      <div style={STATS_STRIP_STYLE}>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
-          TODAY&apos;S BIGGEST POT <span style={{ color: 'var(--bone-on-dark)', fontWeight: 600 }}>5.420 KR</span> — k_8821 vs grimreef
-        </span>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)' }}>
-          1.247 SETTLED TODAY &nbsp;·&nbsp; 96.430 KR PAID
-        </span>
-      </div>
-
-      {/* Minimal nav */}
-      <div style={MINIMAL_NAV_STYLE}>
+      {/* Nav */}
+      <div style={{ borderBottom: '1px solid var(--rule-soft)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bone)' }}>
         <Link href="/" style={{ ...s.display(18), letterSpacing: '-0.01em', textDecoration: 'none', color: 'var(--ink)' }}>
           DUELS.
         </Link>
-        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>18+ &nbsp;·&nbsp; PLAY WITHIN MEANS</span>
+        <span style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)' }}>TEST MODE · NO REAL MONEY</span>
       </div>
 
-      {/* Split layout */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Layout — stacked on mobile, split on desktop */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-        {/* Left — bone */}
-        <div style={{ padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ ...s.mono, fontSize: 11, color: 'var(--alarm)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--alarm)', display: 'inline-block' }} />
-              47 MATCHES IN PROGRESS
-            </div>
+        {/* Form — full width, shown first on mobile */}
+        <div style={{ background: 'var(--ink)', padding: 'clamp(40px, 8vw, 80px) clamp(24px, 6vw, 56px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
 
-            <h1 style={{ ...s.display(120), lineHeight: 0.84, marginBottom: 40 }}>
-              SIGN IN.
-            </h1>
-
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.3, maxWidth: 480, color: 'var(--ink)' }}>
-              ONE DOOR. VERIFIED BY MITID.{' '}
-              <span style={{ color: 'var(--ink-soft)' }}>
-                NO USERNAMES TO REMEMBER. NO PASSWORDS TO FORGET. THE STAKES ARE REAL — SO IS THE CHECK.
-              </span>
-            </p>
-          </div>
-
-          {/* Badges */}
-          <div style={{ display: 'flex', gap: 40, paddingTop: 40, borderTop: '1px solid var(--rule-soft)' }}>
-            {[
-              { label: 'INSTANT', sub: 'VERIFICATION' },
-              { label: '18+', sub: 'GATE' },
-              { label: 'SKILL ONLY', sub: 'NO HOUSE' },
-            ].map(b => (
-              <div key={b.label}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{b.label}</div>
-                <div style={{ ...s.mono, fontSize: 10, color: 'var(--ink-faint)', marginTop: 4 }}>{b.sub}</div>
-              </div>
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', marginBottom: 40, borderBottom: '1px solid rgba(240,237,228,0.12)' }}>
+            {(['signup', 'signin'] as const).map(m => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setError(null) }}
+                style={{
+                  ...s.mono, fontSize: 10, letterSpacing: '0.12em',
+                  padding: '10px 0',
+                  marginRight: 32,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: mode === m ? 'var(--bone-on-dark)' : 'var(--bone-ghost)',
+                  borderBottom: mode === m ? '2px solid var(--alarm)' : '2px solid transparent',
+                  marginBottom: -1,
+                }}
+              >
+                {m === 'signup' ? 'CREATE ACCOUNT' : 'SIGN IN'}
+              </button>
             ))}
           </div>
-        </div>
 
-        {/* Right — black panel */}
-        <div style={{ background: 'var(--ink)', padding: '80px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', marginBottom: 20 }}>ONE WAY IN</div>
-
-            {/* MITID. wordmark */}
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.9, textTransform: 'uppercase', letterSpacing: '-0.02em', marginBottom: 28 }}>
-              <span style={{ color: 'var(--bone-on-dark)' }}>MIT</span>
-              <span style={{ color: 'var(--alarm)' }}>ID.</span>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            {/* Email */}
+            <div>
+              <label style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', display: 'block', marginBottom: 10 }}>EMAIL</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(null) }}
+                placeholder="you@example.com"
+                autoComplete="email"
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: `2px solid ${email && !emailOk ? 'var(--alarm)' : emailOk ? 'var(--money)' : 'rgba(240,237,228,0.25)'}`,
+                  color: 'var(--bone-on-dark)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 16,
+                  padding: '8px 0',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
 
-            <p style={{ ...s.mono, fontSize: 11, color: 'var(--bone-faint)', lineHeight: 1.7, maxWidth: 380 }}>
-              REQUIRED BY DANISH LAW FOR REAL-MONEY SKILL GAMES. YOUR CPR STAYS WITH THE AUTH PROVIDER — WE NEVER SEE IT.
-            </p>
-          </div>
+            {/* Password */}
+            <div>
+              <label style={{ ...s.mono, fontSize: 10, color: 'var(--bone-faint)', display: 'block', marginBottom: 10 }}>PASSWORD</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError(null) }}
+                placeholder="Min. 8 characters"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: `2px solid ${password && !passwordOk ? 'var(--alarm)' : passwordOk ? 'var(--money)' : 'rgba(240,237,228,0.25)'}`,
+                  color: 'var(--bone-on-dark)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 16,
+                  padding: '8px 0',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {mode === 'signup' && (
+                <div style={{ ...s.mono, fontSize: 9, color: 'var(--bone-ghost)', marginTop: 6 }}>
+                  MINIMUM 8 CHARACTERS
+                </div>
+              )}
+            </div>
 
-          <div>
+            {error && (
+              <div style={{ ...s.mono, fontSize: 10, color: 'var(--alarm)' }}>{error}</div>
+            )}
+
             <button
-              onClick={handleMitID}
+              type="submit"
+              disabled={!canSubmit}
+              style={{
+                marginTop: 12,
+                background: canSubmit ? 'var(--bone)' : 'rgba(240,237,228,0.15)',
+                color: canSubmit ? 'var(--ink)' : 'rgba(240,237,228,0.3)',
+                border: 'none',
+                padding: '20px 32px',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700, fontSize: 18,
+                textTransform: 'uppercase', letterSpacing: '0.02em',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {loading
+                ? (mode === 'signup' ? 'CREATING…' : 'SIGNING IN…')
+                : (mode === 'signup' ? 'CREATE ACCOUNT →' : 'SIGN IN →')}
+            </button>
+          </form>
+
+          <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid rgba(240,237,228,0.12)' }}>
+            <button
+              onClick={handleGuest}
               disabled={loading}
               style={{
                 width: '100%',
-                background: 'var(--bone)',
-                color: 'var(--ink)',
-                border: 'none',
-                padding: '22px 32px',
+                background: 'transparent',
+                color: 'rgba(240,237,228,0.5)',
+                border: '1px solid rgba(240,237,228,0.2)',
+                padding: '14px 32px',
                 fontFamily: 'var(--font-display)',
-                fontWeight: 700,
-                fontSize: 18,
-                textTransform: 'uppercase',
-                letterSpacing: '0.02em',
+                fontWeight: 600, fontSize: 14,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                marginBottom: 16,
               }}
             >
-              {loading ? 'CONNECTING TO MITID...' : 'CONTINUE WITH MITID →'}
+              PLAY AS GUEST — NO ACCOUNT
             </button>
-
-            <p style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)', textAlign: 'center', lineHeight: 1.7 }}>
-              BY CONTINUING YOU AGREE TO THE TERMS AND CONFIRM YOU ARE 18 OR OVER.
-            </p>
+            <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.3)', textAlign: 'center', marginTop: 8 }}>
+              TEST MODE · 5.000 KR PLAY MONEY · NO ACCOUNT RECOVERY
+            </div>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div style={{ background: 'var(--ink)', padding: '14px 40px', display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ background: 'var(--ink)', padding: '14px 56px', display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ ...s.mono, fontSize: 9, color: 'var(--bone-faint)' }}>
-          SPILLELOVEN-EXEMPT &nbsp;·&nbsp; SKILL-BASED 1V1 ONLY &nbsp;·&nbsp; CVR 99999999
+          SPILLELOVEN-EXEMPT &nbsp;·&nbsp; SKILL-BASED 1V1 ONLY
         </span>
         <div style={{ display: 'flex', gap: 20 }}>
           {['SUPPORT', 'RULES', 'STOPSPILLET.DK'].map(l => (

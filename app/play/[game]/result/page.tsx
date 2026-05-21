@@ -1,12 +1,295 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+
+/* ── Hooks ────────────────────────────────────────────────────────────────── */
+
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%*+'
+
+function useScramble(target: string, { delay = 1000, duration = 700 } = {}) {
+  const [value, setValue] = useState('')
+  useEffect(() => {
+    let frame: number
+    let startTime: number | null = null
+    const timer = setTimeout(() => {
+      const step = (ts: number) => {
+        if (!startTime) startTime = ts
+        const progress = Math.min((ts - startTime) / duration, 1)
+        const locked = Math.floor(progress * target.length)
+        let result = target.slice(0, locked)
+        for (let i = locked; i < target.length; i++) {
+          result += SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
+        }
+        setValue(result)
+        if (progress < 1) frame = requestAnimationFrame(step)
+        else setValue(target)
+      }
+      frame = requestAnimationFrame(step)
+    }, delay)
+    return () => { clearTimeout(timer); cancelAnimationFrame(frame) }
+  }, [target, delay, duration])
+  return value
+}
+
+/* ── BROADCAST FINAL — 5-phase cinematic reveal ───────────────────────────── */
+
+type BFPhase = 'enter' | 'tension' | 'verdict' | 'hold' | 'exit'
+
+const BF_CSS = `
+  .bf-root {
+    position: fixed; inset: 0; z-index: 100;
+    background: #0a0a0a;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  /* 3-column: YOU (left) | seam | OPP (right) — fixed, no reflow */
+  .bf-body {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 90px 1fr;
+  }
+
+  /* Exit only — seam expands to fill screen */
+  .bf-root.bf-exit .bf-body {
+    grid-template-columns: 0px 1fr 0px;
+    transition: grid-template-columns 0.3s ease-in;
+  }
+
+  /* Banners */
+  .bf-banner {
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+  }
+  .bf-banner.left  { background: #131311; transform: translateX(-100%); animation: bf-slide-left  0.6s 0.35s forwards cubic-bezier(0.2,0.85,0.3,1); }
+  .bf-banner.right { background: #0a0a0a; transform: translateX(100%);  animation: bf-slide-right 0.6s 0.45s forwards cubic-bezier(0.2,0.85,0.3,1); }
+
+  .bf-label {
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.2em;
+    color: rgba(240,237,228,0.35);
+    opacity: 0;
+    animation: bf-fade-in 0.5s 1.4s forwards;
+  }
+
+  /* Names — scale transition (GPU, no layout recalc) */
+  .bf-name {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(48px, 7vw, 110px);
+    text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.88;
+    color: var(--bone-on-dark);
+    transform: scale(1);
+    transition: transform 0.65s cubic-bezier(0.65,0,0.25,1), color 0.5s ease;
+    opacity: 0;
+  }
+  .bf-name.left  { animation: bf-name-in 0.5s 0.9s forwards ease-out; }
+  .bf-name.right { animation: bf-name-in 0.5s 1.0s forwards ease-out; }
+
+  /* Verdict: winner scales up green, loser scales down faint */
+  .bf-root.bf-verdict .bf-name.winner,
+  .bf-root.bf-hold    .bf-name.winner,
+  .bf-root.bf-exit    .bf-name.winner {
+    transform: scale(1.55);
+    color: var(--money);
+  }
+  .bf-root.bf-verdict .bf-name.loser,
+  .bf-root.bf-hold    .bf-name.loser,
+  .bf-root.bf-exit    .bf-name.loser {
+    transform: scale(0.5);
+    color: var(--bone-faint);
+  }
+
+  /* Hold: winner breathing glow */
+  .bf-root.bf-hold .bf-name.winner {
+    animation: bf-name-in 0.5s 1.0s forwards ease-out, bf-breathe 2.4s 1.7s ease-in-out infinite;
+  }
+
+  /* Seam — overflow visible lets VS extend beyond 90px bounds pre-verdict */
+  .bf-seam {
+    position: relative;
+    overflow: visible;
+  }
+  /* Clip on verdict so score stays inside the green */
+  .bf-root.bf-verdict .bf-seam,
+  .bf-root.bf-hold    .bf-seam,
+  .bf-root.bf-exit    .bf-seam {
+    overflow: hidden;
+  }
+
+  /* Seam fill panels — slide for color wipe */
+  .seam-fill {
+    position: absolute; inset: 0;
+    transition: transform 0.6s cubic-bezier(0.85,0,0.15,1);
+  }
+  .seam-fill.red   { background: var(--alarm); transform: translateY(0); }
+  .seam-fill.green { background: var(--money);  transform: translateY(-100%); }
+
+  /* Verdict: red slides down, green slides in from top */
+  .bf-root.bf-verdict .seam-fill.red,
+  .bf-root.bf-hold    .seam-fill.red,
+  .bf-root.bf-exit    .seam-fill.red   { transform: translateY(101%); }
+  .bf-root.bf-verdict .seam-fill.green,
+  .bf-root.bf-hold    .seam-fill.green,
+  .bf-root.bf-exit    .seam-fill.green { transform: translateY(0); }
+
+  /* VS text */
+  .bf-vs {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display); font-weight: 900;
+    font-size: clamp(80px, 14vw, 200px);
+    letter-spacing: -0.04em; line-height: 1;
+    color: #fff; text-transform: uppercase;
+    opacity: 0; z-index: 2; pointer-events: none;
+    animation: bf-vs-scale-in 0.4s 0.5s forwards cubic-bezier(0.2,0.7,0.3,1.4);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  /* Score text — starts small enough to fit inside 90px seam */
+  .bf-final {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 22px; letter-spacing: 3px;
+    color: #fff; text-transform: uppercase;
+    white-space: nowrap; text-align: center;
+    opacity: 0; z-index: 2; pointer-events: none;
+    transition: opacity 0.35s 0.1s ease, transform 0.35s 0.1s ease;
+  }
+
+  /* Verdict: VS fades out (override animation forwards fill), FINAL slides in */
+  .bf-root.bf-verdict .bf-vs,
+  .bf-root.bf-hold    .bf-vs,
+  .bf-root.bf-exit    .bf-vs {
+    opacity: 0 !important;
+    transform: translate(-50%, calc(-50% - 18px)) scale(0.7) !important;
+  }
+  .bf-root.bf-verdict .bf-final,
+  .bf-root.bf-hold    .bf-final,
+  .bf-root.bf-exit    .bf-final {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* Exit: FINAL expands to fill screen */
+  .bf-root.bf-exit .bf-final {
+    animation: bf-final-expand 0.95s 0.1s forwards cubic-bezier(0.7,0,0.3,1) !important;
+    transition: none !important;
+  }
+
+  /* Skip hint */
+  .bf-skip {
+    position: absolute; bottom: 24px; left: 0; right: 0; text-align: center;
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+    color: rgba(240,237,228,0.2);
+    opacity: 0;
+    animation: bf-fade-in 0.4s 3s forwards;
+    pointer-events: none;
+  }
+
+  .bf-blackout {
+    position: absolute; inset: 0;
+    background: #0a0a0a;
+    opacity: 0; pointer-events: none;
+  }
+  .bf-root.bf-exit .bf-blackout {
+    animation: bf-blackout 0.5s 0.85s forwards ease-in;
+  }
+
+  /* ── Keyframes ─────────────────────────────────────── */
+  @keyframes bf-slide-left  { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+  @keyframes bf-slide-right { from{transform:translateX(100%)}  to{transform:translateX(0)} }
+  @keyframes bf-vs-scale-in {
+    from { opacity:0; transform:translate(-50%,-50%) scale(0.85) }
+    to   { opacity:1; transform:translate(-50%,-50%) scale(1) }
+  }
+  @keyframes bf-name-in  { from{opacity:0} to{opacity:1} }
+  @keyframes bf-fade-in  { from{opacity:0} to{opacity:1} }
+  @keyframes bf-breathe  {
+    0%,100% { text-shadow: 0 0 0 rgba(29,138,58,0) }
+    50%     { text-shadow: 0 0 60px rgba(29,138,58,0.5) }
+  }
+  @keyframes bf-final-expand {
+    0%   { font-size:22px;  letter-spacing:3px }
+    100% { font-size:200px; letter-spacing:6px }
+  }
+  @keyframes bf-blackout { to { opacity:1 } }
+`
+
+function BroadcastFinal({
+  winner, loser, myScore, oppScore, playerWins, onDone,
+}: {
+  winner: string; loser: string; myScore: number; oppScore: number
+  playerWins: boolean; onDone: () => void
+}) {
+  const [phase, setPhase] = useState<BFPhase>('enter')
+
+  // Left = always YOU, right = always OPP
+  const leftName  = useScramble(playerWins ? winner : loser, { delay: 700, duration: 600 })
+  const rightName = useScramble(playerWins ? loser  : winner, { delay: 700, duration: 500 })
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('tension'), 1600)
+    const t2 = setTimeout(() => setPhase('verdict'), 2500)
+    const t3 = setTimeout(() => setPhase('hold'),    4000)
+    const t4 = setTimeout(() => setPhase('exit'),    6600)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'exit') return
+    const t = setTimeout(onDone, 1400)
+    return () => clearTimeout(t)
+  }, [phase, onDone])
+
+  const skip = useCallback(() => {
+    if (phase !== 'exit') setPhase('exit')
+  }, [phase])
+
+  return (
+    <div className={`bf-root bf-${phase}`} onClick={skip}>
+      <style dangerouslySetInnerHTML={{ __html: BF_CSS }} />
+
+      <div className="bf-body">
+        {/* LEFT — YOU */}
+        <div className="bf-banner left">
+          <div className="bf-label">YOU</div>
+          <div className={`bf-name left ${playerWins ? 'winner' : 'loser'}`}>{leftName}</div>
+        </div>
+
+        {/* SEAM — vertical, color wipe + VS/FINAL */}
+        <div className="bf-seam">
+          <div className="seam-fill red" />
+          <div className="seam-fill green" />
+          <div className="bf-vs">VS.</div>
+          <div className="bf-final">{myScore} — {oppScore}</div>
+        </div>
+
+        {/* RIGHT — OPP */}
+        <div className="bf-banner right">
+          <div className="bf-label">OPP</div>
+          <div className={`bf-name right ${playerWins ? 'loser' : 'winner'}`}>{rightName}</div>
+        </div>
+      </div>
+
+      <div className="bf-skip">TAP TO SKIP</div>
+      <div className="bf-blackout" />
+    </div>
+  )
+}
 import { s } from '@/lib/styles'
-import { loadMatchResult, markBalanceApplied, type MatchResult } from '@/lib/match-state'
-import { adjustBalance, addTransaction } from '@/lib/balance'
-import { getH2HRecord } from '@/lib/mock-data'
+import { type MatchResult } from '@/lib/match-state'
+import { supabase } from '@/lib/supabase'
+
+type H2HRecord = {
+  wins: number
+  losses: number
+  currentStreak: number
+  revengeActive: boolean
+}
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -54,11 +337,38 @@ function BunkerBar({ slug, kr, matchId, label, color = 'var(--alarm)' }: { slug:
 }
 
 /* ── WIN RESULT ─────────────────────────────────────────────────────── */
-function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
+type StripData = { biggestPotWho: string; biggestPotKr: string; settledToday: number; totalPaidKr: string }
+type BoardPot  = { rank: number; who: string; what: string; value_ore: number }
+
+function fmtResultKr(ore: number) {
+  return Math.round(ore / 100).toLocaleString('da-DK')
+}
+
+function WinResult({ result, slug, myHandle, oppHandle, newBal, h2hData }: { result: MatchResult; slug: string; myHandle: string; oppHandle: string; newBal: number | null; h2hData: H2HRecord | null }) {
   const delta   = netDelta(result)
   const rake    = result.stakeKr * 2 - result.winnerGets
-  const newBal  = 2490 // mock
-  const h2h     = getH2HRecord(result.opponent ?? 'BOT')
+  const h2h     = h2hData
+
+  const [stripData, setStripData] = useState<StripData | null>(null)
+  const [boardPots, setBoardPots] = useState<BoardPot[]>([])
+
+  useEffect(() => {
+    supabase.rpc('rpc_get_stats_strip').then(({ data }) => {
+      if (!data) return
+      const d = data as { biggest_pot_who: string; biggest_pot_ore: number; settled_today: number; total_paid_ore: number }
+      setStripData({
+        biggestPotWho: d.biggest_pot_who ?? '—',
+        biggestPotKr:  fmtResultKr(d.biggest_pot_ore ?? 0),
+        settledToday:   d.settled_today ?? 0,
+        totalPaidKr:   fmtResultKr(d.total_paid_ore ?? 0),
+      })
+    })
+    supabase.rpc('rpc_get_board').then(({ data }) => {
+      if (!data) return
+      const d = data as { biggest_pots: BoardPot[] }
+      setBoardPots(d.biggest_pots ?? [])
+    })
+  }, [])
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
@@ -66,10 +376,10 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
       <div style={{ background: 'var(--ink)', padding: '6px 56px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
-          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>5.420 KR</strong> — k_8821 vs grimreef
+          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>{stripData?.biggestPotKr ?? '—'} KR</strong> — {stripData?.biggestPotWho ?? '—'}
         </span>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)' }}>
-          1.247 SETTLED TODAY &nbsp;·&nbsp; 96.430 KR PAID
+          {(stripData?.settledToday ?? 0).toLocaleString('da-DK')} SETTLED TODAY &nbsp;·&nbsp; {stripData?.totalPaidKr ?? '—'} KR PAID
         </span>
       </div>
 
@@ -96,14 +406,14 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
         <div style={{
           padding: '28px 56px',
           borderBottom: '1.5px solid var(--ink)',
-          borderLeft: '4px solid var(--nemesis)',
+          borderLeft: '3px solid var(--nemesis)',
           background: 'var(--nemesis-soft)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
             <div style={{ ...mono, fontSize: 9, color: 'var(--nemesis)', marginBottom: h2h.revengeActive ? 14 : 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--nemesis)', display: 'inline-block' }} />
-              NEMESIS · {result.opponent}{h2h.revengeActive ? ' · REVENGE CLEARED' : ''}
+              NEMESIS · {oppHandle}{h2h.revengeActive ? ' · REVENGE CLEARED' : ''}
             </div>
             {h2h.revengeActive ? (
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, letterSpacing: '-0.02em', lineHeight: 0.88 }}>
@@ -147,7 +457,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
         <div style={{ textAlign: 'right' }}>
           <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginBottom: 4 }}>NEW BALANCE</div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-            {newBal.toLocaleString('da-DK')} KR
+            {(newBal ?? 0).toLocaleString('da-DK')} KR
           </div>
           <div style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)', marginTop: 4 }}>
             +{delta} FROM MATCH · +0 RAKE TO YOU
@@ -173,7 +483,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
         }}>
           REMATCH? · BOT MUST ACCEPT
         </Link>
-        <Link href="/play" style={{
+        <Link href="/" style={{
           display: 'block', textAlign: 'center',
           border: '1.5px solid var(--rule-soft)', color: 'var(--ink-faint)', padding: '18px 24px',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
@@ -181,6 +491,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
         }}>
           BREAK
         </Link>
+
       </div>
 
       {/* What happened */}
@@ -210,13 +521,12 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
           <span style={{ ...display(48) }}>ON THE BOARD.</span>
           <span style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)' }}>TODAY · LIVE</span>
         </div>
-        {[
-          { rank: '01', who: 'K_8821 VS GRIMREEF',   what: 'CARD · 250 ROOM', val: '5.420' },
-          { rank: '02', who: 'SANDMAN VS REEF',        what: 'CYCLE · 500 ROOM', val: '4.500' },
-          { rank: '03', who: 'NOVASTRIKE VS ANON#9',  what: 'CARD · 250 ROOM',  val: '4.500' },
-          { rank: '04', who: 'MADS_KBH VS VIPER99',   what: 'DROP · 100 ROOM',  val: '1.800' },
-          { rank: '05', who: 'SIREN VS ISO_9001',      what: 'CARD · 50 ROOM',   val: '900'   },
-        ].map(r => (
+        {boardPots.map(e => ({
+          rank: String(e.rank).padStart(2, '0'),
+          who: e.who.toUpperCase(),
+          what: e.what.replace('CARD-DUEL', 'CARD DUEL').replace('CYCLE-DUEL', 'CYCLEDUEL').replace('DROP-DUEL', 'DROPDUEL'),
+          val: fmtResultKr(e.value_ore),
+        })).map(r => (
           <div key={r.rank} style={{
             display: 'grid', gridTemplateColumns: '32px 1fr auto',
             alignItems: 'baseline', gap: 16,
@@ -242,7 +552,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
               JUST IN · YOUR ENTRY
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--bone-on-dark)', textTransform: 'uppercase' }}>
-              NOVASTRIKE VS BOT · CARD · {result.stakeKr} ROOM
+              {myHandle} VS {oppHandle} · CARD · {result.stakeKr} ROOM
             </div>
             <div style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)', marginTop: 4 }}>
               {result.myScore}–{result.oppScore} · sudden death · 22 minutes ago
@@ -286,7 +596,7 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
             { label: 'POT',          val: `${result.winnerGets + rake} KR` },
             { label: 'RAKE',         val: `${rake} KR · 10%` },
             { label: 'YOUR TAKE',    val: `+ ${delta} KR`, color: 'var(--money)' },
-            { label: 'NEW BALANCE',  val: `${newBal.toLocaleString('da-DK')} KR`, bold: true },
+            { label: 'NEW BALANCE',  val: `${(newBal ?? 0).toLocaleString('da-DK')} KR`, bold: true },
           ].map(row => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed var(--rule-soft)' }}>
               <span style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)' }}>{row.label}</span>
@@ -302,10 +612,9 @@ function WinResult({ result, slug }: { result: MatchResult; slug: string }) {
 }
 
 /* ── LOSS RESULT ─────────────────────────────────────────────────────── */
-function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
+function LossResult({ result, slug, myHandle, oppHandle, newBal, h2hData }: { result: MatchResult; slug: string; myHandle: string; oppHandle: string; newBal: number | null; h2hData: H2HRecord | null }) {
   const delta  = netDelta(result)
-  const newBal = 2400 // mock
-  const h2h    = getH2HRecord(result.opponent ?? 'BOT')
+  const h2h    = h2hData
 
   return (
     <div style={{ background: 'var(--concrete)', color: 'var(--bone-on-dark)', minHeight: '100vh', paddingTop: 36 }}>
@@ -327,7 +636,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
 
             <div style={{ marginTop: 24 }}>
               <div style={{ ...mono, fontSize: 12, color: 'var(--bone-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: 8 }}>
-                NOVASTRIKE LT BOT
+                {myHandle} LT {oppHandle}
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, color: 'rgba(255,255,255,0.4)', fontVariantNumeric: 'tabular-nums' }}>
@@ -358,7 +667,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
                   REVENGE UNLOCKED.
                 </div>
                 <div style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 8, lineHeight: 1.7 }}>
-                  3 STRAIGHT LOSSES · BEAT {result.opponent} NEXT FOR BONUS TICKETS
+                  3 STRAIGHT LOSSES · BEAT {oppHandle} NEXT FOR BONUS TICKETS
                 </div>
               </div>
             )}
@@ -366,7 +675,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
               <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, paddingTop: 14, borderTop: '1px solid rgba(139,92,246,0.2)' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--nemesis)', display: 'inline-block', flexShrink: 0 }} />
                 <span style={{ ...mono, fontSize: 9, color: 'var(--nemesis)' }}>
-                  LOST {Math.abs(h2h.currentStreak) + 1} IN A ROW · VS {result.opponent} · REVENGE ACTIVE
+                  LOST {Math.abs(h2h.currentStreak) + 1} IN A ROW · VS {oppHandle} · REVENGE ACTIVE
                 </span>
               </div>
             )}
@@ -380,7 +689,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
               {delta}
             </div>
             <div style={{ ...mono, fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-              KR · BAL {newBal.toLocaleString('da-DK')} KR
+              KR · BAL {(newBal ?? 0).toLocaleString('da-DK')} KR
             </div>
           </div>
         </div>
@@ -404,7 +713,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
         }}>
           SMALLER ROOM · 10 KR
         </Link>
-        <Link href="/play" style={{
+        <Link href="/" style={{
           display: 'block', textAlign: 'center',
           color: 'rgba(255,255,255,0.3)', padding: '18px 16px',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
@@ -412,6 +721,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
         }}>
           BREAK
         </Link>
+
       </div>
 
       {/* What happened */}
@@ -450,7 +760,7 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
             { label: 'POT',         val: `${result.stakeKr * 2} KR` },
             { label: 'RAKE',        val: `${result.stakeKr * 2 - result.winnerGets} KR · 10%` },
             { label: 'YOUR NET',    val: `— ${result.stakeKr} KR`, color: 'var(--alarm)' },
-            { label: 'NEW BALANCE', val: `${newBal.toLocaleString('da-DK')} KR`, bold: true },
+            { label: 'NEW BALANCE', val: `${(newBal ?? 0).toLocaleString('da-DK')} KR`, bold: true },
           ].map(row => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.08)' }}>
               <span style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>{row.label}</span>
@@ -464,10 +774,9 @@ function LossResult({ result, slug }: { result: MatchResult; slug: string }) {
 }
 
 /* ── FORFEIT RESULT ──────────────────────────────────────────────────── */
-function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) {
+function ForfeitResult({ result, slug, newBal }: { result: MatchResult; slug: string; newBal: number | null }) {
   const delta   = -result.stakeKr
   const rake    = Math.round(result.stakeKr * 2 * 0.1)
-  const newBal  = 2350 // mock
   const forfeitToday = 1
 
   return (
@@ -502,7 +811,7 @@ function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) 
         <div style={{ textAlign: 'right' }}>
           <div style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>NEW BALANCE</div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
-            {newBal.toLocaleString('da-DK')} KR
+            {(newBal ?? 0).toLocaleString('da-DK')} KR
           </div>
           <div style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
             — {result.stakeKr} FROM STAKE · 0 RAKE OWED
@@ -528,7 +837,7 @@ function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) 
         }}>
           BACK TO LIBRARY
         </Link>
-        <Link href="/play" style={{
+        <Link href="/" style={{
           display: 'block', textAlign: 'center',
           color: 'rgba(255,255,255,0.3)', padding: '18px 16px',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
@@ -536,6 +845,7 @@ function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) 
         }}>
           BREAK
         </Link>
+
       </div>
 
       {/* Timeline + receipt */}
@@ -577,7 +887,7 @@ function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) 
             { label: 'POT AWARDED',        val: `${result.winnerGets} KR → BOT` },
             { label: 'RAKE',               val: `${rake} KR · standard` },
             { label: 'YOUR NET',           val: `— ${result.stakeKr} KR`, color: 'var(--alarm)' },
-            { label: 'NEW BALANCE',        val: `${newBal.toLocaleString('da-DK')} KR`, bold: true },
+            { label: 'NEW BALANCE',        val: `${(newBal ?? 0).toLocaleString('da-DK')} KR`, bold: true },
           ].map(row => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.08)' }}>
               <span style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>{row.label}</span>
@@ -598,9 +908,6 @@ function ForfeitResult({ result, slug }: { result: MatchResult; slug: string }) 
             FORFEITS TODAY · {forfeitToday} OF 3
           </div>
         </div>
-        <Link href="/rules" style={{ ...mono, fontSize: 9, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-          READ THE RULE →
-        </Link>
       </div>
 
       <div style={{ height: 80 }} />
@@ -617,27 +924,111 @@ const MOCK_RESULTS: Record<string, MatchResult> = {
 /* ── PAGE ROUTER ─────────────────────────────────────────────────────── */
 export default function ResultPage({ params }: { params: Promise<{ game: string }> }) {
   const { game: slug } = use(params)
-  const searchParams = useSearchParams()
-  const preview = searchParams.get('preview')
-  const [result, setResult] = useState<MatchResult | null>(preview ? MOCK_RESULTS[preview] ?? null : null)
+  const searchParams   = useSearchParams()
+  const preview        = searchParams.get('preview')
+  const matchIdParam   = searchParams.get('matchId')
+  const myScoreParam   = parseInt(searchParams.get('myScore') ?? '0')
+  const oppScoreParam  = parseInt(searchParams.get('oppScore') ?? '0')
+
+  const [result,    setResult]    = useState<MatchResult | null>(preview ? MOCK_RESULTS[preview] ?? null : null)
+  const [myHandle,  setMyHandle]  = useState('YOU')
+  const [oppHandle, setOppHandle] = useState('OPP')
+  const [loading,   setLoading]   = useState(!preview)
+  const [showFinal, setShowFinal] = useState(true)
+  const [newBal,    setNewBal]    = useState<number | null>(null)
+  const [h2hData,   setH2hData]   = useState<H2HRecord | null>(null)
 
   useEffect(() => {
     if (preview) return
-    const r = loadMatchResult()
-    if (!r) return
-    setResult(r)
-    if (!r.balanceApplied) {
-      const delta = netDelta(r)
-      adjustBalance(delta)
-      const desc = r.outcome === 'win'
-        ? `Win · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-        : r.outcome === 'loss'
-        ? `Loss · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-        : `Forfeit · ${slug.toUpperCase().replace('-', ' ')} · ${r.stakeKr} KR room`
-      addTransaction(desc, delta)
-      markBalanceApplied()
+    if (!matchIdParam) { setLoading(false); return }
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+
+      const { data: match } = await supabase
+        .from('matches')
+        .select('winner_id, player1_id, player2_id, stake_kr, purse_ore, entry_fee_ore')
+        .eq('id', matchIdParam)
+        .single()
+
+      if (!match) { setLoading(false); return }
+
+      const [profilesRes, walletRes] = await Promise.all([
+        supabase
+          .from('public_profiles')
+          .select('id, handle')
+          .in('id', [match.player1_id, match.player2_id]),
+        supabase
+          .from('wallets')
+          .select('balance_ore')
+          .eq('user_id', user.id)
+          .single(),
+      ])
+
+      const me  = profilesRes.data?.find((p: { id: string; handle: string }) => p.id === user.id)
+      const opp = profilesRes.data?.find((p: { id: string; handle: string }) => p.id !== user.id)
+      const mh  = me?.handle  ?? 'YOU'
+      const oh  = opp?.handle ?? 'OPP'
+      setMyHandle(mh)
+      setOppHandle(oh)
+
+      if (walletRes.data) setNewBal(walletRes.data.balance_ore / 100)
+
+      // H2H history (pre-match — exclude current match so wins+1 logic in UI is accurate)
+      if (opp?.id) {
+        const { data: h2hMatches } = await supabase
+          .from('matches')
+          .select('winner_id, player1_id, player2_id')
+          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+          .neq('id', matchIdParam)
+          .not('winner_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(100)
+
+        const filtered = (h2hMatches ?? []).filter((m: { player1_id: string; player2_id: string; winner_id: string }) =>
+          (m.player1_id === user.id && m.player2_id === opp.id) ||
+          (m.player1_id === opp.id  && m.player2_id === user.id)
+        )
+
+        const wins   = filtered.filter((m: { winner_id: string }) => m.winner_id === user.id).length
+        const losses = filtered.filter((m: { winner_id: string }) => m.winner_id !== user.id).length
+
+        let streak = 0
+        for (const m of filtered) {
+          const won = (m as { winner_id: string }).winner_id === user.id
+          if (streak === 0) { streak = won ? 1 : -1 }
+          else if (streak > 0 && won)  streak++
+          else if (streak < 0 && !won) streak--
+          else break
+        }
+
+        setH2hData({ wins, losses, currentStreak: streak, revengeActive: streak <= -3 })
+      }
+
+      const outcome: 'win' | 'loss' = match.winner_id === user.id ? 'win' : 'loss'
+      const winnerGets = Math.round(match.purse_ore / 100)
+      setResult({
+        game:       slug,
+        tierId:     'custom',
+        stakeKr:    match.stake_kr,
+        entryFee:   Math.round(match.entry_fee_ore / 100),
+        winnerGets,
+        outcome,
+        myScore:    myScoreParam,
+        oppScore:   oppScoreParam,
+        opponent:   oh,
+        balanceApplied: true,
+      })
+      setLoading(false)
     }
-  }, [slug, preview])
+    load()
+  }, [matchIdParam, slug, preview, myScoreParam, oppScoreParam])
+
+  if (loading) return (
+    <div style={{ background: '#0a0a0a', color: 'var(--bone-on-dark)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.22em' }}>LOADING RESULT…</div>
+    </div>
+  )
 
   if (!result) {
     return (
@@ -652,7 +1043,23 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
     )
   }
 
-  if (result.outcome === 'win')    return <WinResult    result={result} slug={slug} />
-  if (result.outcome === 'loss')   return <LossResult   result={result} slug={slug} />
-  return <ForfeitResult result={result} slug={slug} />
+  const showBroadcast = showFinal && (result.outcome === 'win' || result.outcome === 'loss')
+
+  return (
+    <>
+      {showBroadcast && (
+        <BroadcastFinal
+          winner={result.outcome === 'win' ? myHandle : oppHandle}
+          loser={result.outcome === 'win'  ? oppHandle : myHandle}
+          myScore={result.myScore}
+          oppScore={result.oppScore}
+          playerWins={result.outcome === 'win'}
+          onDone={() => setShowFinal(false)}
+        />
+      )}
+      {result.outcome === 'win'  && <WinResult    result={result} slug={slug} myHandle={myHandle} oppHandle={oppHandle} newBal={newBal} h2hData={h2hData} />}
+      {result.outcome === 'loss' && <LossResult   result={result} slug={slug} myHandle={myHandle} oppHandle={oppHandle} newBal={newBal} h2hData={h2hData} />}
+      {result.outcome === 'draw' && <ForfeitResult result={result} slug={slug} newBal={newBal} />}
+    </>
+  )
 }
