@@ -1,0 +1,144 @@
+---
+game: HexDuel
+status: spec-complete
+added: 2026-05-02
+updated: 2026-05-14
+---
+
+# HexDuel
+
+Simultaneous Hex — both players pick a hex cell at the same time. First to form an unbroken chain across the board wins. No draws possible.
+
+---
+
+## Core Mechanic
+
+Standard Hex on a 9×9 rhombus grid, played simultaneously. Red connects left and right edges. Blue connects top and bottom edges. Both players choose a hex each turn, lock simultaneously, reveal together. Contested hex (both choose same cell) = dead zone — cell permanently removed from play, neither piece placed. Simultaneous play breaks all memorised Hex theory — you predict, not react. No draws are mathematically possible in Hex.
+
+Per-move time limit: **20 seconds**. Expires → first available cell in scan order (top-left to bottom-right of the rhombus grid). Deterministic.
+
+---
+
+## Legal Basis
+
+| Check | Status |
+|-------|--------|
+| Simultaneous decisions | ✅ both placements committed before either is revealed each turn |
+| RNG | none |
+| Skill basis | spatial reasoning / connection strategy / opponent-reading |
+| Tiebreaker | dead-zone split — see Scoring |
+
+**First-player advantage eliminated:** Standard Hex is mathematically proven to be a first-player win under perfect play (strategy-stealing argument, Nash 1948). HexDuel's simultaneous rule eliminates this entirely — there is no first player. Both commit blind every turn. This is a structural fairness improvement over original Hex and strengthens the skill-only legal position.
+
+**Dead-zone and no-draw:** The Hex Theorem (no draws) assumes a fully filled board. Dead zones remove cells rather than fill them. If enough critical cells are dead-zoned, neither chain may be completable — handled by split pot rule below.
+
+---
+
+## Board
+
+**Size:** 9×9 rhombus grid (81 cells).
+
+Variants use different sizes — see Themes & Variants. The 9×9 base is chosen for match length: ~15–25 moves to win, fast enough for real-money sessions without dragging.
+
+---
+
+## Flow
+
+1. Both players choose a hex cell and lock simultaneously (20s timer)
+2. Placements reveal together
+3. Contested cell (both chose same): **dead zone** — cell permanently removed, neither piece placed. Both choose again next turn.
+4. Repeat until one player forms an unbroken chain connecting both their edges — that player wins
+5. If board reaches a state where neither chain is completable: split pot (see Scoring)
+
+---
+
+## Scoring
+
+Win = first unbroken chain across both player edges. No point accumulation.
+
+**Dead-zone split:** If the board reaches a state where neither player can complete a chain (all remaining cells are isolated from viable paths for both sides) — split pot. Entry fee kept by platform. No refund on rake.
+
+This is a strategic outcome, not RNG. A player who dead-zones aggressively risks creating a split — sacrificing prize probability for board control. The trade-off is intentional.
+
+---
+
+## Simultaneous Rule
+
+Both players choose and lock their hex cell before either placement is revealed. No turn order — both commit at the same time every move.
+
+---
+
+## Contested Move Rule
+
+**Dead zone** — neither piece placed, cell permanently removed from play. Both players choose a new cell next turn.
+
+Contesting intentionally is a valid strategy — sacrifice your move to permanently destroy a cell critical to opponent's chain. No infinite loops possible since the cell no longer exists after one contest.
+
+---
+
+## Training Gate
+
+HexDuel requires training completion before real-money rooms unlock. The Big Three (Card Duel, CycleDuel, DropDuel) are pick-up-and-play. HexDuel's connection strategy is not immediately obvious — training protects players and demonstrates platform due diligence.
+
+**Requirement:** 5 games vs training bot, at least 1 win. One-time per account.
+
+**Training bot:** Shallow MCTS. Pursues its own chain with light blocking. No deep opponent-reading. Beatable by a player who understands basic connection paths. Not trivial — a player who places randomly will not win.
+
+**Why 1 win required:** Proves basic understanding. A player who completes 5 games without winning once has not grasped connection strategy — the win requirement is a skill gate, not just a patience gate.
+
+**Platform note:** Training gate is a responsible gaming argument — the platform verified the player understands the game before real money is on the line. Document in `Company/compliance.md`.
+
+---
+
+## Crown Compatibility
+
+✅ Applicable in series format. Spatial board with clear connection-path reads — opponent's "obvious" next cell is often visible from the board state, making Crown predictions high-value and high-risk. Crown does not apply when replaying a contested turn.
+
+---
+
+## Bot Notes (build reference)
+
+Standard Hex bots use MCTS (Monte Carlo Tree Search) with virtual connection heuristics — scoring cells by how critical they are to both players' shortest paths.
+
+| Bot tier | Behaviour | Used for |
+|----------|-----------|---------|
+| Training bot | Shallow MCTS (~depth 3), pursues own chain + light blocking, no dead-zone strategy | Training gate |
+| Ranked bot | Deeper MCTS, virtual connections, dead-zone aware | Optional practice post-training |
+
+Key Hex concepts for bot implementation:
+- **Virtual connections** — two cells are virtually connected if they can be joined regardless of opponent's single move
+- **Dead-cell analysis** — cells irrelevant to either player's path can be deprioritised
+- **Bridge pattern** — two pieces with a shared virtual connection form a bridge; a strong bot protects bridges
+
+For simultaneous play, the bot must predict likely opponent cells rather than react to placed pieces. Training bot can skip prediction — just plays own strategy naively.
+
+---
+
+## Themes & Variants
+
+| Name | Theme | Setup changes | Notes |
+|------|-------|--------------|-------|
+| **HexDuel** | Neutral / standard | 9×9 | Base |
+| HexDuel Blitz | Neutral speed | 7×7 board, 15s timer | Smaller board, faster chain |
+| HexDuel Deep | Neutral extended | 11×11 board, 20s timer | Classic Hex size, longer match |
+| Dead Zones | Neutral variant | 9×9, contested = both pieces placed | Contested cells filled with neutral pieces — same strategic effect, different visual |
+
+---
+
+## Future Formats
+
+| Format | Notes |
+|--------|-------|
+| Tournament bracket | Standard bracket |
+| Crown-only variant | Series format with Crown active from game 1 |
+
+---
+
+## Open Questions
+
+| Question | Priority |
+|----------|----------|
+| Per-move time limit confirmed at 20s — revisit post-launch if matches feel rushed | Low |
+| Dead-zone split detection — server must evaluate chain-possibility after each dead zone. Define algorithm at build time. | Medium |
+| Training bot win rate target — calibrate so ~60% of players who complete 5 games win at least once | Medium |
+| Legal confirmation — Spillemyndighed has confirmed skill games, but simultaneous incomplete-information mechanic (early game shots with no board info) worth flagging alongside ShipDuel review | Medium |

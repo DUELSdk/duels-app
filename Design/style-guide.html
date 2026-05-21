@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUELS — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* BROADCAST surface */
+    --bone:        #efece4;
+    --bone-2:      #e6e2d6;
+    --bone-3:      #d8d3c2;
+    --ink:         #0d0d0d;
+    --ink-2:       #1c1c1a;
+    --ink-soft:    #4a4845;
+    --ink-faint:   #807c74;
+    --ink-ghost:   #b8b3a4;
+    --rule:        #0d0d0d;
+    --rule-soft:   rgba(13,13,13,0.14);
+
+    /* BUNKER surface */
+    --concrete:      #0a0a0a;
+    --concrete-2:    #131311;
+    --concrete-3:    #1c1b18;
+    --concrete-4:    #2a2926;
+    --bone-on-dark:  #f0ede4;
+    --bone-faint:    #8a8780;
+    --bone-ghost:    #5a5853;
+
+    /* Accents */
+    --alarm:       #ef0000;
+    --alarm-hot:   #ff1f1f;
+    --alarm-soft:  rgba(239,0,0,0.10);
+    --money:       #1d8a3a;
+    --money-soft:  rgba(29,138,58,0.10);
+    --accent:      #1d4ed8;
+
+    /* Type */
+    --font-display: 'Barlow Condensed', 'Helvetica Neue Condensed', sans-serif;
+    --font-body:    'Inter', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bone);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .guide-header {
+    border-bottom: 1px solid var(--rule);
+    padding: 48px 64px 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  .guide-wordmark {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 72px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .guide-wordmark span {
+    color: var(--alarm);
+  }
+
+  .guide-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .guide-nav {
+    border-bottom: 1px solid var(--rule-soft);
+    padding: 0 64px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .guide-nav a {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-decoration: none;
+    padding: 14px 20px 13px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .guide-nav a:hover {
+    color: var(--ink);
+    border-bottom-color: var(--alarm);
+  }
+
+  .section {
+    padding: 80px 64px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 42px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 48px;
+  }
+
+  .rule-h { width: 100%; height: 1px; background: var(--rule); margin: 32px 0; }
+  .rule-soft-h { width: 100%; height: 1px; background: var(--rule-soft); margin: 32px 0; }
+
+  /* ── Surfaces ── */
+  .surfaces-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border: 1px solid var(--rule);
+  }
+
+  .surface-demo {
+    padding: 40px;
+  }
+
+  .surface-broadcast { background: var(--bone); }
+  .surface-bunker    { background: var(--concrete); }
+
+  .surface-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding: 4px 8px;
+    display: inline-block;
+    border: 1px solid;
+  }
+
+  .surface-broadcast .surface-tag {
+    color: var(--ink-soft);
+    border-color: var(--rule-soft);
+  }
+
+  .surface-bunker .surface-tag {
+    color: var(--bone-faint);
+    border-color: rgba(240,237,228,0.15);
+  }
+
+  .surface-demo-card {
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .surface-broadcast .surface-demo-card {
+    background: var(--bone-2);
+    border: 1px solid var(--rule-soft);
+  }
+
+  .surface-bunker .surface-demo-card {
+    background: var(--concrete-2);
+    border: 1px solid rgba(240,237,228,0.06);
+  }
+
+  .surface-demo-headline {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .surface-broadcast .surface-demo-headline { color: var(--ink); }
+  .surface-bunker .surface-demo-headline    { color: var(--bone-on-dark); }
+
+  .surface-demo-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .surface-broadcast .surface-demo-sub { color: var(--ink-faint); }
+  .surface-bunker .surface-demo-sub    { color: var(--bone-faint); }
+
+  .surface-where {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 20px;
+  }
+
+  .surface-broadcast .surface-where { color: var(--ink-soft); }
+  .surface-bunker .surface-where    { color: var(--bone-faint); }
+
+  .surface-where strong {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .surface-broadcast .surface-where strong { color: var(--ink); }
+  .surface-bunker .surface-where strong    { color: var(--bone-on-dark); }
+
+  /* ── Colors ── */
+  .color-group {
+    margin-bottom: 48px;
+  }
+
+  .color-group-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .swatch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 120px;
+  }
+
+  .swatch-color {
+    width: 120px;
+    height: 64px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .swatch-name {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    line-height: 1.3;
+  }
+
+  .swatch-hex {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-ghost);
+  }
+
+  /* ── Typography ── */
+  .type-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 32px;
+    align-items: start;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .type-row:first-child { padding-top: 0; }
+  .type-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .type-meta { padding-top: 4px; }
+
+  .type-meta-name {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+
+  .type-meta-spec {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-ghost);
+    line-height: 1.7;
+  }
+
+  .t-display {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 64px;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 0.95;
+    color: var(--ink);
+  }
+
+  .t-headline {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 36px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .t-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .t-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .t-body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 520px;
+  }
+
+  .t-mono-data {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .t-mono-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ── Buttons ── */
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border: 1px solid var(--rule);
+  }
+
+  .btn-surface {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .btn-surface-broadcast { background: var(--bone); }
+  .btn-surface-bunker    { background: var(--concrete); }
+
+  .btn-surface-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .btn-surface-broadcast .btn-surface-label { color: var(--ink-faint); }
+  .btn-surface-bunker .btn-surface-label    { color: var(--bone-faint); }
+
+  .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  .btn {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.15s;
+  }
+
+  .btn:hover { opacity: 0.85; }
+
+  /* Primary — always alarm red */
+  .btn-primary {
+    background: var(--alarm);
+    color: var(--bone);
+  }
+
+  /* Secondary on BROADCAST */
+  .btn-secondary-broadcast {
+    background: var(--bone);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+
+  /* Secondary on BUNKER */
+  .btn-secondary-bunker {
+    background: transparent;
+    color: var(--bone-on-dark);
+    border: 1px solid rgba(240,237,228,0.2);
+  }
+
+  /* Ghost */
+  .btn-ghost-broadcast {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .btn-ghost-bunker {
+    background: transparent;
+    color: var(--bone-on-dark);
+    border: 1px solid transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Money button variant */
+  .btn-money {
+    background: var(--money);
+    color: #fff;
+  }
+
+  /* ── Live dot ── */
+  .live-examples {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .live-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--alarm);
+    box-shadow: 0 0 0 0 rgba(239,0,0,0.4);
+    animation: pulse-alarm 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .live-dot.money {
+    background: var(--money);
+    box-shadow: 0 0 0 0 rgba(29,138,58,0.4);
+    animation: pulse-money 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-alarm {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,0,0,0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(239,0,0,0); }
+  }
+
+  @keyframes pulse-money {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(29,138,58,0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(29,138,58,0); }
+  }
+
+  .live-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Rules ── */
+  .rules-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .rule-demo-item { display: flex; flex-direction: column; gap: 8px; }
+
+  .rule-demo-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-ghost);
+  }
+
+  .rule-full  { width: 100%; height: 1px; background: var(--ink); }
+  .rule-soft  { width: 100%; height: 1px; background: var(--rule-soft); }
+  .rule-alarm { width: 48px; height: 3px; background: var(--alarm); }
+
+  /* ── Purse / Entry fee ── */
+  .purse-demo {
+    background: var(--concrete);
+    padding: 40px;
+    display: flex;
+    gap: 64px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .purse-block { display: flex; flex-direction: column; gap: 4px; }
+
+  .purse-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+  }
+
+  .purse-amount {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 48px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--bone-on-dark);
+  }
+
+  .purse-currency {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--bone-faint);
+    margin-left: 4px;
+  }
+
+  .purse-entry .purse-amount {
+    font-size: 28px;
+    color: var(--bone-faint);
+  }
+
+  /* ── BunkerTop bar ── */
+  .bunker-top {
+    background: var(--concrete-2);
+    border-bottom: 1px solid rgba(240,237,228,0.06);
+    padding: 0 24px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .bunker-top-left, .bunker-top-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .bunker-top-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bunker-top-stat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+  }
+
+  .bunker-top-stat span {
+    color: var(--bone-on-dark);
+    font-size: 13px;
+  }
+
+  .bunker-top-timer {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--alarm);
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .bunker-top-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(240,237,228,0.08);
+  }
+
+  /* ── Win / Loss states ── */
+  .state-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border: 1px solid var(--rule);
+  }
+
+  .state-cell {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .state-win  { background: var(--money-soft); }
+  .state-loss { background: var(--alarm-soft); }
+
+  .state-result {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .state-win .state-result  { color: var(--money); }
+  .state-loss .state-result { color: var(--alarm); }
+
+  .state-purse {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  .state-win .state-purse strong  { color: var(--money); }
+  .state-loss .state-purse strong { color: var(--alarm); }
+
+  /* ── Voice ── */
+  .voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border: 1px solid var(--rule);
+  }
+
+  .voice-cell {
+    padding: 40px;
+  }
+
+  .voice-good { background: var(--bone-2); }
+  .voice-bad  { background: #fff; }
+
+  .voice-cell-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .voice-good .voice-cell-label { color: var(--money); }
+  .voice-bad .voice-cell-label  { color: var(--alarm); }
+
+  .voice-line {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 2;
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .voice-good .voice-line { color: var(--ink); }
+  .voice-bad .voice-line  { color: var(--ink-soft); text-decoration: line-through; text-decoration-color: var(--alarm); }
+
+  .voice-rule {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 20px;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* ── Misc ── */
+  .accent-note {
+    background: rgba(29,78,216,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  .accent-note strong { color: var(--accent); font-weight: 600; }
+
+  .no-amber {
+    background: var(--alarm-soft);
+    border-left: 3px solid var(--alarm);
+    padding: 16px 20px;
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--alarm);
+  }
+
+  @media (max-width: 768px) {
+    .guide-header    { padding: 32px 24px 28px; }
+    .guide-nav       { padding: 0 24px; }
+    .section         { padding: 56px 24px; }
+    .guide-wordmark  { font-size: 48px; }
+    .surfaces-grid,
+    .btn-grid,
+    .voice-grid,
+    .state-grid      { grid-template-columns: 1fr; }
+    .type-row        { grid-template-columns: 1fr; gap: 12px; }
+    .purse-demo      { gap: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="guide-header">
+  <div>
+    <div class="guide-wordmark">DUEL<span>S</span></div>
+    <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:8px;">Design System · v1</div>
+  </div>
+  <div class="guide-meta">
+    Platform: DUELS<br>
+    Domain: duels.dk<br>
+    Surfaces: BROADCAST · BUNKER<br>
+    Updated: 2026-05-15
+  </div>
+</header>
+
+<!-- Nav -->
+<nav class="guide-nav">
+  <a href="#surfaces">Surfaces</a>
+  <a href="#colors">Colors</a>
+  <a href="#typography">Typography</a>
+  <a href="#buttons">Buttons</a>
+  <a href="#indicators">Indicators</a>
+  <a href="#rules">Rules</a>
+  <a href="#purse">Purse</a>
+  <a href="#bunkertop">BunkerTop</a>
+  <a href="#states">States</a>
+  <a href="#voice">Voice</a>
+</nav>
+
+<!-- Surfaces -->
+<section class="section" id="surfaces">
+  <div class="section-label">01</div>
+  <div class="section-title">Surfaces</div>
+
+  <div class="surfaces-grid">
+    <div class="surface-demo surface-broadcast">
+      <div class="surface-tag">BROADCAST</div>
+      <div class="surface-demo-card">
+        <div class="surface-demo-headline">Card Duel</div>
+        <div class="surface-demo-sub">3 games · 24 live</div>
+      </div>
+      <div class="surface-where">
+        <strong>Used for</strong>
+        Landing · Library · Lobby · Leaderboard · Tournaments · Profile · Wallet · Auth
+      </div>
+    </div>
+    <div class="surface-demo surface-bunker">
+      <div class="surface-tag">BUNKER</div>
+      <div class="surface-demo-card">
+        <div class="surface-demo-headline">Round 3</div>
+        <div class="surface-demo-sub">Lock your move</div>
+      </div>
+      <div class="surface-where">
+        <strong>Used for</strong>
+        Match screen only. Finding opponent transitions into BUNKER. Result screen exits back to BROADCAST.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Colors -->
+<section class="section" id="colors">
+  <div class="section-label">02</div>
+  <div class="section-title">Colors</div>
+
+  <div class="color-group">
+    <div class="color-group-label">BROADCAST — light surface</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#efece4;border-color:rgba(0,0,0,0.12);"></div>
+        <div class="swatch-name">--bone</div>
+        <div class="swatch-hex">#efece4</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#e6e2d6;border-color:rgba(0,0,0,0.12);"></div>
+        <div class="swatch-name">--bone-2</div>
+        <div class="swatch-hex">#e6e2d6</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#d8d3c2;border-color:rgba(0,0,0,0.12);"></div>
+        <div class="swatch-name">--bone-3</div>
+        <div class="swatch-hex">#d8d3c2</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0d0d0d;"></div>
+        <div class="swatch-name">--ink</div>
+        <div class="swatch-hex">#0d0d0d</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4a4845;"></div>
+        <div class="swatch-name">--ink-soft</div>
+        <div class="swatch-hex">#4a4845</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#807c74;"></div>
+        <div class="swatch-name">--ink-faint</div>
+        <div class="swatch-hex">#807c74</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#b8b3a4;border-color:rgba(0,0,0,0.08);"></div>
+        <div class="swatch-name">--ink-ghost</div>
+        <div class="swatch-hex">#b8b3a4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="color-group">
+    <div class="color-group-label">BUNKER — dark surface</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0a0a0a;border-color:rgba(255,255,255,0.06);"></div>
+        <div class="swatch-name">--concrete</div>
+        <div class="swatch-hex">#0a0a0a</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#131311;border-color:rgba(255,255,255,0.06);"></div>
+        <div class="swatch-name">--concrete-2</div>
+        <div class="swatch-hex">#131311</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1c1b18;border-color:rgba(255,255,255,0.06);"></div>
+        <div class="swatch-name">--concrete-3</div>
+        <div class="swatch-hex">#1c1b18</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#2a2926;border-color:rgba(255,255,255,0.06);"></div>
+        <div class="swatch-name">--concrete-4</div>
+        <div class="swatch-hex">#2a2926</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f0ede4;border-color:rgba(0,0,0,0.1);"></div>
+        <div class="swatch-name">--bone-on-dark</div>
+        <div class="swatch-hex">#f0ede4</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#8a8780;"></div>
+        <div class="swatch-name">--bone-faint</div>
+        <div class="swatch-hex">#8a8780</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#5a5853;"></div>
+        <div class="swatch-name">--bone-ghost</div>
+        <div class="swatch-hex">#5a5853</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="color-group">
+    <div class="color-group-label">Accent system — shared across both surfaces</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ef0000;border-color:transparent;"></div>
+        <div class="swatch-name">--alarm</div>
+        <div class="swatch-hex">#ef0000</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ff1f1f;border-color:transparent;"></div>
+        <div class="swatch-name">--alarm-hot</div>
+        <div class="swatch-hex">#ff1f1f</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:rgba(239,0,0,0.10);border-color:rgba(239,0,0,0.2);"></div>
+        <div class="swatch-name">--alarm-soft</div>
+        <div class="swatch-hex">rgba(239,0,0,.10)</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1d8a3a;border-color:transparent;"></div>
+        <div class="swatch-name">--money</div>
+        <div class="swatch-hex">#1d8a3a</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:rgba(29,138,58,0.10);border-color:rgba(29,138,58,0.2);"></div>
+        <div class="swatch-name">--money-soft</div>
+        <div class="swatch-hex">rgba(29,138,58,.10)</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1d4ed8;border-color:transparent;"></div>
+        <div class="swatch-name">--accent</div>
+        <div class="swatch-hex">#1d4ed8</div>
+      </div>
+    </div>
+
+    <div class="accent-note">
+      <strong>Danish Blue (--accent)</strong> is not a UI color. Use max once per page — brand moments only (logo treatment, one-off editorial hit). Never for buttons, labels, or repeated elements.
+    </div>
+
+    <div class="no-amber">
+      ✕ No amber. The amber in-game accent was an earlier direction — superseded. It does not exist in this system.
+    </div>
+  </div>
+</section>
+
+<!-- Typography -->
+<section class="section" id="typography">
+  <div class="section-label">03</div>
+  <div class="section-title">Typography</div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Display</div>
+      <div class="type-meta-spec">Barlow Condensed<br>900 weight<br>−0.03em tracking<br>Uppercase</div>
+    </div>
+    <div class="t-display">Card Duel</div>
+  </div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Headline</div>
+      <div class="type-meta-spec">Barlow Condensed<br>900 weight<br>−0.02em tracking<br>Uppercase</div>
+    </div>
+    <div class="t-headline">Enter the purse</div>
+  </div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Title</div>
+      <div class="type-meta-spec">Barlow Condensed<br>700 weight<br>−0.01em tracking<br>Uppercase</div>
+    </div>
+    <div class="t-title">Round 3 of 5</div>
+  </div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Eyebrow</div>
+      <div class="type-meta-spec">JetBrains Mono<br>11px / 500w<br>+0.12em tracking<br>Uppercase · ink-soft</div>
+    </div>
+    <div class="t-eyebrow">24 live · Card Duel</div>
+  </div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Body</div>
+      <div class="type-meta-spec">Inter<br>15px / 400w<br>1.55 line-height</div>
+    </div>
+    <div class="t-body">DUELS is a 1v1 skill-gaming platform where players compete for real money. 100% skill, no RNG. Every outcome is earned — not drawn.</div>
+  </div>
+
+  <div class="type-row">
+    <div class="type-meta">
+      <div class="type-meta-name">Mono data</div>
+      <div class="type-meta-spec">JetBrains Mono<br>600w<br>Scores · timers · purse</div>
+    </div>
+    <div>
+      <div class="t-mono-data">180 KR</div>
+      <div class="t-mono-label" style="margin-top:4px;">Purse</div>
+    </div>
+  </div>
+</section>
+
+<!-- Buttons -->
+<section class="section" id="buttons">
+  <div class="section-label">04</div>
+  <div class="section-title">Buttons</div>
+
+  <div class="btn-grid">
+    <div class="btn-surface btn-surface-broadcast">
+      <div class="btn-surface-label">On BROADCAST</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Enter · 100 KR</button>
+        <button class="btn btn-secondary-broadcast">View rules</button>
+        <button class="btn btn-ghost-broadcast">Cancel</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-money">Collect winnings</button>
+      </div>
+    </div>
+    <div class="btn-surface btn-surface-bunker">
+      <div class="btn-surface-label">On BUNKER</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Lock move</button>
+        <button class="btn btn-secondary-bunker">View board</button>
+        <button class="btn btn-ghost-bunker">Forfeit</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-money">Claim</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;font-size:13px;color:var(--ink-faint);font-family:var(--font-mono);line-height:1.8;letter-spacing:0.04em;">
+    PRIMARY always uses --alarm. · SECONDARY adapts to surface. · GHOST for low-priority actions only (cancel, forfeit). · MONEY for win/positive confirms only.
+  </div>
+</section>
+
+<!-- Indicators -->
+<section class="section" id="indicators">
+  <div class="section-label">05</div>
+  <div class="section-title">Live Indicators</div>
+
+  <div class="live-examples">
+    <div class="live-item">
+      <div class="live-dot"></div>
+      <div class="live-label">Live</div>
+    </div>
+    <div class="live-item">
+      <div class="live-dot"></div>
+      <div class="live-label">24 active</div>
+    </div>
+    <div class="live-item">
+      <div class="live-dot money"></div>
+      <div class="live-label">Win confirmed</div>
+    </div>
+    <div class="live-item">
+      <div class="live-dot money"></div>
+      <div class="live-label">Payout sent</div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;font-size:13px;color:var(--ink-faint);font-family:var(--font-mono);line-height:1.8;letter-spacing:0.04em;">
+    Red dot = live / active / danger. · Green dot = win / positive outcome. · 8px diameter. · Always pulsing — never static.
+  </div>
+</section>
+
+<!-- Rules -->
+<section class="section" id="rules">
+  <div class="section-label">06</div>
+  <div class="section-title">Rules & Dividers</div>
+
+  <div class="rules-demo">
+    <div class="rule-demo-item">
+      <div class="rule-demo-label">Full rule — --rule (#0d0d0d) · 1px</div>
+      <div class="rule-full"></div>
+    </div>
+    <div class="rule-demo-item">
+      <div class="rule-demo-label">Soft rule — --rule-soft rgba(13,13,13,0.14) · 1px</div>
+      <div class="rule-soft"></div>
+    </div>
+    <div class="rule-demo-item">
+      <div class="rule-demo-label">Alarm accent rule — --alarm · 3px · used for section punches</div>
+      <div class="rule-alarm"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Purse / Entry fee -->
+<section class="section" id="purse">
+  <div class="section-label">07</div>
+  <div class="section-title">Purse & Entry Fee</div>
+
+  <div class="purse-demo">
+    <div class="purse-block">
+      <div class="purse-label">Purse</div>
+      <div class="purse-amount">180<span class="purse-currency">KR</span></div>
+    </div>
+    <div class="purse-block purse-entry">
+      <div class="purse-label">Entry</div>
+      <div class="purse-amount">100<span class="purse-currency" style="font-size:13px;">KR</span></div>
+    </div>
+    <div class="purse-block purse-entry">
+      <div class="purse-label">Take</div>
+      <div class="purse-amount" style="color:var(--money);font-size:28px;">+162<span class="purse-currency" style="font-size:13px;color:var(--money);">KR</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;font-size:13px;color:var(--ink-faint);font-family:var(--font-mono);line-height:1.8;letter-spacing:0.04em;">
+    Always shown on BUNKER (concrete bg). · Mono font, tight tracking. · Purse = total pot. Entry = fee paid. Take = net gain (--money green).
+  </div>
+</section>
+
+<!-- BunkerTop -->
+<section class="section" id="bunkertop">
+  <div class="section-label">08</div>
+  <div class="section-title">BunkerTop Bar</div>
+
+  <div class="bunker-top">
+    <div class="bunker-top-left">
+      <div class="bunker-top-stat">Round <span>3</span></div>
+      <div class="bunker-top-divider"></div>
+      <div class="bunker-top-stat">of <span>5</span></div>
+    </div>
+    <div class="bunker-top-center">
+      <div class="live-dot" style="width:6px;height:6px;"></div>
+      <div class="bunker-top-timer">0:12</div>
+    </div>
+    <div class="bunker-top-right">
+      <div class="bunker-top-stat">Purse <span>180 KR</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;font-size:13px;color:var(--ink-faint);font-family:var(--font-mono);line-height:1.8;letter-spacing:0.04em;">
+    Background: --concrete-2. · Full width, 48px height. · Timer turns --alarm when under 5s. · Round counter in bone-faint, value in bone-on-dark. · Purse always visible.
+  </div>
+</section>
+
+<!-- Win / Loss states -->
+<section class="section" id="states">
+  <div class="section-label">09</div>
+  <div class="section-title">Win · Loss States</div>
+
+  <div class="state-grid">
+    <div class="state-cell state-win">
+      <div class="state-result">Win</div>
+      <div class="state-purse">+<strong>162 KR</strong> credited to wallet</div>
+    </div>
+    <div class="state-cell state-loss">
+      <div class="state-result">Loss</div>
+      <div class="state-purse">Entry of <strong>100 KR</strong> forfeited</div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;font-size:13px;color:var(--ink-faint);font-family:var(--font-mono);line-height:1.8;letter-spacing:0.04em;">
+    Win = --money-soft bg + --money text. · Loss = --alarm-soft bg + --alarm text. · Never reverse these. · Split result: neutral bg, both amounts shown.
+  </div>
+</section>
+
+<!-- Voice -->
+<section class="section" id="voice">
+  <div class="section-label">10</div>
+  <div class="section-title">Broadcaster Voice</div>
+
+  <div class="voice-grid">
+    <div class="voice-cell voice-good">
+      <div class="voice-cell-label">✓ Write this</div>
+      <div class="voice-line">ØDEGAARD has committed.</div>
+      <div class="voice-line">The purse: 200 KR.</div>
+      <div class="voice-line">Silence.</div>
+      <div class="voice-line">NIELSEN leads 2–1.</div>
+      <div class="voice-line">Round 4. Lock your move.</div>
+      <div class="voice-rule">Third-person. Present tense. Terse. Names, not pronouns. No encouragement.</div>
+    </div>
+    <div class="voice-cell voice-bad">
+      <div class="voice-cell-label">✕ Never write this</div>
+      <div class="voice-line">You are winning!</div>
+      <div class="voice-line">Great job! Your entry is confirmed.</div>
+      <div class="voice-line">Please wait while we find you an opponent.</div>
+      <div class="voice-line">You've earned 162 KR. Congratulations!</div>
+      <div class="voice-line">Good luck in Round 4!</div>
+      <div class="voice-rule">No second-person. No encouragement. No filler. If it sounds like a chatbot, rewrite it.</div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

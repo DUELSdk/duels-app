@@ -1,113 +1,175 @@
-# CLAUDE.md — DUEL
+# CLAUDE.md — DUELS Vault
 
-@DESIGN.md
-@GAMES.md
-@IDEAS.md
+**Platform name: DUELS** (not DUEL). Domain: `duels.dk`. Any existing file or code that says "DUEL" as the platform name means DUELS — the rename was decided 2026-05-12 but a full file sweep was skipped for cost reasons. New content always uses DUELS.
 
-Platform name: **DUELS**. Skill-gaming platform. Players duel 1v1 for real money. Zero casino license required — all games are 100% skill-based under Danish law (Spilleloven).
+DUELS skill-gaming platform. Shared vault rules live one level up in `../CLAUDE.md`.
 
-**Source of truth for any page build:** `/website/designs/[page].html` → `globals.css` tokens → `DESIGN.md`. Never build from DESIGN.md alone if a prototype file exists. Read the prototype first.
+Read order: `CLAUDE.md` → `_brain/index.md` → `_context.md`
 
-Solo build. Stack: Next.js + Supabase + Tailwind + TypeScript. Hosted on Vercel.
+`_brain/` is Claude's meta-context — not a workspace. Read it every session.
 
 ---
 
-## What We're Building
+## What This Vault Is
 
-Three games at launch: **Card Duel**, **CycleDuel**, **DropDuel**.
-Post-launch: ReverseDuel, CodeDuel, cross-game modes (Gauntlet, Pick & Ban).
-
-Current focus: **Card Duel** — build the game first, lobby/matchmaking/payments added later.
-
----
-
-## Architecture Principles
-
-- Server-side game logic always — anti-cheat requirement, never trust the client
-- Responsive by default — works on mobile, tablet, desktop
-- Game state lives in Supabase — real-time sync via Supabase Realtime
-- Auth: MitID via idura (formerly Criipto) (not yet integrated — use placeholder auth for now)
-- Payments: MangoPay + Trustly (not yet integrated — use fake money for now)
-
----
-
-## Card Duel — Game Rules
-
-Sealed sequential RPS. Pure psychology, zero randomness.
-
-- Each player has 9 cards: 3× Rock, 3× Scissors, 3× Paper
-- Both players arrange their 9 cards into a sequence and lock simultaneously
-- Cards auto-resolve sequentially — slot 1 vs slot 1 through slot 9
-- Win = 1 point, tie (same vs same) = 0 each, loss = 0
-- Most points after 9 rounds wins
-- Overall tie → sudden death: each player picks one fresh card (R/S/P) secretly, simultaneous reveal, repeat until broken
-- Used cards always visible to both players
-
-**Themes (same engine, different skin):**
-- Blade Duel (samurai)
-- Spell Clash (fantasy magic)
-- Street Fight (urban)
-- War Room (military)
-
----
-
-## CycleDuel — Game Rules
-
-5-type cycle card game with information reveals.
-
-- 5 types: Feint, Guard, Strike, Rush, Grab — each beats 2, loses to 2
-- Hand: 2 of each = 10 cards. 3 blocks of 3 rounds = 9 rounds. 1 card benched in block 3
-- Each block: see opponent's first card → lock sequence → auto-resolve
-- Scoring same as Card Duel. Tie → sudden death (pick from 5 types)
-
----
-
-## DropDuel — Game Rules
-
-Two-phase Connect Four.
-
-- Phase 1 (15s): both players secretly place 1 blocked cell simultaneously. Revealed at game start.
-- Block rules: not bottom row, not top row, solid block, pieces stack on top
-- Phase 2: standard Connect Four on modified 6×7 board
-- Per-move time limit — auto-place in first available column right-to-left if expired
-- Draw resolution: overflow column (8th) unlocks → threat score → true tie = full refund, no rake
-
----
-
-## Business Model
-
-Platform earns entry fees only — never touches the prize pot. Winner takes full stake pot.
-
-| Tier | Total paid | Entry fee | Winner gets |
-|------|------------|-----------|-------------|
-| Starter | 10 kr | 1 kr | 18 kr |
-| Standard | 25 kr | 3 kr | 44 kr |
-| Serious | 50 kr | 4 kr | 92 kr |
-| High | 100 kr | 6 kr | 188 kr |
-| Elite | 250 kr | 10 kr | 480 kr |
-| Max | 500 kr | 15 kr | 970 kr |
-
-Tournaments: 15% entry fee. Full tier breakdown in `duel_product.md`.
+DUEL is a 1v1 skill-gaming platform where players compete for real money. 100% skill, no RNG. Legal framing: competition platform, not casino.
 
 ---
 
 ## Folder Structure
 
-```
-app/          — Next.js app router pages
-components/   — reusable UI components
-lib/          — supabase client, utilities
-types/        — TypeScript types
-```
+| Folder | What lives here |
+|--------|----------------|
+| `/Company` | Legal, finance, compliance, marketing, operations |
+| `/Research` | Market research, roadmap, launch strategy |
+| `/Games` | Game rules and UI specs per game |
+| `/Design` | Visual design system, hi-fi mockups, brand assets, placeholder site |
+| `/Templates` | Reusable note templates. Copy before use. |
+| `/app` | Next.js app code (`duel/`) — build layer |
+| `_brain/` | Claude meta-context — read every session |
 
 ---
 
-## Current State
+## Routing
 
-- [x] Next.js + Supabase + Tailwind installed
-- [x] Supabase client wired up (lib/supabase.ts)
-- [ ] Card Duel game UI
-- [ ] Card Duel game logic (server-side)
-- [ ] Matchmaking / lobby
-- [ ] Auth
-- [ ] Payments
+| Task | Read these files |
+|------|-----------------|
+| Anything money touches (payments, wallet, fees, MangoPay) | `_brain/agent-banker.md` |
+| Game rules, legal position, new game review, disputes | `_brain/agent-referee.md` |
+| Building or changing anything in `app/duel/` | `_brain/agent-builder.md` |
+| Any public-facing copy, brand, launch, campaigns | `_brain/agent-promoter.md` |
+| Product / design | `duel_product.md` |
+| UI / visual design system | `Design/style-guide.html` — tokens, surfaces, components, voice. Then `design.md` for build rules. |
+| Design a game mechanic | `duel_product.md` Platform Design Rule section |
+| Legal question (product rules) | `duel_product.md` Legal Framework section |
+| Legal entity / CVR / aftaler | `Company/legal.md` |
+| Finance / regnskab / betalinger | `Company/finance.md` |
+| Payment provider decision | `Company/payment-provider-research.md` — comparison, fees, status. Stripe BLOCKED. MangoPay primary candidate, inquiry sent. |
+| UI copy / locked strings / brand vocabulary | `_brain/copy-library.md` — every repeated UI string, match flow copy, broadcaster voice templates, financial labels, legal micro-copy. Pull from here when building. Also translation source for DE/SE expansion. |
+| Component inventory / what's already built | `app/duel/COMPONENTS.md` — every shared component, game component, lib utility, their props, surface, and usage. Read before building to avoid duplication. Also flags what does NOT exist yet. |
+| Compliance / hvidvask / GDPR | `Company/compliance.md` |
+| Marketing / brand / kanaler | `Company/marketing.md` |
+| Drift / hosting / support | `Company/operations.md` |
+| Roadmap / build planning | `Research/duel-roadmap_research.md` |
+| Legal market research | `Research/market-legality_research.md` |
+| Launch strategy | `Research/launch-strategy_research.md` |
+| Add a new game | `duel_product.md` Games section + `Templates/Duel-Game.md` |
+| Build or change UI for a specific game | `Games/[game-name]-ui.md` — animations, components, states. Also read `Games/[game-name].md` for rules/visibility. Exists for: card-duel, cycle-duel, drop-duel, ship-duel |
+| Game rules (authoritative) | `Games/[game-name].md` — master. `app/duel/GAMES.md` is a build summary derived from this. |
+| Unbuilt feature ideas (build-layer) | `app/duel/IDEAS.md` — short concepts waiting to be built. Promoted to GAMES.md or DESIGN.md when decided. |
+| Fully spec'd format research | `Research/Formats/` — deep specs with math, legal notes, variables. Not the same as IDEAS.md. |
+| Bracket tournament math (seat tiers, prize formula, time estimate) | `Research/Formats/bracket-tournament-format.md` |
+| Pre-launch testing | `app/duel/TEST.md` — full manual test checklist across all pages and features |
+| Master launch plan | `PLAN.md` — phased plan with gates and dependency map |
+| Terms and Conditions (draft) | `Company/terms-and-conditions.md` — draft for MangoPay submission, lawyer review before go-live |
+| AML Policy (draft) | `Company/aml-policy.md` — anti-money laundering policy for MangoPay submission |
+| Shareholding structure | `Company/shareholding-structure.md` — ownership chart for MangoPay submission |
+| MangoPay integration workflow | `Company/mangopay-integration-workflow.md` — money flow diagram for MangoPay submission |
+| Bookkeeping template (per-match, moms tracker) | `Company/bogforing-skabelon.md` — Google Sheets column spec, transaction types, bilag retention rules |
+| Supabase database schema | `app/duel/supabase/migrations/001_core_schema.sql` — profiles, matches, wallets, transactions tables |
+| Create any new note | Matching template from `/Templates` first |
+
+---
+
+## Legal Language (non-negotiable)
+
+Never write these words anywhere in DUEL content — docs, copy, UI text, research notes, code comments:
+- ❌ indsats, bet, wager, gamble, gambling, jackpot, odds, house edge
+
+Always use instead:
+- ✅ purse (prize pot), take (winnings), split (tie result), competition, skill game, match, platform
+- ✅ For the platform fee per match: use "entry fee" in legal/internal docs until the brand term is locked (candidates: cover, call fee, entry, seat — see Platform Vocabulary section in `duel_product.md`)
+
+Danish copy: never "indsats". "entry fee" stays English or use "startgebyr" until brand term decided.
+
+---
+
+## New Game Checklist
+
+Every game added to DUEL must have all of these before it's spec-complete:
+
+- [ ] Core mechanic in 1–2 sentences
+- [ ] Simultaneous decision mechanic confirmed — both players commit before either sees the other's move
+- [ ] Contested move rule specified (blocked or both-placed)
+- [ ] Crown mechanic compatibility noted
+- [ ] Legal note — zero RNG, 100% skill confirmed
+- [ ] Tiebreaker mechanic defined
+- [ ] Themes & variants table (base variant at minimum)
+- [ ] Future formats row (even if empty)
+- [ ] Added to the games list in `duel_product.md`
+
+Use `Templates/Duel-Game.md` as the base block.
+
+---
+
+## File Hygiene Rules
+
+**New file rule:** Every new `.md` file created in the vault must be added to the Routing table above in the same session. No exceptions. If a file has no routing entry, it is invisible to future sessions.
+
+**Memory rule:** Never create a `memory/` folder inside the vault. Memory files belong exclusively in `~/.claude/projects/C--Users-sylva-OneDrive-Skrivebord-DUEL/memory/` and are written via the memory tool. A vault `memory/` folder will not be loaded by the memory system and is dead weight.
+
+**Design session cleanup:** After a design session is archived into `Design/` or a named subfolder in `Design/`, delete the root-level `uploads/` source folder. The archive is the record — the source is redundant once bundled.
+
+---
+
+## Design-to-Build Workflow
+
+Discuss what the page needs to do, then build it directly in Next.js. The dev server is the live preview. Do not create new HTML prototypes — it doubles the work and the tokens.
+
+If an existing prototype exists in `/Design/` for the page being built, read it first as build reference. Existing prototypes are source of truth. New ones are not created.
+
+### Flow
+
+1. **Discuss direction** — page purpose, layout, copy, any decisions
+2. **Check `/Design/`** — if a prototype exists for this page, read it before touching code
+3. **Build directly in Next.js** — Claude codes it, dev server shows it live
+4. **Iterate in the codebase** — changes go straight into the component
+
+---
+
+## Before Building Game UI or Mechanics
+
+Before implementing any UI, logic, or interaction for a specific game — read both files:
+
+- `Games/[game-name].md` — rules, visibility, simultaneous lock, flow, tiebreaker
+- `Games/[game-name]-ui.md` — animations, component states, visual feel
+
+This is non-negotiable. Do not assume from memory. Read both files.
+
+---
+
+## Before Designing Something New
+
+Before writing a new spec, format, mechanic, or concept — check if something similar already exists:
+
+1. Scan `Research/` and `Research/Ideas/` for related formats or mechanics
+2. Check `duel_product.md` Games section for existing game specs
+3. If a match exists: adapt it, don't duplicate. Change the variables, extend the spec, or fork it with a note linking back to the original
+4. If nothing matches: proceed with new design
+
+Goal: reuse proven math and structure. New ideas should build on what's already spec'd.
+
+---
+
+## Data Before Design Changes
+
+Before changing variables in any format (cutoff %, match count, entry fee tiers, rake, etc.) or proposing a redesign — check if player data exists that should drive the decision.
+
+1. Check `duel_product.md` Metrics section for current numbers
+2. If data is available: use it. Win rate distributions tell you where to set cutoffs. Session drop-off tells you if match count is too long. Revenue per event tells you if rake is calibrated right.
+3. If no data yet: design with reasonable defaults and flag the variable as "to be tuned post-launch"
+4. After launch: decisions on format variables should reference actual player behavior, not assumptions
+
+Don't redesign something because it feels wrong. Redesign it because the numbers say so.
+
+---
+
+## Open Questions Maintenance
+
+After any session where a DUEL decision is made: mark resolved questions as resolved or remove the row. Do not let answered questions accumulate.
+
+---
+
+## Kanban Board
+
+`Claude-Kanban-Board.md` at the vault root. Check at session start.

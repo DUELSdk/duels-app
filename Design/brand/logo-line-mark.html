@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUEL — The Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #18181b;
+  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 64px 56px;
+  min-width: 900px;
+}
+
+.display {
+  font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  line-height: 1;
+  color: white;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 80px;
+}
+
+.section { margin-bottom: 96px; }
+
+.sec-header {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 48px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.sec-num {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+  font-weight: 300;
+  min-width: 24px;
+}
+
+.sec-name {
+  font-size: 14px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 300;
+}
+
+.sec-note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.18);
+  font-weight: 300;
+  font-style: italic;
+  margin-left: auto;
+}
+
+.variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-end;
+}
+
+.variant {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+}
+
+.sw {
+  background: #18181b;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sw-hero  { padding: 64px 80px; min-width: 320px; min-height: 240px; }
+.sw-og    { padding: 40px 48px; min-width: 260px; }
+.sw-nav   { padding: 18px 22px; }
+.sw-icon  { width: 80px; height: 80px; }
+.sw-fav   { width: 52px; height: 52px; }
+.sw-light { background: #f4f4f5; }
+
+/* THE LINE — base shape */
+.line-mark {
+  background: #dc2626;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* sizes */
+.lm-hero  { width: 6px;   height: 120px; }
+.lm-og    { width: 4px;   height: 72px;  }
+.lm-nav   { width: 2.5px; height: 32px;  }
+.lm-icon  { width: 4px;   height: 44px;  }
+.lm-fav   { width: 3px;   height: 30px;  }
+.lm-fav-xs{ width: 2px;   height: 20px;  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <span class="eyebrow">DUEL — The Line · 2026</span>
+  <span class="eyebrow" style="color:rgba(255,255,255,0.12);">Line as primary mark · DUEL as secondary</span>
+</header>
+
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- HERO — The mark alone                                       -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="sec-header">
+    <span class="sec-num">—</span>
+    <span class="sec-name">The Mark</span>
+    <span class="sec-note">The line is the logo. Everything else is secondary.</span>
+  </div>
+
+  <div class="variants" style="align-items:center;">
+
+    <!-- Pure mark, dark -->
+    <div class="variant">
+      <div class="sw sw-hero">
+        <div class="line-mark lm-hero"></div>
+      </div>
+      <span class="v-label">Primary Mark — Dark</span>
+    </div>
+
+    <!-- Pure mark, light -->
+    <div class="variant">
+      <div class="sw sw-hero sw-light">
+        <div class="line-mark lm-hero"></div>
+      </div>
+      <span class="v-label">Primary Mark — Light</span>
+    </div>
+
+    <!-- Mark + tagline -->
+    <div class="variant">
+      <div class="sw sw-hero">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+          <div class="line-mark lm-hero"></div>
+          <span class="eyebrow" style="color:rgba(255,255,255,0.2); letter-spacing:0.3em;">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Mark + Name Below</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- 01 · LINE LEADS — horizontal lockup, line dominates        -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="sec-header">
+    <span class="sec-num">01</span>
+    <span class="sec-name">Line Leads</span>
+    <span class="sec-note">Line is the anchor. DUEL hangs off it — secondary, quiet.</span>
+  </div>
+
+  <div class="variants">
+
+    <!-- OG horizontal -->
+    <div class="variant">
+      <div class="sw sw-og" style="min-width:300px;">
+        <div style="display:flex; align-items:center; gap:20px;">
+          <div class="line-mark lm-og"></div>
+          <span class="display" style="font-size:64px; letter-spacing:0.12em; color:rgba(255,255,255,0.9);">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">OG / Trademark</span>
+    </div>
+
+    <!-- Nav -->
+    <div class="variant">
+      <div class="sw sw-nav" style="min-width:180px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="line-mark lm-nav"></div>
+          <span class="display" style="font-size:26px; letter-spacing:0.12em; color:rgba(255,255,255,0.9);">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Nav / Compact</span>
+    </div>
+
+    <!-- Icon — line only -->
+    <div class="variant">
+      <div class="sw sw-icon">
+        <div class="line-mark lm-icon"></div>
+      </div>
+      <span class="v-label">Icon / Avatar</span>
+    </div>
+
+    <!-- Favicon -->
+    <div class="variant">
+      <div class="sw sw-fav">
+        <div class="line-mark lm-fav"></div>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+    <!-- Light bg -->
+    <div class="variant">
+      <div class="sw sw-og sw-light" style="min-width:300px;">
+        <div style="display:flex; align-items:center; gap:20px;">
+          <div class="line-mark lm-og"></div>
+          <span class="display" style="font-size:64px; letter-spacing:0.12em; color:rgba(24,24,27,0.85);">DUEL</span>
+        </div>
+      </div>
+      <span class="v-label">Light Background</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- 02 · LINE CENTER — DUEL split either side                  -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="sec-header">
+    <span class="sec-num">02</span>
+    <span class="sec-name">Split Sides</span>
+    <span class="sec-note">Line at center. DU left, EL right — two players separated by the line.</span>
+  </div>
+
+  <div class="variants">
+
+    <!-- OG split -->
+    <div class="variant">
+      <div class="sw sw-og" style="min-width:340px;">
+        <div style="display:flex; align-items:center; gap:0;">
+          <span class="display" style="font-size:80px; letter-spacing:0.02em; color:rgba(255,255,255,0.9); padding-right:20px;">DU</span>
+          <div class="line-mark lm-og"></div>
+          <span class="display" style="font-size:80px; letter-spacing:0.02em; color:rgba(255,255,255,0.9); padding-left:20px;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">OG / Trademark</span>
+    </div>
+
+    <!-- Nav split -->
+    <div class="variant">
+      <div class="sw sw-nav" style="min-width:200px;">
+        <div style="display:flex; align-items:center; gap:0;">
+          <span class="display" style="font-size:28px; letter-spacing:0.02em; padding-right:9px;">DU</span>
+          <div class="line-mark lm-nav"></div>
+          <span class="display" style="font-size:28px; letter-spacing:0.02em; padding-left:9px;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Nav / Compact</span>
+    </div>
+
+    <!-- Icon — split tiny -->
+    <div class="variant">
+      <div class="sw sw-icon">
+        <div style="display:flex; align-items:center; gap:0;">
+          <span class="display" style="font-size:22px; letter-spacing:0; padding-right:6px;">DU</span>
+          <div class="line-mark lm-icon"></div>
+          <span class="display" style="font-size:22px; letter-spacing:0; padding-left:6px;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Icon / Avatar</span>
+    </div>
+
+    <!-- Favicon — line only -->
+    <div class="variant">
+      <div class="sw sw-fav">
+        <div class="line-mark lm-fav"></div>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+    <!-- Light bg -->
+    <div class="variant">
+      <div class="sw sw-og sw-light" style="min-width:340px;">
+        <div style="display:flex; align-items:center; gap:0;">
+          <span class="display" style="font-size:80px; letter-spacing:0.02em; color:rgba(24,24,27,0.85); padding-right:20px;">DU</span>
+          <div class="line-mark lm-og"></div>
+          <span class="display" style="font-size:80px; letter-spacing:0.02em; color:rgba(24,24,27,0.85); padding-left:20px;">EL</span>
+        </div>
+      </div>
+      <span class="v-label">Light Background</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- 03 · LINE ONLY SYSTEM                                       -->
+<!-- At small sizes: just the line. Nothing else.               -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="sec-header">
+    <span class="sec-num">03</span>
+    <span class="sec-name">Scale System</span>
+    <span class="sec-note">As it shrinks, everything drops away. The line is the last thing left.</span>
+  </div>
+
+  <div class="variants" style="align-items:center;">
+
+    <!-- 96px -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:96px; height:96px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:5px; height:54px;"></div>
+      </div>
+      <span class="v-label">96 × 96</span>
+    </div>
+
+    <!-- 80px -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:80px; height:80px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:4px; height:44px;"></div>
+      </div>
+      <span class="v-label">80 × 80</span>
+    </div>
+
+    <!-- 64px -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:64px; height:64px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:4px; height:36px;"></div>
+      </div>
+      <span class="v-label">64 × 64</span>
+    </div>
+
+    <!-- 48px -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:48px; height:48px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:3px; height:28px;"></div>
+      </div>
+      <span class="v-label">48 × 48</span>
+    </div>
+
+    <!-- 32px -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:32px; height:32px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:2.5px; height:20px;"></div>
+      </div>
+      <span class="v-label">32 × 32</span>
+    </div>
+
+    <!-- 16px favicon -->
+    <div class="variant" style="align-items:center;">
+      <div style="width:20px; height:20px; background:#18181b; border:1px solid rgba(255,255,255,0.07); border-radius:2px; display:flex; align-items:center; justify-content:center;">
+        <div class="line-mark" style="width:2px; height:13px;"></div>
+      </div>
+      <span class="v-label">Favicon</span>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- 04 · LINE WEIGHT VARIANTS                                   -->
+<!-- Same concept, different weight — hairline to slab          -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<section class="section" style="margin-bottom:0;">
+  <div class="sec-header">
+    <span class="sec-num">04</span>
+    <span class="sec-name">Line Weight</span>
+    <span class="sec-note">Same mark, different weight. Pick one and own it.</span>
+  </div>
+
+  <div class="variants" style="align-items:center;">
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:1.5px; height:44px;"></div>
+      </div>
+      <span class="v-label">Hairline · 1.5px</span>
+    </div>
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:3px; height:44px;"></div>
+      </div>
+      <span class="v-label">Thin · 3px</span>
+    </div>
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:5px; height:44px;"></div>
+      </div>
+      <span class="v-label">Regular · 5px</span>
+    </div>
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:8px; height:44px;"></div>
+      </div>
+      <span class="v-label">Medium · 8px</span>
+    </div>
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:12px; height:44px;"></div>
+      </div>
+      <span class="v-label">Bold · 12px</span>
+    </div>
+
+    <div class="variant" style="align-items:center;">
+      <div class="sw sw-icon">
+        <div class="line-mark" style="width:18px; height:44px; border-radius:2px;"></div>
+      </div>
+      <span class="v-label">Slab · 18px</span>
+    </div>
+
+  </div>
+</section>
+
+
+</body>
+</html>

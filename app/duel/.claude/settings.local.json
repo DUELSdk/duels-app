@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/game/demo-game-0001)",
+      "Bash(curl -s http://localhost:3000/play/card-duel/demo)",
+      "Bash(xargs sed *)",
+      "Bash(powershell -Command 'Get-ChildItem -Recurse -Path app,components -Include '\\\\''*.tsx'\\\\'' | ForEach-Object { \\(Get-Content $_.FullName\\) -replace '\\\\''bg-zinc-900'\\\\'', '\\\\''bg-zinc-950'\\\\'' | Set-Content $_.FullName }')"
+    ]
+  }
+}

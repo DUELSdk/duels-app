@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUELS — Pitch</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #18181b;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.10);
+    --border-dim: rgba(255,255,255,0.06);
+    --red: #dc2626;
+    --red-dim: rgba(220,38,38,0.10);
+    --red-border: rgba(220,38,38,0.22);
+    --white: #ffffff;
+    --white-70: rgba(255,255,255,0.70);
+    --white-50: rgba(255,255,255,0.50);
+    --white-30: rgba(255,255,255,0.30);
+    --white-15: rgba(255,255,255,0.15);
+    --white-08: rgba(255,255,255,0.08);
+    --green: #34d399;
+    --amber: #fbbf24;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* ── DECK ───────────────────────────────── */
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 72px 96px;
+    opacity: 0;
+    transform: translateY(24px);
+    pointer-events: none;
+    transition: opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateY(-16px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  /* ── NAV ────────────────────────────────── */
+  .nav {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+  }
+
+  .nav-dots {
+    display: flex;
+    gap: 8px;
+  }
+
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--white-15);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .nav-dot.active {
+    background: var(--red);
+    transform: scale(1.3);
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--white-50);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .nav-btn:hover { border-color: var(--white-30); color: var(--white); }
+
+  .slide-counter {
+    position: fixed;
+    top: 28px;
+    right: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--white-30);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── TYPOGRAPHY ─────────────────────────── */
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--white-30);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .eyebrow.red { color: var(--red); opacity: 0.8; }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(64px, 10vw, 120px);
+    line-height: 0.9;
+    letter-spacing: 0.03em;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1;
+    letter-spacing: 0.03em;
+    margin-bottom: 24px;
+  }
+
+  .body-large {
+    font-size: clamp(16px, 2vw, 22px);
+    font-weight: 300;
+    color: var(--white-70);
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  .body-large strong { color: var(--white); font-weight: 500; }
+
+  .body {
+    font-size: clamp(13px, 1.4vw, 16px);
+    color: var(--white-50);
+    line-height: 1.7;
+  }
+
+  /* ── CARDS ──────────────────────────────── */
+  .card-row {
+    display: grid;
+    gap: 20px;
+    margin-top: 32px;
+  }
+
+  .card-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .card-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+
+  .card-red {
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    border-radius: 12px;
+    padding: 28px 36px;
+  }
+
+  .card-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--red);
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .card-sub {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white-30);
+    margin-bottom: 10px;
+  }
+
+  .card-body {
+    font-size: 13px;
+    color: var(--white-50);
+    line-height: 1.6;
+  }
+
+  /* ── STAT BLOCKS ────────────────────────── */
+  .stat-block {
+    text-align: left;
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--white-30);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
+  .stat-note {
+    font-size: 12px;
+    color: var(--white-40);
+    margin-top: 4px;
+  }
+
+  /* ── QUOTE ──────────────────────────────── */
+  .quote-block {
+    border-left: 3px solid var(--red);
+    padding-left: 28px;
+    margin: 24px 0;
+  }
+
+  .quote-text {
+    font-size: clamp(14px, 1.6vw, 18px);
+    font-style: italic;
+    color: var(--white);
+    line-height: 1.8;
+  }
+
+  .quote-source {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--white-30);
+    letter-spacing: 0.1em;
+    margin-top: 12px;
+  }
+
+  /* ── STATUS LIST ────────────────────────── */
+  .status-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .status-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: clamp(13px, 1.4vw, 16px);
+    color: var(--white-50);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-green { background: var(--green); }
+  .dot-amber { background: var(--amber); }
+  .dot-dim   { background: var(--white-30); }
+
+  /* ── SLIDE 1: TITLE ─────────────────────── */
+  .slide-title { justify-content: center; }
+
+  .title-mark {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(96px, 18vw, 200px);
+    line-height: 0.85;
+    letter-spacing: 0.04em;
+  }
+
+  .title-mark .s { color: var(--red); }
+
+  .title-line {
+    width: 48px;
+    height: 2px;
+    background: var(--red);
+    margin: 28px 0;
+  }
+
+  .title-tagline {
+    font-size: clamp(14px, 1.6vw, 18px);
+    font-weight: 300;
+    color: var(--white-50);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── DIVIDER ────────────────────────────── */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border-dim);
+    margin: 28px 0;
+  }
+
+  /* ── SEEKING ────────────────────────────── */
+  .seek-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .seek-list li {
+    font-size: clamp(14px, 1.5vw, 18px);
+    color: var(--white-50);
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .seek-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+  }
+
+  /* ── CONTACT SLIDE ──────────────────────── */
+  .contact-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(32px, 5vw, 56px);
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+
+  .contact-detail {
+    font-size: clamp(13px, 1.4vw, 16px);
+    color: var(--white-50);
+    line-height: 2;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .contact-detail span { color: var(--white-70); }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active" data-slide="0">
+    <div class="title-mark">DUEL<span class="s">S</span></div>
+    <div class="title-line"></div>
+    <div class="title-tagline">1v1 færdighedsspil om rigtige penge &nbsp;·&nbsp; Dansk platform &nbsp;·&nbsp; 2026</div>
+  </div>
+
+  <!-- SLIDE 2: PROBLEMET -->
+  <div class="slide" data-slide="1">
+    <div class="eyebrow">Muligheden</div>
+    <h2>Spillere vil udfordre hinanden.<br>Der er ingen god platform for det.</h2>
+    <p class="body-large" style="margin-top: 16px;">
+      Online spil er enten <strong>casino</strong> — husfordel, tilfældighed, reguleret som gambling —
+      eller gratis uden noget på højkant. Der er intet imellem for spillere der vil
+      <strong>konkurrere 1v1 om rigtige penge</strong> i færdighedsspil.
+    </p>
+  </div>
+
+  <!-- SLIDE 3: HVAD ER DUELS -->
+  <div class="slide" data-slide="2">
+    <div class="eyebrow">Konceptet</div>
+    <h2>En konkurrenceplatform.<br>Ikke et casino.</h2>
+    <div class="card-row cols-3" style="margin-top: 36px;">
+      <div class="card">
+        <div class="card-num">01</div>
+        <div class="card-title">Player vs Player</div>
+        <div class="card-body">Spillerne konkurrerer mod hinanden. Platformen deltager aldrig i spillet.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">02</div>
+        <div class="card-title">100% Færdighed</div>
+        <div class="card-body">Nul tilfældighed. Vinderen er altid den bedste spiller i det pågældende spil.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">03</div>
+        <div class="card-title">Entry Fee Model</div>
+        <div class="card-body">Platformen tjener en fast entry fee per match — uanset hvem der vinder.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: SPILLENE -->
+  <div class="slide" data-slide="3">
+    <div class="eyebrow">Tre spil ved launch</div>
+    <h2>Designet til<br>færdighedskamp.</h2>
+    <div class="card-row cols-3" style="margin-top: 32px;">
+      <div class="card">
+        <div class="card-num">SPIL 01</div>
+        <div class="card-title">Card Duel</div>
+        <div class="card-sub">Forseglet sekvens · RPS</div>
+        <div class="card-body">Begge spillere arrangerer 9 kort og låser simultant. Ren psykologi og pattern-reading.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">SPIL 02</div>
+        <div class="card-title">CycleDuel</div>
+        <div class="card-sub">5-type hierarki</div>
+        <div class="card-body">Kortspil med informationsafsløringer per blok. Bluffing og modtræk i realtid.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">SPIL 03</div>
+        <div class="card-title">DropDuel</div>
+        <div class="card-sub">Fire på Stribe variant</div>
+        <div class="card-body">Hemmelig blokplacering før spillet starter. Modificeret bræt, ny strategi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: FORRETNINGSMODEL -->
+  <div class="slide" data-slide="4">
+    <div class="eyebrow">Forretningsmodel</div>
+    <h2>Platformen tjener<br>på facilitering.</h2>
+    <div class="card-row cols-4" style="margin-top: 40px;">
+      <div class="card">
+        <div class="stat-label">Entry fee</div>
+        <div class="stat-value">10%</div>
+        <div class="stat-note">per standard match</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Turneringer</div>
+        <div class="stat-value">15%</div>
+        <div class="stat-note">entry fee</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Husfordel</div>
+        <div class="stat-value" style="color: var(--green);">0%</div>
+        <div class="stat-note">aldrig</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Vinder får</div>
+        <div class="stat-value">Alt</div>
+        <div class="stat-note">hele præmiepuljen</div>
+      </div>
+    </div>
+    <p class="body" style="margin-top: 24px; max-width: 560px;">
+      Platformen rører aldrig præmiepuljen. Entry fee er det samme uanset hvem der vinder — samme model som en skakturnering.
+    </p>
+  </div>
+
+  <!-- SLIDE 6: JURIDISK -->
+  <div class="slide" data-slide="5">
+    <div class="eyebrow red">Juridisk afklaring</div>
+    <h2>Ingen licens krævet.</h2>
+    <div class="card-red" style="margin-top: 28px;">
+      <div class="quote-block">
+        <div class="quote-text">
+          "I de fremførte eksempler er det Spillemyndighedens umiddelbare vurdering at der er tale om færdighedsspil, hvorfor det som udgangspunkt ikke er omfattet af spillelovens anvendelsesområde, og der derfor ikke kræves en tilladelse."
+        </div>
+        <div class="quote-source">SPILLEMYNDIGHEDEN &nbsp;·&nbsp; BREV AF 20. APRIL 2026 &nbsp;·&nbsp; JOURNAL 26-632347</div>
+      </div>
+    </div>
+    <p class="body" style="margin-top: 20px; max-width: 600px;">
+      Tre betingelser udløser spillelovens krav: betaling + præmiechance + tilfældighedselement.
+      DUELS-spil opfylder ikke betingelse 3. Platformen opererer lovligt uden casino-licens.
+    </p>
+  </div>
+
+  <!-- SLIDE 7: STATUS -->
+  <div class="slide" data-slide="6">
+    <div class="eyebrow">Nuværende status</div>
+    <h2>Platform under<br>opbygning.</h2>
+    <ul class="status-list">
+      <li><span class="dot dot-green"></span>CVR registreret — DUEL v/Silas Greve Abainza (PMV)</li>
+      <li><span class="dot dot-green"></span>Juridisk afklaring bekræftet — Spillemyndigheden</li>
+      <li><span class="dot dot-green"></span>Tre spilmekanikker specifikationsklare</li>
+      <li><span class="dot dot-green"></span>UI næsten færdig — Next.js platform under build</li>
+      <li><span class="dot dot-amber"></span>Betalingsintegration (MangoPay + Trustly) — igangværende</li>
+      <li><span class="dot dot-amber"></span>KYC / MitID integration — planlagt</li>
+      <li><span class="dot dot-dim"></span>Server-side game logic — planlagt</li>
+    </ul>
+  </div>
+
+  <!-- SLIDE 8: HVAD VI SØGER -->
+  <div class="slide" data-slide="7">
+    <div class="eyebrow">Hvad vi søger</div>
+    <h2>Rådgivning og<br>netværk.</h2>
+    <ul class="seek-list">
+      <li>Sparring om startup-rejsen og næste skridt mod launch</li>
+      <li>Connections mod angels og investorer i dansk startup-miljø</li>
+      <li>Erfaring med real-money platforme og compliance</li>
+      <li>Early advisors med domæneviden i gaming eller fintech</li>
+    </ul>
+  </div>
+
+  <!-- SLIDE 9: KONTAKT -->
+  <div class="slide" data-slide="8">
+    <div class="eyebrow">Founder</div>
+    <div class="contact-name">Silas Greve Abainza</div>
+    <div class="contact-detail">
+      <span>greveabainza@pm.me</span><br>
+      <span>duels.dk</span><br>
+      CVR · DUEL v/Silas Greve Abainza (PMV)
+    </div>
+    <div class="divider" style="max-width: 400px; margin-top: 40px;"></div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--white-30); letter-spacing: 0.1em; margin-top: 20px;">
+      DUELS &nbsp;·&nbsp; 2026
+    </div>
+  </div>
+
+</div>
+
+<!-- COUNTER -->
+<div class="slide-counter" id="counter">1 / 9</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn" id="prev">← TILBAGE</button>
+  <div class="nav-dots" id="dots"></div>
+  <button class="nav-btn" id="next">FREM →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dots.appendChild(d);
+  });
+
+  function goTo(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current - (current > n ? -1 : 0) + (current > n ? 0 : 0)].classList.remove('exit'), 300);
+
+    const prev = current;
+    current = n;
+
+    slides[prev].classList.remove('active');
+    setTimeout(() => slides[prev].classList.remove('exit'), 400);
+
+    slides[current].classList.add('active');
+
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  // Fix exit cleanup
+  slides.forEach(s => {
+    s.addEventListener('transitionend', () => {
+      if (!s.classList.contains('active')) s.classList.remove('exit');
+    });
+  });
+
+  document.getElementById('next').addEventListener('click', () => goTo(current + 1));
+  document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') goTo(current + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goTo(current - 1);
+  });
+</script>
+</body>
+</html>

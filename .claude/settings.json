@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(Start-Sleep -Seconds 6)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000\")",
+      "Bash(mkdir \"c:\\\\Users\\\\sylva\\\\OneDrive\\\\Skrivebord\\\\DUEL\\\\app\\\\duel\\\\app\\\\play\\\\[game]\\\\finding\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\sylva\\OneDrive\\Skrivebord\\DUEL\\app\\duel\\app\\play\\[game]",
+      "c:\\Users\\sylva\\OneDrive\\Skrivebord\\DUEL\\app\\duel\\app\\play\\[game]\\finding"
+    ]
+  }
+}
