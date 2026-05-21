@@ -75,7 +75,16 @@
       "WebFetch(domain:docs.adyen.com)",
       "WebFetch(domain:stripe.com)",
       "WebFetch(domain:mangopay.com)",
-      "WebFetch(domain:greenmoov.app)"
+      "WebFetch(domain:greenmoov.app)",
+      "PowerShell(Rename-Item *)",
+      "Bash(cat app/duel/vercel.json)",
+      "Bash(cat vercel.json)",
+      "WebFetch(domain:paynexpay.com)",
+      "WebFetch(domain:docs.idura.app)",
+      "WebFetch(domain:idura.eu)",
+      "Bash(npx supabase *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\sylva\\\\OneDrive\\\\Skrivebord\\\\DUEL\\\\app\\\\duel\\\\app\\\\**\\\\page.tsx\")",
+      "Bash(Remove-Item *)"
     ]
   },
   "prefersReducedMotion": true
