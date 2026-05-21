@@ -201,7 +201,7 @@ const TO_CARD: Record<Move, string> = { R: 'rock', P: 'paper', S: 'scissors' }
 const TO_MOVE: Record<string, Move> = { rock: 'R', paper: 'P', scissors: 'S' }
 
 function useWindowWidth() {
-  const [w, setW] = useState(1280)
+  const [w, setW] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1280)
   useEffect(() => {
     setW(window.innerWidth)
     const handle = () => setW(window.innerWidth)
@@ -253,7 +253,8 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const [sdBusy,        setSdBusy]        = useState(false)
   const [sdRevealPhase, setSdRevealPhase] = useState<'picking'|'waiting'|'revealed'>('picking')
   const [sdResult,      setSdResult]      = useState<{my:Move;opp:Move}|null>(null)
-  const prevSdCardsRef = useRef('')
+  const prevSdCardsRef  = useRef('')
+  const sdDecidedRef    = useRef(false)
 
   // ── Selection state ────────────────────────────────────────────
   const [selSlot, setSelSlot] = useState<number|null>(null)
@@ -368,8 +369,11 @@ function CardDuelMatch({ slug }: { slug: string }) {
     const key = `${myCard}-${oppCard}`
     if (myCard && oppCard && key !== prevSdCardsRef.current) {
       prevSdCardsRef.current = key
+      const myMove  = TO_MOVE[myCard]
+      const oppMove = TO_MOVE[oppCard]
+      if (cardOutcome(myMove, oppMove) !== 'tie') sdDecidedRef.current = true
       setSdRevealPhase('revealed')
-      setSdResult({ my: TO_MOVE[myCard], opp: TO_MOVE[oppCard] })
+      setSdResult({ my: myMove, opp: oppMove })
     }
     if (!myCard && !oppCard && prevSdCardsRef.current !== '') {
       prevSdCardsRef.current = ''
@@ -382,9 +386,10 @@ function CardDuelMatch({ slug }: { slug: string }) {
     if (!gs || gs.phase !== 'complete' || !revealDone) return
     const myScore  = iAmP1Ref.current ? gs.p1_score : gs.p2_score
     const oppScore = iAmP1Ref.current ? gs.p2_score : gs.p1_score
+    const delay = sdDecidedRef.current ? 3200 : 1200
     const id = setTimeout(() => {
       router.replace(`/play/${slug}/result?matchId=${matchId}&myScore=${myScore}&oppScore=${oppScore}`)
-    }, 1200)
+    }, delay)
     return () => clearTimeout(id)
   }, [gs, revealDone, matchId, router, slug])
 
@@ -619,24 +624,25 @@ function CardDuelMatch({ slug }: { slug: string }) {
       {revealIdx >= 0 && !revealDone && revealMyCard && revealOppCard && (
         <>
           {/* Score header */}
-          <section style={{ padding: '16px 40px', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <section style={{ padding: 'clamp(8px,1.5vw,16px) clamp(16px,4vw,40px)', borderBottom: div, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>YOU · {myHandle}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.85, color: 'var(--money)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{revealScore.me}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(28px,5.5vw,64px)', lineHeight: 0.85, color: 'var(--money)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{revealScore.me}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>● CLASH · SLOT {revealIdx + 1} / 9</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--bone-faint)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>SEQUENCES SEALED · WATCH IT PLAY</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1.1vw,12px)', color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>● CLASH · SLOT {revealIdx + 1} / 9</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(11px,1.4vw,16px)', color: 'var(--bone-faint)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>SEQUENCES SEALED · WATCH IT PLAY</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>OPP · {oppHandle}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.85, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{revealScore.opp}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(28px,5.5vw,64px)', lineHeight: 0.85, color: 'var(--alarm)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{revealScore.opp}</div>
             </div>
           </section>
 
           {/* Main clash arena */}
           <section style={{
-            flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px',
+            flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+            padding: 'clamp(12px,3vw,40px)',
             background: 'radial-gradient(ellipse at center, var(--concrete-2) 0%, var(--concrete) 80%)',
             position: 'relative', overflow: 'hidden',
           }}>
@@ -659,7 +665,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
               )}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 48 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(12px,4vw,48px)', width: '100%' }}>
               {/* My card */}
               <div style={{ textAlign: 'center', flex: 1, maxWidth: 320 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 16 }}>YOUR SLOT {revealIdx + 1}</div>
@@ -687,9 +693,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
               </div>
 
               {/* VS */}
-              <div style={{ textAlign: 'center', position: 'relative' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, lineHeight: 0.85, color: 'var(--bone-faint)', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>VS</span>
-                <div style={{ position: 'absolute', top: '50%', left: '50%', width: 200, height: 200, border: '2px solid var(--money)', borderRadius: '50%', transform: 'translate(-50%,-50%)', opacity: 0.2 }} />
+              <div style={{ textAlign: 'center', position: 'relative', flexShrink: 0 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(28px,6vw,72px)', lineHeight: 0.85, color: 'var(--bone-faint)', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>VS</span>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', width: 'clamp(60px,16vw,200px)', height: 'clamp(60px,16vw,200px)', border: '2px solid var(--money)', borderRadius: '50%', transform: 'translate(-50%,-50%)', opacity: 0.2 }} />
                 <AnimatePresence>
                   {clashPhase === 'facedown' && (
                     <motion.div
@@ -731,7 +737,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
             </div>
 
             {/* Result announcement */}
-            <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, textAlign: 'center' }}>
+            <div style={{ marginTop: 'clamp(10px,2.5vh,28px)', textAlign: 'center', width: '100%' }}>
               <AnimatePresence mode="wait">
                 {clashPhase === 'facedown' ? (
                   <motion.div
@@ -740,7 +746,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.1 } }}
                     transition={{ duration: 0.2 }}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--bone-ghost)', letterSpacing: '0.26em', fontWeight: 600 }}
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(10px,1.2vw,13px)', color: 'var(--bone-ghost)', letterSpacing: '0.26em', fontWeight: 600 }}
                   >SLOT {revealIdx + 1} · RESOLVING</motion.div>
                 ) : (
                   <motion.div
@@ -750,11 +756,11 @@ function CardDuelMatch({ slug }: { slug: string }) {
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <div style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 72, lineHeight: 0.9,
+                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(20px,5vw,72px)', lineHeight: 0.9,
                       letterSpacing: '-0.02em', textTransform: 'uppercase',
                       color: revealResult === 'win' ? 'var(--money)' : revealResult === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)',
                     }}>{clashCopy}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bone-on-dark)', letterSpacing: '0.20em', marginTop: 10, fontWeight: 600 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1.1vw,12px)', color: 'var(--bone-on-dark)', letterSpacing: '0.20em', marginTop: 8, fontWeight: 600 }}>
                       {revealResult === 'win' ? `${myHandle} TAKES SLOT ${revealIdx + 1} · +1` :
                        revealResult === 'loss' ? `${oppHandle} TAKES SLOT ${revealIdx + 1} · +1` :
                        `SLOT ${revealIdx + 1} · TIE · NO POINTS`}
@@ -766,7 +772,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
           </section>
 
           {/* Progress strip */}
-          <section style={{ padding: '16px 40px', background: 'var(--concrete-2)', borderTop: div }}>
+          <section style={{ padding: 'clamp(8px,1.5vw,16px) clamp(16px,4vw,40px)', background: 'var(--concrete-2)', borderTop: div, flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em' }}>SLOT PROGRESS · {revealIdx + 1} / 9</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-faint)', letterSpacing: '0.10em' }}>
@@ -789,23 +795,23 @@ function CardDuelMatch({ slug }: { slug: string }) {
       )}
 
       {/* ── SUDDEN DEATH ────────────────────────────────────────── */}
-      {gs.phase === 'sudden_death' && (revealDone || !gs.round_results) && (
+      {(gs.phase === 'sudden_death' || (gs.phase === 'complete' && sdDecidedRef.current)) && (revealDone || !gs.round_results) && (
         <>
-          <section style={{ padding: '28px 40px', textAlign: 'center', borderBottom: div }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
+          <section style={{ padding: 'clamp(12px,2.5vw,28px) clamp(16px,4vw,40px)', textAlign: 'center', borderBottom: div, flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1.1vw,12px)', color: 'var(--alarm)', letterSpacing: '0.22em', fontWeight: 700 }}>
               ● FULL HAND USED · TIED {gs.p1_score} — {gs.p2_score} · ONE CARD DECIDES
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 140, lineHeight: 0.82, marginTop: 6, color: 'var(--alarm)', letterSpacing: '-0.04em', textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(40px,11vw,140px)', lineHeight: 0.82, marginTop: 4, color: 'var(--alarm)', letterSpacing: '-0.04em', textTransform: 'uppercase' }}>
               SUDDEN<br />DEATH.
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--bone-faint)', marginTop: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(12px,1.6vw,18px)', color: 'var(--bone-faint)', marginTop: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               {sdRevealPhase === 'picking' ? 'Pick one of three. So do they. Highest beats wins.' :
                sdRevealPhase === 'waiting' ? 'Both cards locked. Outcome unknown.' : 'Cards revealed.'}
             </div>
             {gs.sd_round > 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', marginTop: 8, letterSpacing: '0.14em' }}>REPLAY · ROUND {gs.sd_round + 1}</div>}
           </section>
 
-          <section style={{ flex: 1, background: 'var(--concrete-2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 40px', position: 'relative', overflow: 'hidden' }}>
+          <section style={{ flex: 1, minHeight: 0, background: 'var(--concrete-2)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(16px,3vw,32px) clamp(16px,4vw,40px)', position: 'relative', overflow: 'hidden' }}>
             <AnimatePresence mode="wait">
 
               {/* ── PICKING ── */}
@@ -814,7 +820,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 28, textAlign: 'center' }}>
                     PICK ONE · OPPONENT PICKS SIMULTANEOUSLY
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 32 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(12px,3vw,32px)' }}>
                     {(['R', 'P', 'S'] as Move[]).map(k => (
                       <div key={k} style={{ textAlign: 'center' }}>
                         <div onClick={() => handleSdPick(k)} style={{ cursor: 'pointer' }}>
@@ -854,90 +860,116 @@ function CardDuelMatch({ slug }: { slug: string }) {
                     )}
                   </AnimatePresence>
 
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 56 }}>
-                    {/* My card */}
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 14 }}>YOU · LOCKED IN</div>
-                      <CDCard
-                        k={sdPick} size={160}
-                        active={sdRevealPhase === 'waiting'}
-                        win={sdRevealPhase === 'revealed' && !!sdResult && cardOutcome(sdResult.my, sdResult.opp) === 'win'}
-                        loss={sdRevealPhase === 'revealed' && !!sdResult && cardOutcome(sdResult.my, sdResult.opp) === 'loss'}
-                        tie={sdRevealPhase === 'revealed' && !!sdResult && cardOutcome(sdResult.my, sdResult.opp) === 'tie'}
-                      />
-                    </div>
-
-                    {/* VS */}
-                    <div style={{ textAlign: 'center' }}>
-                      <motion.div
-                        animate={sdRevealPhase === 'waiting' ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-                        transition={{ duration: 1.3, repeat: sdRevealPhase === 'waiting' ? Infinity : 0, ease: 'easeInOut' }}
-                        style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 60, lineHeight: 0.85, letterSpacing: '-0.02em', textTransform: 'uppercase', color: sdRevealPhase === 'waiting' ? 'var(--alarm)' : 'var(--bone-faint)' }}
-                      >VS</motion.div>
-                    </div>
-
-                    {/* Opp card */}
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 14 }}>OPP · {oppHandle}</div>
-                      <div style={{ perspective: '700px' }}>
-                        <AnimatePresence mode="wait">
-                          {sdRevealPhase === 'waiting' ? (
-                            <motion.div key={`opp-hidden-${gs.sd_round}`} exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}>
-                              <motion.div
-                                animate={{ boxShadow: ['0 0 0px 0px rgba(239,0,0,0)', '0 0 22px 4px rgba(239,0,0,0.28)', '0 0 0px 0px rgba(239,0,0,0)'] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                              >
-                                <CDCard faceDown size={160} />
-                              </motion.div>
-                            </motion.div>
-                          ) : (
-                            <motion.div key={`opp-revealed-${gs.sd_round}`} initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }} transition={{ duration: 0.26, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}>
-                              {sdResult && (
-                                <CDCard
-                                  k={sdResult.opp} size={160}
-                                  win={cardOutcome(sdResult.my, sdResult.opp) === 'loss'}
-                                  loss={cardOutcome(sdResult.my, sdResult.opp) === 'win'}
-                                  tie={cardOutcome(sdResult.my, sdResult.opp) === 'tie'}
-                                />
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'center', marginTop: 36, minHeight: 64 }}>
-                    <AnimatePresence mode="wait">
-                      {sdRevealPhase === 'waiting' && (
-                        <motion.div key="sd-waiting-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.2 }}>
-                          <motion.div
-                            animate={{ opacity: [0.45, 1, 0.45] }}
-                            transition={{ duration: 1.0, repeat: Infinity, ease: 'easeInOut' }}
-                            style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--alarm)', letterSpacing: '0.26em', fontWeight: 700 }}
-                          >● BOTH LOCKED · REVEALING</motion.div>
-                        </motion.div>
-                      )}
-                      {sdRevealPhase === 'revealed' && sdResult && (
-                        <motion.div key="sd-result-text" initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}>
-                          <div style={{
-                            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 64, lineHeight: 0.9,
-                            letterSpacing: '-0.02em', textTransform: 'uppercase',
-                            color: cardOutcome(sdResult.my, sdResult.opp) === 'win' ? 'var(--money)' : cardOutcome(sdResult.my, sdResult.opp) === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)',
-                          }}>
-                            {cardOutcome(sdResult.my, sdResult.opp) === 'tie' ? 'TIE — AGAIN.' : cardOutcome(sdResult.my, sdResult.opp) === 'win' ? `${myHandle} WINS.` : `${oppHandle} WINS.`}
+                  {(() => {
+                    const sdCardSize = Math.max(80, Math.min(160, Math.floor(vw * 0.14)))
+                    const sdOutcome  = sdResult ? cardOutcome(sdResult.my, sdResult.opp) : null
+                    const sdDecisive = sdOutcome !== null && sdOutcome !== 'tie'
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(16px,5vw,56px)' }}>
+                          {/* My card */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10 }}>YOU · {myHandle}</div>
+                            <CDCard
+                              k={sdPick} size={sdCardSize}
+                              active={sdRevealPhase === 'waiting'}
+                              win={sdRevealPhase === 'revealed' && sdOutcome === 'win'}
+                              loss={sdRevealPhase === 'revealed' && sdOutcome === 'loss'}
+                              tie={sdRevealPhase === 'revealed' && sdOutcome === 'tie'}
+                            />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+
+                          {/* VS */}
+                          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                            <motion.div
+                              animate={sdRevealPhase === 'waiting' ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+                              transition={{ duration: 1.3, repeat: sdRevealPhase === 'waiting' ? Infinity : 0, ease: 'easeInOut' }}
+                              style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px,5vw,56px)', lineHeight: 0.85, letterSpacing: '-0.02em', textTransform: 'uppercase', color: sdRevealPhase === 'waiting' ? 'var(--alarm)' : sdDecisive ? (sdOutcome === 'win' ? 'var(--money)' : 'var(--alarm)') : 'var(--bone-faint)' }}
+                            >VS</motion.div>
+                          </div>
+
+                          {/* Opp card */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10 }}>OPP · {oppHandle}</div>
+                            <div style={{ perspective: '700px' }}>
+                              <AnimatePresence mode="wait">
+                                {sdRevealPhase === 'waiting' ? (
+                                  <motion.div key={`opp-hidden-${gs.sd_round}`} exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } }}>
+                                    <motion.div
+                                      animate={{ boxShadow: ['0 0 0px 0px rgba(239,0,0,0)', '0 0 22px 4px rgba(239,0,0,0.28)', '0 0 0px 0px rgba(239,0,0,0)'] }}
+                                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                    >
+                                      <CDCard faceDown size={sdCardSize} />
+                                    </motion.div>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div key={`opp-revealed-${gs.sd_round}`} initial={{ rotateY: -90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }} transition={{ duration: 0.26, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }}>
+                                    {sdResult && (
+                                      <CDCard
+                                        k={sdResult.opp} size={sdCardSize}
+                                        win={sdOutcome === 'loss'}
+                                        loss={sdOutcome === 'win'}
+                                        tie={sdOutcome === 'tie'}
+                                      />
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Result text */}
+                        <div style={{ textAlign: 'center', marginTop: 'clamp(12px,2.5vh,28px)' }}>
+                          <AnimatePresence mode="wait">
+                            {sdRevealPhase === 'waiting' && (
+                              <motion.div key="sd-waiting-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.2 }}>
+                                <motion.div
+                                  animate={{ opacity: [0.45, 1, 0.45] }}
+                                  transition={{ duration: 1.0, repeat: Infinity, ease: 'easeInOut' }}
+                                  style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(10px,1.1vw,13px)', color: 'var(--alarm)', letterSpacing: '0.26em', fontWeight: 700 }}
+                                >● BOTH LOCKED · REVEALING</motion.div>
+                              </motion.div>
+                            )}
+                            {sdRevealPhase === 'revealed' && sdResult && (
+                              <motion.div key="sd-result-text" initial={{ opacity: 0, y: 14, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
+                                {sdDecisive && (
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1vw,11px)', color: 'var(--bone-ghost)', letterSpacing: '0.22em', marginBottom: 6 }}>
+                                    SUDDEN DEATH · MATCH DECIDED
+                                  </div>
+                                )}
+                                <div style={{
+                                  fontFamily: 'var(--font-display)', fontWeight: 800,
+                                  fontSize: sdDecisive ? 'clamp(36px,8vw,104px)' : 'clamp(24px,5.5vw,64px)',
+                                  lineHeight: 0.88, letterSpacing: '-0.02em', textTransform: 'uppercase',
+                                  color: sdOutcome === 'win' ? 'var(--money)' : sdOutcome === 'loss' ? 'var(--alarm)' : 'var(--bone-faint)',
+                                }}>
+                                  {sdOutcome === 'tie' ? 'TIE — AGAIN.' : sdOutcome === 'win' ? `${myHandle} WINS.` : `${oppHandle} WINS.`}
+                                </div>
+                                {sdDecisive && (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.4, duration: 0.3 }}
+                                    style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(9px,1vw,11px)', letterSpacing: '0.18em', marginTop: 10, fontWeight: 700, color: sdOutcome === 'win' ? 'var(--money)' : 'var(--alarm)' }}
+                                  >
+                                    {sdOutcome === 'win' ? `● ${myHandle} TAKES THE PURSE` : `● ${oppHandle} TAKES THE PURSE`}
+                                  </motion.div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </motion.div>
               )}
 
             </AnimatePresence>
           </section>
 
-          <section style={{ padding: '20px 40px', textAlign: 'center' }}>
+          <section style={{ padding: 'clamp(10px,2vw,20px) clamp(16px,4vw,40px)', textAlign: 'center', flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>TIE AGAIN → INSTANT REPLAY · NO LIMIT</div>
           </section>
         </>
