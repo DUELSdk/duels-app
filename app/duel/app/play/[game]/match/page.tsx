@@ -200,10 +200,28 @@ type CDGameState = {
 const TO_CARD: Record<Move, string> = { R: 'rock', P: 'paper', S: 'scissors' }
 const TO_MOVE: Record<string, Move> = { rock: 'R', paper: 'P', scissors: 'S' }
 
+function useWindowWidth() {
+  const [w, setW] = useState(1280)
+  useEffect(() => {
+    setW(window.innerWidth)
+    const handle = () => setW(window.innerWidth)
+    window.addEventListener('resize', handle)
+    return () => window.removeEventListener('resize', handle)
+  }, [])
+  return w
+}
+
 function CardDuelMatch({ slug }: { slug: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const matchId = searchParams.get('matchId')
+
+  // ── Responsive sizing ────────────────────────────────────────────
+  const vw       = useWindowWidth()
+  const px       = vw < 640 ? 16 : vw < 1000 ? 24 : 40
+  const cardGap  = vw < 640 ? 5 : 7
+  const cardSize = Math.max(44, Math.min(72, Math.floor((vw - px * 2 - cardGap * 8) / 9)))
+  const chipSize = Math.max(30, Math.min(44, Math.floor(cardSize * 0.60)))
 
   // ── Supabase state ──────────────────────────────────────────────
   const [iAmP1,     setIAmP1]     = useState(false)
@@ -226,8 +244,9 @@ function CardDuelMatch({ slug }: { slug: string }) {
   const [slotResults, setSlotResults] = useState<Array<'win'|'loss'|'tie'|'pending'>>(Array(9).fill('pending'))
   const [revealScore, setRevealScore] = useState({ me: 0, opp: 0 })
   const [revealDone,  setRevealDone]  = useState(false)
-  const revealStartedRef = useRef(false)
-  const prevPhaseRef     = useRef('')
+  const revealStartedRef  = useRef(false)
+  const roundResultsRef   = useRef<string[] | null>(null)
+  const prevPhaseRef      = useRef('')
 
   // ── Sudden death ────────────────────────────────────────────────
   const [sdPick,        setSdPick]        = useState<Move|null>(null)
@@ -306,6 +325,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
   useEffect(() => {
     if (!gs || !gs.round_results || revealStartedRef.current) return
     revealStartedRef.current = true
+    roundResultsRef.current = gs.round_results as string[]
     setRevealIdx(0)
     setSlotResults(Array(9).fill('pending'))
     setRevealScore({ me: 0, opp: 0 })
@@ -313,12 +333,16 @@ function CardDuelMatch({ slug }: { slug: string }) {
     setClashPhase('facedown')
   }, [gs])
 
-  // ── Walk reveal slot by slot ─────────────────────────────────────
+  // ── Walk reveal slot by slot — only depends on revealIdx, NOT gs ──
+  // gs is excluded from deps intentionally: the 2s poll re-sets gs every 2s
+  // which would cancel the 4.4s advance timeout before it fires, sticking on slot 1.
+  // roundResultsRef captures the data once at reveal start.
   useEffect(() => {
-    if (!gs || !gs.round_results || revealIdx < 0 || revealIdx >= 9) return
+    if (!roundResultsRef.current || revealIdx < 0 || revealIdx >= 9) return
     setClashPhase('facedown')
+    const rr = roundResultsRef.current
     const flipId = setTimeout(() => {
-      const raw = gs.round_results![revealIdx]
+      const raw = rr[revealIdx]
       const result: 'win'|'loss'|'tie' =
         raw === 'tie' ? 'tie' :
         (raw === 'player1' && iAmP1Ref.current) || (raw === 'player2' && !iAmP1Ref.current) ? 'win' : 'loss'
@@ -334,7 +358,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
       }
     }, 4400)
     return () => { clearTimeout(flipId); clearTimeout(advId) }
-  }, [gs, revealIdx])
+  }, [revealIdx])
 
   // ── SD reveal when both cards appear ────────────────────────────
   useEffect(() => {
@@ -470,56 +494,56 @@ function CardDuelMatch({ slug }: { slug: string }) {
       {gs.phase === 'lock' && (
         <>
           {/* Top bar */}
-          <div style={{ padding: '10px 40px', borderBottom: div, background: 'var(--concrete-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', letterSpacing: '0.16em', fontWeight: 700 }}>
+          <div style={{ padding: `8px ${px}px`, borderBottom: div, background: 'var(--concrete-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--alarm)', letterSpacing: '0.14em', fontWeight: 700 }}>
               ● {myHand.length > 0 ? `${9 - myHand.length} / 9 PLACED` : 'ALL PLACED · READY TO SEAL'}
             </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.12em' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>
               OPP · <span style={{ color: oppLocked ? 'var(--money)' : 'var(--bone-ghost)', fontWeight: 700 }}>
                 {oppLocked ? 'SEALED' : 'ARRANGING'}
               </span>
             </span>
           </div>
 
-          {/* Main: two halves */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Main: two halves — YOUR HALF gets more space */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
             {/* OPP HALF */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 40px 10px', background: 'var(--concrete-2)', overflow: 'hidden' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 12, textAlign: 'center' }}>
+            <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', padding: `12px ${px}px 8px`, background: 'var(--concrete-2)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8, textAlign: 'center' }}>
                 OPP · {oppHandle} · {oppLocked ? 'SEALED' : 'ARRANGING'} · MOVES HIDDEN
               </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flex: 1, alignItems: 'center', overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: cardGap, justifyContent: 'center', overflowX: 'auto' }}>
                 {Array.from({ length: 9 }).map((_, i) => (
-                  <CDCard key={i} faceDown size={72} slot={i + 1} />
+                  <CDCard key={i} faceDown size={cardSize} slot={i + 1} />
                 ))}
               </div>
             </div>
 
             {/* VS divider */}
-            <div style={{ flexShrink: 0, height: 48, display: 'flex', alignItems: 'center', padding: '0 40px', background: 'var(--concrete)' }}>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10 }}>
+            <div style={{ flexShrink: 0, height: 36, display: 'flex', alignItems: 'center', padding: `0 ${px}px`, background: 'var(--concrete)' }}>
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>{myHandle}</span>
               </div>
-              <div style={{ width: 56, textAlign: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--bone-ghost)', letterSpacing: '0.22em' }}>VS</span>
+              <div style={{ width: 48, textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: 'var(--bone-ghost)', letterSpacing: '0.22em' }}>VS</span>
               </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.10em' }}>{oppHandle}</span>
               </div>
             </div>
 
-            {/* YOUR HALF */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 40px', background: 'var(--concrete-3)', overflowY: 'auto' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-on-dark)', letterSpacing: '0.14em', marginBottom: 12, fontWeight: 600, textAlign: 'center' }}>
+            {/* YOUR HALF — gets remaining space, scrollable */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: `12px ${px}px 8px`, background: 'var(--concrete-3)', overflowY: 'auto' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-on-dark)', letterSpacing: '0.12em', marginBottom: 10, fontWeight: 600, textAlign: 'center' }}>
                 YOU · {myHandle} ·{' '}
-                {selHand !== null ? 'CLICK A SLOT TO PLACE' :
-                 selSlot !== null ? 'CLICK SLOT OR HAND CARD TO MOVE' :
-                 'CLICK A CARD TO SELECT'}
+                {selHand !== null ? 'TAP A SLOT TO PLACE' :
+                 selSlot !== null ? 'TAP SLOT OR HAND CARD TO MOVE' :
+                 'TAP A CARD TO SELECT'}
               </div>
 
               {/* Sequence slots */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: cardGap, justifyContent: 'center' }}>
                 {mySlots.map((k, i) => (
                   <div
                     key={i}
@@ -528,12 +552,13 @@ function CardDuelMatch({ slug }: { slug: string }) {
                       cursor: myLocked ? 'default' : 'pointer',
                       outline: k === null && selHand !== null ? '1.5px solid rgba(239,0,0,0.45)' : 'none',
                       outlineOffset: 2,
+                      flexShrink: 0,
                     }}
                   >
                     <CDCard
                       k={k ?? undefined}
                       slot={i + 1}
-                      size={72}
+                      size={cardSize}
                       active={selSlot === i}
                       empty={k === null}
                       sealed={myLocked && k !== null}
@@ -543,16 +568,16 @@ function CardDuelMatch({ slug }: { slug: string }) {
               </div>
 
               {/* Hand */}
-              <div style={{ marginTop: 'auto', paddingTop: 14 }}>
+              <div style={{ marginTop: 12 }}>
                 {myHand.length > 0 ? (
                   <>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.14em', marginBottom: 10, textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--bone-ghost)', letterSpacing: '0.12em', marginBottom: 8, textAlign: 'center' }}>
                       HAND · {myHand.length} REMAINING
                     </div>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', gap: cardGap, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {myHand.map((k, i) => (
-                        <div key={i} onClick={() => handleHandClick(i)} style={{ cursor: myLocked ? 'default' : 'pointer' }}>
-                          <CDCard k={k} size={72} active={selHand === i} dim={selHand !== null && selHand !== i} />
+                        <div key={i} onClick={() => handleHandClick(i)} style={{ cursor: myLocked ? 'default' : 'pointer', flexShrink: 0 }}>
+                          <CDCard k={k} size={cardSize} active={selHand === i} dim={selHand !== null && selHand !== i} />
                         </div>
                       ))}
                     </div>
@@ -567,7 +592,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
           </div>
 
           {/* Footer */}
-          <div style={{ padding: '14px 40px', display: 'flex', gap: 12, alignItems: 'center', borderTop: div, flexShrink: 0 }}>
+          <div style={{ padding: `12px ${px}px`, display: 'flex', gap: 12, alignItems: 'center', borderTop: div, flexShrink: 0 }}>
             {lockError && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--alarm)', letterSpacing: '0.10em' }}>{lockError}</span>}
             {myLocked ? (
               <motion.div
@@ -651,7 +676,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                       <CDCard
                         k={clashPhase === 'revealed' ? revealMyCard : undefined}
                         faceDown={clashPhase === 'facedown'}
-                        slot={revealIdx + 1} size={180}
+                        slot={revealIdx + 1} size={Math.min(180, Math.floor(vw * 0.18))}
                         win={clashPhase === 'revealed' && revealResult === 'win'}
                         loss={clashPhase === 'revealed' && revealResult === 'loss'}
                         tie={clashPhase === 'revealed' && revealResult === 'tie'}
@@ -694,7 +719,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                       <CDCard
                         k={clashPhase === 'revealed' ? revealOppCard : undefined}
                         faceDown={clashPhase === 'facedown'}
-                        slot={revealIdx + 1} size={180}
+                        slot={revealIdx + 1} size={Math.min(180, Math.floor(vw * 0.18))}
                         win={clashPhase === 'revealed' && revealResult === 'loss'}
                         loss={clashPhase === 'revealed' && revealResult === 'win'}
                         tie={clashPhase === 'revealed' && revealResult === 'tie'}
@@ -755,7 +780,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                   state={i === revealIdx ? 'current' : state}
                   k={state !== 'pending' && i < revealIdx && mySeq ? TO_MOVE[mySeq[i]] : undefined}
                   isCurrent={i === revealIdx}
-                  size={44}
+                  size={chipSize}
                 />
               ))}
             </div>
@@ -793,7 +818,7 @@ function CardDuelMatch({ slug }: { slug: string }) {
                     {(['R', 'P', 'S'] as Move[]).map(k => (
                       <div key={k} style={{ textAlign: 'center' }}>
                         <div onClick={() => handleSdPick(k)} style={{ cursor: 'pointer' }}>
-                          <CDCard k={k} size={150} />
+                          <CDCard k={k} size={Math.min(150, Math.floor(vw * 0.15))} />
                         </div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bone-ghost)', marginTop: 12, letterSpacing: '0.14em' }}>TAP</div>
                       </div>
