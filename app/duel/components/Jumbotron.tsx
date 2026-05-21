@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 // ── Design helpers ───────────────────────────────────────────────────────────
 const mono: React.CSSProperties = {
@@ -40,55 +41,6 @@ export type JumboState =
   | { kind: 'final';   match: LiveMatch; tournamentName: string; prize: number; round: string }
   | { kind: 'between'; schedule: ScheduleItem[] }
 
-// ── Mock data ────────────────────────────────────────────────────────────────
-// When Supabase is live: replace these with a real query in Jumbotron().
-// Selection rule: on mount, pick the highest-stake active match and lock it.
-// Never switch mid-match even if a bigger one starts — let it play out.
-// When the featured match ends, wait 5s then re-query.
-
-const MOCK_LIVE: JumboState = {
-  kind: 'live',
-  match: {
-    id: '4F2A', gameLabel: 'CARD DUEL', stakeKr: 250, pot: 480,
-    playerA: 'LASERHAWK', playerB: 'NOVASTRIKE', watching: 234,
-    status: 'NOVASTRIKE locking slot 6',
-    board: {
-      kind: 'card-duel',
-      a: ['P','R','S','S','R', null, null, null, null],
-      b: ['R','P','R','P','S', null, null, null, null],
-    },
-  },
-}
-
-const MOCK_FINAL: JumboState = {
-  kind: 'final',
-  tournamentName: 'THURSDAY NIGHT SEALED 50', prize: 1360, round: 'FINAL · MATCH 6 OF 6',
-  match: {
-    id: 'TNS50-F', gameLabel: 'CARD DUEL', stakeKr: 50, pot: 1360,
-    playerA: 'SANDMAN', playerB: 'NOVASTRIKE', watching: 891,
-    status: 'Sandman leads 4 — 3 · slot 8 pending',
-    board: {
-      kind: 'card-duel',
-      a: ['R','P','S','P','R','P','S', null, null],
-      b: ['S','R','P','R','S','R','P', null, null],
-    },
-  },
-}
-
-const MOCK_BETWEEN: JumboState = {
-  kind: 'between',
-  schedule: [
-    { day: 'TONIGHT', time: '20:00', startsIn: 'IN 1H 14M', name: 'THURSDAY NIGHT SEALED 50', game: 'CARD DUEL', pool: 1360, seats: '22/32' },
-    { day: 'TONIGHT', time: '21:30', startsIn: 'IN 2H 44M', name: 'THE FRIDAY DROP',           game: 'DROP DUEL', pool: 980,  seats: '3/16'  },
-    { day: 'SAT',     time: '18:00', startsIn: 'SATURDAY',  name: 'WEEKEND SEALED 100',         game: 'CARD DUEL', pool: 2720, seats: '0/64'  },
-  ],
-}
-
-const STATES: { label: string; state: JumboState }[] = [
-  { label: 'LIVE',    state: MOCK_LIVE    },
-  { label: 'FINAL',   state: MOCK_FINAL   },
-  { label: 'BETWEEN', state: MOCK_BETWEEN },
-]
 
 // ── Card Duel board ──────────────────────────────────────────────────────────
 function cardResult(a: CardMove, b: CardMove): 'win' | 'loss' | 'tie' | null {
@@ -326,44 +278,49 @@ function StateBetween({ schedule }: { schedule: ScheduleItem[] }) {
 
 // ── Main export ──────────────────────────────────────────────────────────────
 export function Jumbotron({ px }: { px: string }) {
-  const [activeIdx, setActiveIdx] = useState(0)
-  const state = STATES[activeIdx].state
+  const [state, setState] = useState<JumboState>({ kind: 'between', schedule: [] })
+
+  useEffect(() => {
+    async function load() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).rpc('rpc_get_featured_match')
+      if (!data) return
+
+      const board: CardBoard = {
+        kind: 'card-duel',
+        a: data.board.a as CardMove[],
+        b: data.board.b as CardMove[],
+      }
+
+      setState({
+        kind: 'live',
+        match: {
+          id:        data.id,
+          gameLabel: data.game_label,
+          stakeKr:   data.stake_kr,
+          pot:       data.pot,
+          playerA:   data.player_a,
+          playerB:   data.player_b,
+          watching:  data.watching,
+          status:    data.status_text,
+          board,
+        },
+      })
+    }
+    load()
+  }, [])
+
   const isBetween = state.kind === 'between'
 
   return (
     <section style={{ padding: `40px ${px}` }}>
-      {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ ...mono, fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}>
           {!isBetween && <span className="live-dot" />}
           {isBetween ? "TONIGHT'S CARD" : 'JUMBOTRON · WATCH IT HAPPEN'}
         </div>
-
-        {/* Preview toggle — remove when Supabase is live */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ ...mono, fontSize: 9, color: 'var(--ink-ghost)', marginRight: 4 }}>PREVIEW</span>
-          {STATES.map((s, i) => (
-            <button
-              key={s.label}
-              onClick={() => setActiveIdx(i)}
-              style={{
-                ...mono, fontSize: 9,
-                padding: '4px 10px',
-                border: '1px solid',
-                borderColor: activeIdx === i ? 'var(--ink)' : 'var(--ink-ghost)',
-                background: activeIdx === i ? 'var(--ink)' : 'transparent',
-                color: activeIdx === i ? 'var(--bone)' : 'var(--ink-ghost)',
-                cursor: 'pointer',
-                letterSpacing: '0.10em',
-              }}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* State render */}
       {state.kind === 'live'    && <StateLive match={state.match} />}
       {state.kind === 'final'   && <StateFinal match={state.match} tournamentName={state.tournamentName} prize={state.prize} round={state.round} />}
       {state.kind === 'between' && <StateBetween schedule={state.schedule} />}

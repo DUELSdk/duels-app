@@ -19,7 +19,8 @@ export async function POST(request: Request) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (data?.error) return NextResponse.json({ error: data.error }, { status: 400 })
+  const result = data as { error?: string } | null
+  if (result?.error) return NextResponse.json({ error: result.error }, { status: 400 })
 
   return NextResponse.json({ ok: true })
 }

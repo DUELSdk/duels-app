@@ -2,12 +2,17 @@
 
 import { useState, useTransition } from 'react'
 import type { CardType } from '@/types/game'
-import { CardPiece, EmptySlot } from './CardPiece'
 
-// TODO: wire to /api/card-duel/lock — old server action deleted (queried non-existent games table)
-async function submitSequence(_gameId: string, _sequence: CardType[]): Promise<void> {
-  throw new Error('SequenceBuilder not wired to real API yet — use match page inline implementation')
+async function submitSequence(matchId: string, sequence: CardType[]): Promise<void> {
+  const res = await fetch('/api/card-duel/lock', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ matchId, sequence }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to submit')
 }
+import { CardPiece, EmptySlot } from './CardPiece'
 
 const INITIAL_HAND: CardType[] = [
   'rock', 'rock', 'rock',

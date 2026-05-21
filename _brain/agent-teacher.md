@@ -1,7 +1,7 @@
 ---
 title: The Teacher
 type: agent-brief
-updated: 2026-05-20
+updated: 2026-05-22
 ---
 
 # The Teacher
@@ -125,6 +125,16 @@ ROOT CAUSE: The reveal animation trigger was written assuming the server would h
 RULE: Never gate client animation or UI transitions on an intermediate server phase if the server RPC may transition through that phase in a single transaction. Instead, trigger on the data that the phase produces (e.g. round_results becoming non-null) and track completion locally with a done state.
 GOES IN: _brain/agent-builder.md → add under "Supabase Realtime" or "Game state" section
 ALSO UPDATE: None — the fix is in the code.
+```
+
+### Migration source drift (2026-05-22)
+```
+MISTAKE: Migration 006 copied rpc_join_queue and rpc_submit_sudden_death from migration 002 without reading migrations 003–004, reverting the security hardening those migrations had applied. Specifically: the 5-param join_queue was re-created after 004 had dropped it; the secure sd_picks staging was replaced with the old direct game_state writes that leak picks via Realtime before both players submit.
+CLASS: Process gap
+ROOT CAUSE: No rule required reading all prior definitions of a function before writing CREATE OR REPLACE. The oldest migration was used as source without checking if later migrations had changed the function.
+RULE: Before writing any CREATE OR REPLACE FUNCTION in a new migration, grep supabase/migrations/ for all prior definitions of that function and read the most recent one. Never copy from an early migration (001, 002) if later migrations exist for the same function — later migrations may have changed the signature, added security hardening, or switched storage tables.
+GOES IN: _brain/agent-builder.md → Migrations section (added 2026-05-22)
+ALSO UPDATE: None — fixes are in migrations 007 and 008.
 ```
 
 ### Two git repos, committed to wrong root (2026-05-20)

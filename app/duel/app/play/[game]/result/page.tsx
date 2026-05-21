@@ -282,7 +282,6 @@ function BroadcastFinal({
 }
 import { s } from '@/lib/styles'
 import { type MatchResult } from '@/lib/match-state'
-import { getStatsStrip, getLiveMatchCount, getBoard } from '@/lib/mock-data'
 import { supabase } from '@/lib/supabase'
 
 type H2HRecord = {
@@ -338,13 +337,38 @@ function BunkerBar({ slug, kr, matchId, label, color = 'var(--alarm)' }: { slug:
 }
 
 /* ── WIN RESULT ─────────────────────────────────────────────────────── */
+type StripData = { biggestPotWho: string; biggestPotKr: string; settledToday: number; totalPaidKr: string }
+type BoardPot  = { rank: number; who: string; what: string; value_ore: number }
+
+function fmtResultKr(ore: number) {
+  return Math.round(ore / 100).toLocaleString('da-DK')
+}
+
 function WinResult({ result, slug, myHandle, oppHandle, newBal, h2hData }: { result: MatchResult; slug: string; myHandle: string; oppHandle: string; newBal: number | null; h2hData: H2HRecord | null }) {
   const delta   = netDelta(result)
   const rake    = result.stakeKr * 2 - result.winnerGets
   const h2h     = h2hData
-  const stats   = getStatsStrip()
-  const counts  = getLiveMatchCount()
-  const board   = getBoard()
+
+  const [stripData, setStripData] = useState<StripData | null>(null)
+  const [boardPots, setBoardPots] = useState<BoardPot[]>([])
+
+  useEffect(() => {
+    supabase.rpc('rpc_get_stats_strip').then(({ data }) => {
+      if (!data) return
+      const d = data as { biggest_pot_who: string; biggest_pot_ore: number; settled_today: number; total_paid_ore: number }
+      setStripData({
+        biggestPotWho: d.biggest_pot_who ?? '—',
+        biggestPotKr:  fmtResultKr(d.biggest_pot_ore ?? 0),
+        settledToday:   d.settled_today ?? 0,
+        totalPaidKr:   fmtResultKr(d.total_paid_ore ?? 0),
+      })
+    })
+    supabase.rpc('rpc_get_board').then(({ data }) => {
+      if (!data) return
+      const d = data as { biggest_pots: BoardPot[] }
+      setBoardPots(d.biggest_pots ?? [])
+    })
+  }, [])
 
   return (
     <div style={{ background: 'var(--bone)', color: 'var(--ink)', minHeight: '100vh' }}>
@@ -352,10 +376,10 @@ function WinResult({ result, slug, myHandle, oppHandle, newBal, h2hData }: { res
       <div style={{ background: 'var(--ink)', padding: '6px 56px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--money)', display: 'inline-block' }} />
-          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>{stats.biggestPotAmount} KR</strong> — {stats.biggestPotWho}
+          TODAY&apos;S BIGGEST POT <strong style={{ color: 'var(--bone-on-dark)' }}>{stripData?.biggestPotKr ?? '—'} KR</strong> — {stripData?.biggestPotWho ?? '—'}
         </span>
         <span style={{ ...mono, fontSize: 9, color: 'var(--bone-faint)' }}>
-          {counts.settledToday.toLocaleString('da-DK')} SETTLED TODAY &nbsp;·&nbsp; {stats.totalPaidToday} KR PAID
+          {(stripData?.settledToday ?? 0).toLocaleString('da-DK')} SETTLED TODAY &nbsp;·&nbsp; {stripData?.totalPaidKr ?? '—'} KR PAID
         </span>
       </div>
 
@@ -497,7 +521,12 @@ function WinResult({ result, slug, myHandle, oppHandle, newBal, h2hData }: { res
           <span style={{ ...display(48) }}>ON THE BOARD.</span>
           <span style={{ ...mono, fontSize: 9, color: 'var(--ink-faint)' }}>TODAY · LIVE</span>
         </div>
-        {board.biggestPots.map(e => ({ rank: e.rank, who: e.who.toUpperCase(), what: e.what, val: e.value })).map(r => (
+        {boardPots.map(e => ({
+          rank: String(e.rank).padStart(2, '0'),
+          who: e.who.toUpperCase(),
+          what: e.what.replace('CARD-DUEL', 'CARD DUEL').replace('CYCLE-DUEL', 'CYCLEDUEL').replace('DROP-DUEL', 'DROPDUEL'),
+          val: fmtResultKr(e.value_ore),
+        })).map(r => (
           <div key={r.rank} style={{
             display: 'grid', gridTemplateColumns: '32px 1fr auto',
             alignItems: 'baseline', gap: 16,
@@ -919,7 +948,7 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
       const { data: match } = await supabase
         .from('matches')
         .select('winner_id, player1_id, player2_id, stake_kr, purse_ore, entry_fee_ore')
-        .eq('id', matchIdParam)
+        .eq('id', matchIdParam!)
         .single()
 
       if (!match) { setLoading(false); return }
@@ -936,8 +965,8 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
           .single(),
       ])
 
-      const me  = profilesRes.data?.find((p: { id: string; handle: string }) => p.id === user.id)
-      const opp = profilesRes.data?.find((p: { id: string; handle: string }) => p.id !== user.id)
+      const me  = profilesRes.data?.find(p => p.id === user.id)
+      const opp = profilesRes.data?.find(p => p.id !== user.id)
       const mh  = me?.handle  ?? 'YOU'
       const oh  = opp?.handle ?? 'OPP'
       setMyHandle(mh)
@@ -951,18 +980,18 @@ export default function ResultPage({ params }: { params: Promise<{ game: string 
           .from('matches')
           .select('winner_id, player1_id, player2_id')
           .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-          .neq('id', matchIdParam)
+          .neq('id', matchIdParam!)
           .not('winner_id', 'is', null)
           .order('created_at', { ascending: false })
           .limit(100)
 
-        const filtered = (h2hMatches ?? []).filter((m: { player1_id: string; player2_id: string; winner_id: string }) =>
+        const filtered = (h2hMatches ?? []).filter(m =>
           (m.player1_id === user.id && m.player2_id === opp.id) ||
           (m.player1_id === opp.id  && m.player2_id === user.id)
         )
 
-        const wins   = filtered.filter((m: { winner_id: string }) => m.winner_id === user.id).length
-        const losses = filtered.filter((m: { winner_id: string }) => m.winner_id !== user.id).length
+        const wins   = filtered.filter(m => m.winner_id === user.id).length
+        const losses = filtered.filter(m => m.winner_id !== user.id).length
 
         let streak = 0
         for (const m of filtered) {

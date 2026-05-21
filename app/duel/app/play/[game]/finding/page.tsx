@@ -137,7 +137,7 @@ function PairedScreen({ game, kr, me, opp, onDone }: {
   const oppName = useScramble(opp, { delay: 700, duration: 600 })
 
   useEffect(() => {
-    const t = setTimeout(() => setExiting(true), 4500)
+    const t = setTimeout(() => setExiting(true), 3500)
     return () => clearTimeout(t)
   }, [])
 
@@ -217,7 +217,7 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
       const { data } = await supabase
         .from('queue')
         .select('status, match_id')
-        .eq('id', queueId)
+        .eq('id', queueId!)
         .single()
       if (data?.status === 'matched' && data.match_id && !done) {
         done = true
@@ -232,7 +232,7 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
       .channel(`queue-${queueId}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'queue', filter: `id=eq.${queueId}` },
+        { event: 'UPDATE', schema: 'public', table: 'queue', filter: `id=eq.${queueId!}` },
         async (payload) => {
           if (done) return
           const row = payload.new as { status: string; match_id: string | null }
@@ -280,7 +280,7 @@ function FindingContent({ game, kr, queueId, matchIdParam }: {
   }
 
   const handleDone = useCallback(() => {
-    router.replace(`/play/${game}/match?matchId=${matchId}`)
+    router.push(`/play/${game}/match?matchId=${matchId}`)
   }, [router, game, matchId])
 
   async function handleCancel() {

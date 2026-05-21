@@ -32,18 +32,25 @@ You are the authority on how DUELS is built. You know the full stack, every arch
 - **Payments (real):** MangoPay + Trustly — not yet integrated
 - **Repo:** GitHub, single repo, `app/duel/` is the Next.js app
 
-### Current state — everything is mock
+### Current state — partially live
 
-Nothing is wired to real services. All state lives in `localStorage`.
+Supabase is wired. Core game loop runs on real data. Payments + MitID not yet integrated.
 
-| What | Mock | Real (not built) |
+| What | Status | Notes |
 |---|---|---|
-| Auth | `lib/auth.ts` localStorage | MitID via idura/Criipto |
-| Balance | `lib/balance.ts` localStorage | Supabase + MangoPay wallets |
-| Matchmaking | None | Supabase Realtime queues |
-| Game logic | None | Server-side in API routes |
-| Transactions | `lib/balance.ts` localStorage | Supabase transactions table |
-| User profiles | `lib/mock-data.ts` hardcoded | Supabase users table |
+| Auth | Supabase email auth live | MitID (Criipto) not integrated yet |
+| Balance | Supabase wallets live | MangoPay not integrated — play money only |
+| Matchmaking | **Live** | Queue RPCs + Supabase Realtime. Finding page polls + subscribes. |
+| Card Duel game logic | **Live** | `rpc_submit_sequence`, `rpc_submit_sudden_death`, `rpc_resolve_card_duel`. Secure SD via `sd_picks` table. |
+| Transactions | **Live** | Supabase transactions table. Entry fees deducted, prizes credited. |
+| User profiles | **Live** | `rpc_create_profile_and_wallet` on first sign-in. `public_profiles` view for safe reads. |
+| Jumbotron (homepage) | **Live** | Fetches `rpc_get_featured_match()` — highest-purse active or recent complete match. |
+| Leaderboard | **Live** | `rpc_get_board()` — net earnings, win streaks, biggest days. |
+| Stats strip / ticker | **Live** | `rpc_get_stats_strip()`, `rpc_get_ticker()` |
+| CycleDuel / DropDuel | Bot only (local) | No real multiplayer yet — Supabase game_state only implemented for Card Duel |
+| Tournaments | Mock UI | No tournament logic in DB yet |
+| Payments (real money) | Not built | MangoPay + Trustly — after KYC/compliance |
+| MitID auth | Not built | Criipto integration — after MangoPay onboarding |
 
 ### Architecture principles
 
@@ -153,6 +160,10 @@ Read before building anything:
 - Design system source of truth: `Design/style-guide.html` → `globals.css` → `DESIGN.md`. In that order.
 - New pages must be added to CLAUDE.md routing table in the same session.
 - Do not create HTML prototypes — build directly in Next.js, dev server is the preview.
+
+### Migrations
+- Before writing any `CREATE OR REPLACE FUNCTION` in a new migration, grep `supabase/migrations/` for all prior definitions of that function and **read the most recent one**. Never copy from an early migration (001, 002) if later migrations exist for the same function — later migrations may have changed the signature, added security hardening, or switched storage tables. Copying from the wrong source silently reverts those fixes.
+- After deploying any migration that re-declares an existing RPC, run `npm run db:types` to regenerate `lib/database.types.ts`. This catches signature drift between the RPC and the callers at compile time.
 
 ### Supabase queries
 - Before writing any `.select()` query, verify every column name against `supabase/migrations/` — PostgREST returns `{ data: null }` for unknown columns with no error. Symptom is a silent loading hang.

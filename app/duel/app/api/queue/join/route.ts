@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'INVALID_REQUEST' }, { status: 400 })
   }
 
-  // Validate tier exists — fee math is computed inside the RPC from stake_tiers table
+  // Validate tier exists — fee math is looked up server-side from stake_tiers table
   const tier = TIERS.find(t => t.id === tierId && t.stakeKr === stakeKr)
   if (!tier) return NextResponse.json({ error: 'INVALID_TIER' }, { status: 400 })
 
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (data?.error) return NextResponse.json({ error: data.error }, { status: 400 })
+  const result = data as { error?: string; status?: string; queue_id?: string; match_id?: string } | null
+  if (result?.error) return NextResponse.json({ error: result.error }, { status: 400 })
 
-  return NextResponse.json(data)
+  return NextResponse.json(result)
 }

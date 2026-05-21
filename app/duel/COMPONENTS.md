@@ -87,20 +87,25 @@ No props. Client component — calls `clearAuth()` and redirects to `/auth`.
 
 Props:
 ```ts
-// Accepts JumboState — one of:
-{ kind: 'live';   match: LiveMatch }
-{ kind: 'final';  match: LiveMatch; tournamentName: string; prize: number; round: string }
-{ kind: 'schedule'; items: ScheduleItem[] }
-{ kind: 'empty' }
+px: string   // horizontal padding — e.g. '40px'
 ```
 
-`LiveMatch` shape:
+Fetches `rpc_get_featured_match()` on mount (SECURITY DEFINER, accessible to anon).
+Maps result to `JumboState` — one of:
+
+```ts
+{ kind: 'live';    match: LiveMatch }
+{ kind: 'final';   match: LiveMatch; tournamentName: string; prize: number; round: string }
+{ kind: 'between'; schedule: ScheduleItem[] }   // default — shown while loading or when DB is empty
+```
+
+`LiveMatch` shape (from RPC response):
 ```ts
 { id, gameLabel, stakeKr, pot, playerA, playerB, watching, status,
   board: CardBoard | CycleBoard | DropBoard }
 ```
 
-Renders live mini-board for the biggest active match. Card Duel, CycleDuel, DropDuel boards are all handled. Falls back to schedule or empty state.
+Card Duel, CycleDuel, DropDuel boards all rendered. Falls back to `between` state (shows "NO MATCH LIVE") when DB has no match data.
 
 ---
 

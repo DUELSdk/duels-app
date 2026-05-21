@@ -2,12 +2,17 @@
 
 import { useState, useTransition } from 'react'
 import type { CardType } from '@/types/game'
-import { CardPiece } from './CardPiece'
 
-// TODO: wire to /api/card-duel/sudden-death — old server action deleted (queried non-existent games table)
-async function submitSuddenDeathPick(_gameId: string, _pick: CardType): Promise<void> {
-  throw new Error('SuddenDeathPicker not wired to real API yet — use match page inline implementation')
+async function submitSuddenDeathPick(matchId: string, pick: CardType): Promise<void> {
+  const res = await fetch('/api/card-duel/sudden-death', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ matchId, card: pick }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to submit')
 }
+import { CardPiece } from './CardPiece'
 
 const ALL_CARDS: CardType[] = ['rock', 'scissors', 'paper']
 
