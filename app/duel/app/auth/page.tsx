@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { s } from '@/lib/styles'
-import { signIn, signUp, hasProfile, signInAsGuest } from '@/lib/auth'
+import { signIn, signUp, hasProfile } from '@/lib/auth'
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
@@ -22,22 +22,6 @@ export default function AuthPage() {
   const emailOk    = validateEmail(email)
   const passwordOk = password.length >= 8
   const canSubmit  = emailOk && passwordOk && !loading
-
-  async function handleGuest() {
-    setLoading(true)
-    setError(null)
-    const { error: err } = await signInAsGuest()
-    if (err) { setError(err.message.toUpperCase()); setLoading(false); return }
-    // Auto-generate handle — no picker, no moderation needed
-    const tag = Math.floor(1000 + Math.random() * 9000)
-    const handle = `GUEST${tag}`
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.rpc('rpc_create_profile_and_wallet', {
-      p_handle: handle,
-      p_initials: 'GT',
-    })
-    router.replace('/')
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -177,28 +161,6 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid rgba(240,237,228,0.12)' }}>
-            <button
-              onClick={handleGuest}
-              disabled={loading}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                color: 'rgba(240,237,228,0.5)',
-                border: '1px solid rgba(240,237,228,0.2)',
-                padding: '14px 32px',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 600, fontSize: 14,
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              PLAY AS GUEST — NO ACCOUNT
-            </button>
-            <div style={{ ...s.mono, fontSize: 9, color: 'rgba(240,237,228,0.3)', textAlign: 'center', marginTop: 8 }}>
-              TEST MODE · 5.000 KR PLAY MONEY · NO ACCOUNT RECOVERY
-            </div>
-          </div>
         </div>
       </div>
 
